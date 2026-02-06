@@ -282,57 +282,50 @@
         const YAR = "YOU'RE ABSOLUTELY RIGHT";
         const snippets = [
           'const app=express();app.get("/api",async(req,res)=>{const data=await db.query("SELECT * FROM users");res.json(data);});',
-          YAR,
           'function debounce(fn,ms){let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms);}}',
-          YAR,
           'export default class EventBus{#listeners=new Map();on(e,fn){this.#listeners.get(e)?.push(fn)??this.#listeners.set(e,[fn])}}',
           YAR,
           'const [state,setState]=useState(null);useEffect(()=>{fetch(url).then(r=>r.json()).then(setState)},[url]);',
-          YAR,
           'def train(model,loader,opt):model.train()\nfor x,y in loader:loss=model(x,y);loss.backward();opt.step();opt.zero_grad()',
-          YAR,
           'class Pipeline:def __init__(self,steps):self.steps=steps\ndef run(self,data):return reduce(lambda d,s:s(d),self.steps,data)',
           YAR,
           'async def fetch_all(urls):async with aiohttp.ClientSession() as s:return await gather(*[s.get(u) for u in urls])',
-          YAR,
           '@app.route("/predict",methods=["POST"])\ndef predict():data=request.json;result=model.predict(data["features"]);return jsonify(result)',
-          YAR,
           'func main(){http.HandleFunc("/ws",handleWS);log.Fatal(http.ListenAndServe(":8080",nil))}',
           YAR,
           'func worker(ch<-chan Job,wg*sync.WaitGroup){defer wg.Done();for j:=range ch{process(j)}}',
-          YAR,
           'type Server struct{db*sql.DB;cache*redis.Client;mu sync.RWMutex;conf Config}',
-          YAR,
           'fn parse(input:&str)->Result<AST,Error>{let tokens=lexer::tokenize(input)?;parser::build_tree(&tokens)}',
           YAR,
           'impl<T:Send+Sync> Pool<T>{pub fn spawn(&self,f:impl FnOnce()->T+Send){self.queue.push(Box::new(f))}}',
-          YAR,
           '#[derive(Debug,Serialize)]struct Response<T>{data:T,meta:Meta,status:u16}',
-          YAR,
           'interface Config<T extends Record<string,unknown>>{endpoint:string;transform:(raw:unknown)=>T;retry?:number}',
           YAR,
           'type DeepPartial<T>={[K in keyof T]?:T[K] extends object?DeepPartial<T[K]>:T[K]}',
-          YAR,
           'func fetchData()async throws->[Item]{let(data,_)=try await URLSession.shared.data(from:url);return try JSONDecoder().decode([Item].self,from:data)}',
-          YAR,
           'SELECT u.name,COUNT(o.id)as orders FROM users u LEFT JOIN orders o ON o.user_id=u.id GROUP BY u.id HAVING orders>5',
           YAR,
           'suspend fun<T>retry(n:Int,block:suspend()->T):T{repeat(n-1){try{return block()}catch(e:Exception){delay(1000)}};return block()}',
-          YAR,
           'data class User(val id:Long,val name:String,val roles:List<Role>){fun hasAccess(r:Role)=r in roles}',
-          YAR,
           'val flow=channelFlow{launch{db.observe().collect{send(it)}};launch{cache.updates().collect{send(it)}}}',
           YAR,
           'template<typename T>class ThreadPool{std::vector<std::thread>workers;std::queue<std::function<void()>>tasks;std::mutex mtx;};',
-          YAR,
           'auto result=std::transform(v.begin(),v.end(),v.begin(),[](auto x){return x*x;});',
-          YAR,
           'std::unique_ptr<Node>parse(Lexer&lex){auto tok=lex.next();if(tok.type==Token::LParen)return parseExpr(lex);return std::make_unique<Literal>(tok);}',
           YAR,
         ];
 
         // Build a long looping code stream from all snippets (strip any newlines)
-        const codeStream = snippets.join('  //  ').replace(/\n/g, ' ').repeat(3);
+        const joined = snippets.join('  //  ').replace(/\n/g, ' ');
+        const codeStream = joined.repeat(3);
+        // Mark which positions in the stream belong to YAR
+        const isYar = new Array(joined.length).fill(false);
+        let si = 0;
+        while ((si = joined.indexOf(YAR, si)) !== -1) {
+          for (let k = si; k < si + YAR.length; k++) isYar[k] = true;
+          si += YAR.length;
+        }
+        const joinedLen = joined.length;
         let codeOffset = 0;
 
         const lines = original.split('\n');
@@ -397,24 +390,34 @@
           }
         });
 
+        function esc(c) { return c === '&' ? '&amp;' : c === '<' ? '&lt;' : c === '>' ? '&gt;' : c; }
+
         function shimmer() {
           let result = '';
+          let inYar = false;
           for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
             for (let j = 0; j < line.length; j++) {
               if (mask[i][j]) {
-                result += codeStream[(codeOffset + i * 37 + j) % codeStream.length];
+                const idx = (codeOffset + i * 37 + j) % codeStream.length;
+                const charIsYar = isYar[idx % joinedLen];
+                if (charIsYar && !inYar) { result += '<span style="color:#FF991C">'; inYar = true; }
+                else if (!charIsYar && inYar) { result += '</span>'; inYar = false; }
+                result += esc(codeStream[idx]);
               } else {
-                result += line[j];
+                if (inYar) { result += '</span>'; inYar = false; }
+                result += esc(line[j]);
               }
             }
+            if (inYar) { result += '</span>'; inYar = false; }
             if (i < lines.length - 1) result += '\n';
           }
-          pre.textContent = result;
+          if (inYar) result += '</span>';
+          pre.innerHTML = result;
           codeOffset += 3;
         }
 
-        setInterval(shimmer, 80);
+        setInterval(shimmer, 120);
       })();
     </script>
   </body>
