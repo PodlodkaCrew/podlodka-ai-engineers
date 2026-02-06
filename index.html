@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Podlodka AI Engineering Club</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <nav class="nav">
+      <div class="nav-inner">
+        <a class="nav-link" href="#about">About</a>
+        <a class="nav-link" href="#audience">For whom</a>
+        <a class="nav-link" href="#topics">Topics</a>
+        <a class="nav-link" href="#schedule">Schedule</a>
+        <a class="nav-link nav-link--cta" href="#join">Join</a>
+      </div>
+    </nav>
+
+    <header class="hero">
+      <div class="hero-text">
+        <h1 class="hero-title">Podlodka AI Engineers</h1>
+        <h3 class="hero-subtitle">Закрытое сообщество для опытных инженеров. Еженедельные воркшопы с AI-экспертами. Только практика.</h3>
+        <a class="btn btn--large" href="#join">Записаться в список ожидания</a>
+      </div>
+      <div class="hero-ascii-wrap" aria-hidden="true">
+        <pre class="hero-ascii">
+                                            EDDDDDDDDDDDDDDDDDDDDE
+                                      EDDDDDDE                  EDDDDDDEF
+                                  EDDDEF                               EDDDE
+                              EDDDE                                        EDDDE
+                           FDDDF                                              EDDDF
+                         EDDE                                                    EDDE
+                       DDDE                                  EEEEEEF               EDDE
+                     EDD                                 EEEEEF   EE                  DDE
+                   EDDF                              FEEEFF       EE                   FDDE
+                  DDE                               EEF           EE                     EDD
+                EDE                                EEF   EEEEEE   EE                       EDE
+               DDE                                EEF  FEE   EFEEEEF                        EDD
+              DDF                                 EE   EE                                    FDD
+             DDF                                  FE   EE                                     FDD
+            DD             FEEDEE           EEEEEEEE   EEEEEEEEEEE              EEDEE           DD
+           DEE        EDDDDDDDDDDDDDDEF   FEEF                  FEEF      FEDDDDDDDDDDDDDEE     FDD
+          EDDDDDDDDDDDDEDDEDDDEDEDDEDDD   EEF                    FEE   DDDDDDDDEDDEDDEDDDDEDDDDDDDED
+          DDDDDEDDDEDDDDDDDDEDDDDDF       EEF                    FEE        DEDDDDDDDDDEDDDDDDEDDDDDF
+         DDEDEDDDEDDDEDEDEDDDE            EEF                    FEE            EDEDEDDDEDEDEDDDEDEDD
+        EEDDDDEDEDDEDDDEDDEF     FEEEEEEEEFEF                    FEEEEEEEEEEF     FDDDEDDDDDDEDEDDDEDE
+        EDDEEDDEDDEDEDEDDF    FEEEF                                        FEEEF     DEDEDEEDDEDDEDDED
+        DEDDDEDDEDDEDDDE    EEEF                                              FEEE    EDEDDDEDDEDEDEDE
+       EEDEEDEDEDEDEDEE   EEEF                                                  FEEE   EEDEDEDEDEDEDDEE
+       EDDDEDEDEDEDEDE   EFE                                EEEF                  FEE   EEDEDEDEDEDEDED
+       DEEDEDEDEDEDEE   EEE                     FF          EEEE                   EEE   EEDEDEDEDEDEDE
+       EDEEDEEDEEDED    EF                     EEEE         FEFE   EEE              FEF   EDEEDEEDEEDED
+       EDEDEDEEDEEEE   EE                 F    EEEF   EEF   EEEE   EEE               EE   EDEDEDEEDEEEE
+       EEDEEEDEEDEDE   EE         FF    FEEE   EEEE  FEEE   EEFE   EEE    FF         EE   EEEEEEDEEDEDE
+       DEEEDEEEEEDE    EE        EEEE   EEEE   EEFE  FEEE   FEEE   EFE   EEEE        FE    EDEDEEEDEEED
+       EEDEEEEDEEEE    EF        FEEF   FEEE   EEEF  FEEE   EEEF   EEE   FEEF        EE    EEEEEEEEEEEE
+       EEEEEEEEEDE     EE                EFF   EFEE  FEEF   EFEE   EEE               EE   EEEEEDEEDEEDE
+        EEEEEEDEE    EEEF                      EEEF         EEEF   EEE              FEF   EEDEEEEEEEEE
+        EEEEDEEE   FEEF                        FEEF         EEEE   FFF             FEE    EEEEEEEEEEEE
+        FEEEEEEE   EE                                       EFEF                  FEE    EEEEEEEEEEEEE
+         EEEEEEF   EF                                        F                   EEE    EEEEEEEEEEEEE
+          EEEEEE   EE                                                          FEEF    EEEEEEEEEEEEE
+          FE       FEEF       EEEF                                          FEEEF    FEEEEEEEEEEEEEE
+                     EEEEFFEEEEFFEEEEEFEFFEFFEFFEFFEFFEFFEFFEFFEFFEFFEFEEEEEEF     FEEEEEFEEFEEEEEE
+            FEEEEE      EEEEF        EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEF        EEEEEFEEEEEEEFEFE
+           EEE  FEE                                                           FEEFEFEFEEFEFEFEEEE
+           EE    EE    EEFFEEEFEEEFEEEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEEEFEEEEFEEEEFEEFEEFEEFEF
+           FEEEFEEF   EFEFEFFEEFEFEFEFEEEEFEEFEEEFEEEEEFEEEEFEEEEFEEFEEFEFEFEFEEFEFEEFEEFEEFEFE
+              FEF     EFEEFEEFEFEEFEEFEFEFEFEEFEFEFEFFEEFEFEFEFFEEFEEFEFEEFEFEFEFEFEFEFEFEFEF
+                    EFEFEFEFEFEFEFEFEFEFEFEFEFEFEFEFEEFFEFEFEFEEFFEFEFEFEFEFEFEFEFEFEFEFEFEF
+                    FEFEFEFEFEFEFEFEFEFEFEFEFEFEFEFEFFEFEFEFEFEFEFEFEFEFEFEFEFEFEFEFEFEFEFF
+                     FFEFFEFFEFEFFEFEFEFEFEFEFEFEFEFEFEFEFFEFEFFEFEFFEFEFEFEFEFEFEFEFEFEFEF
+                       FEFFEFFEFEFFEFFEFFEFFFEFFFEFFEFFEFEFEFFEFEFFEFFEFFFEFFEFFEFFFEFF
+                          FFEFFFFEFFEFFEFFEFEFFEFFEFFEFFFFEFFEFFFEFFEFFEFEFFEFFEFFEF
+                            FFEFFFEFFFFFEFFFFFFFEFFFFFEFEFFFFFFEFFFEFFFFFFFEFFFFFE
+                               FEFFFEFEFFFFEFEFFFFEFEFFFFFEFEFFFFEFFFEFEFEFFFEF
+                                   FFFFFFEFFFFFEFFFFFFFEFFFFFFEFFFFFFFFFFFF
+                                       FFFFFFFFFFFFFFEFFFFFFFFFFFFEFFFE
+                                             FFFFEFFFFFFFFEFFFFFE
+        </pre>
+      </div>
+    </header>
+
+    <section class="section" id="about">
+      <div class="section-inner">
+        <h2 class="section-heading">Что это за клуб</h2>
+        <div class="section-body">
+          <p>
+            Новые AI модели и тулы выходят каждую неделю, городские сумасшедшие
+            хоронят программирование, очень крутые ребята в одиночку, обложившись
+            десятком агентов, создают супер-успешные проекты – и как с этим жить,
+            решительно непонятно. Чтобы с этим разобраться, мы создали закрытый
+            клуб опытных инженеров, которые каждую неделю общаются с экспертами с
+            прикладным опытом в AI, и учатся перестраивать и свои собственные
+            привычки, и процессы в своих командах.
+          </p>
+          <p class="label">Как клуб работает:</p>
+          <ul>
+            <li>Выбираем темы, в которых хотим разобраться.</li>
+            <li>
+              Находим крутых экспертов с прикладным опытом в них, и организуем
+              еженедельные воркшопы и глубокие разборы.
+            </li>
+            <li>Общаемся в чате с другими ранними адоптерами.</li>
+            <li>Делимся лучшими практиками и опытом внутри сообщества.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="audience">
+      <div class="section-inner">
+        <h2 class="section-heading">Для кого этот клуб</h2>
+        <div class="section-body">
+          <p>Чтобы получить пользу от участия, должно сойтись сразу несколько звезд:</p>
+          <ul>
+            <li>
+              Вы опытный инженер, построивший не одну продакшн систему, сделавший
+              много ошибок и получивший много опыта.
+            </li>
+            <li>
+              Вы понимаете, что наша индустрия очень сильно изменилась, хотите
+              менять свои подходы вместе с ней, и вам интересно экспериментировать.
+            </li>
+            <li>
+              Вы не ожидаете от AI магии, и понимаете, что это набор новых парадигм
+              и инструментов, которые нужно научиться правильно применять.
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="topics">
+      <div class="section-inner">
+        <h2 class="section-heading">Про какие темы мы говорим</h2>
+        <div class="section-body">
+          <p>
+            AI глубоко влияет и на ежедневную рутину программиста, и на методы
+            работы всей команды. Мы будем разбираться с обоими треками. Вот
+            некоторые из направлений, в которые мы точно планируем закапываться:
+          </p>
+          <ul>
+            <li>
+              Лучшие практики работы с AI тулингом: Claude Code, Cursor, Conductor, Codex.
+            </li>
+            <li>
+              Разработка полезных AI агентов – например, для автоматических больших
+              рефакторингов.
+            </li>
+            <li>
+              Оркестрация агентов – и на уровне локальных задач, и на уровне
+              огромных длинных проектов.
+            </li>
+            <li>
+              Организация ежедневной рутины – как правильно делегировать агенту
+              задачи, не теряя в качестве и в фокусе.
+            </li>
+            <li>
+              Как развивать сложные enterprise проекты, код которых пишет AI, и не
+              пускать слоп в продакшн.
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="schedule">
+      <div class="section-inner">
+        <h2 class="section-heading">Расписание клуба на март-май</h2>
+        <div class="section-body">
+          <div class="schedule">
+            <div class="schedule-month">
+              <div class="schedule-label">Март</div>
+              <div class="schedule-events">
+                <div class="schedule-event">
+                  <div class="schedule-event-title">Разные подходы к Spec Driven Development</div>
+                  <div class="schedule-event-speaker">Антон Архипов @ JetBrains</div>
+                  <div class="schedule-event-desc">
+                    По долгу службы Антон постоянно пишет код с разными агентами и сильно
+                    верит в то, что именно благодаря SDD можно писать проекты, поддерживаемые
+                    в долгосроке.
+                  </div>
+                </div>
+                <div class="schedule-event">
+                  <div class="schedule-event-title">Лучшие практики работы с Conductor</div>
+                  <div class="schedule-event-speaker">Дмитрий Рожков</div>
+                  <div class="schedule-event-desc">
+                    Conductor, оркестратор AI агентов – основной рабочий инструмент Димы,
+                    в котором он собрал уже не один боевой проект. Разберемся, зачем и как
+                    на него переезжать.
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="schedule-month">
+              <div class="schedule-label">Апрель</div>
+              <div class="schedule-events">
+                <div class="schedule-event schedule-tbd">TBD</div>
+              </div>
+            </div>
+            <div class="schedule-month">
+              <div class="schedule-label">Май</div>
+              <div class="schedule-events">
+                <div class="schedule-event schedule-tbd">TBD</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section--join" id="join">
+      <div class="section-inner">
+        <h2 class="section-heading">Как попасть в клуб</h2>
+        <div class="section-body">
+          <p>Мы только начинаем развивать клуб, поэтому вход открыт не для всех. Попасть можно двумя способами:</p>
+          <ul>
+            <li>Записаться в список ожидания.</li>
+            <li>Получить инвайт от текущего участника клуба.</li>
+          </ul>
+          <p>
+            Участие в клубе платное, месячная подписка – 20$. Оплачивать можно и
+            российскими, и зарубежными картами.
+          </p>
+          <a class="btn btn--large" href="#">Оставить заявку</a>
+        </div>
+      </div>
+    </section>
+    <script>
+      (function () {
+        const pre = document.querySelector('.hero-ascii');
+        const original = pre.textContent;
+        const YAR = "YOU'RE ABSOLUTELY RIGHT";
+        const snippets = [
+          'const app=express();app.get("/api",async(req,res)=>{const data=await db.query("SELECT * FROM users");res.json(data);});',
+          YAR,
+          'function debounce(fn,ms){let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms);}}',
+          YAR,
+          'export default class EventBus{#listeners=new Map();on(e,fn){this.#listeners.get(e)?.push(fn)??this.#listeners.set(e,[fn])}}',
+          YAR,
+          'const [state,setState]=useState(null);useEffect(()=>{fetch(url).then(r=>r.json()).then(setState)},[url]);',
+          YAR,
+          'def train(model,loader,opt):model.train()\nfor x,y in loader:loss=model(x,y);loss.backward();opt.step();opt.zero_grad()',
+          YAR,
+          'class Pipeline:def __init__(self,steps):self.steps=steps\ndef run(self,data):return reduce(lambda d,s:s(d),self.steps,data)',
+          YAR,
+          'async def fetch_all(urls):async with aiohttp.ClientSession() as s:return await gather(*[s.get(u) for u in urls])',
+          YAR,
+          '@app.route("/predict",methods=["POST"])\ndef predict():data=request.json;result=model.predict(data["features"]);return jsonify(result)',
+          YAR,
+          'func main(){http.HandleFunc("/ws",handleWS);log.Fatal(http.ListenAndServe(":8080",nil))}',
+          YAR,
+          'func worker(ch<-chan Job,wg*sync.WaitGroup){defer wg.Done();for j:=range ch{process(j)}}',
+          YAR,
+          'type Server struct{db*sql.DB;cache*redis.Client;mu sync.RWMutex;conf Config}',
+          YAR,
+          'fn parse(input:&str)->Result<AST,Error>{let tokens=lexer::tokenize(input)?;parser::build_tree(&tokens)}',
+          YAR,
+          'impl<T:Send+Sync> Pool<T>{pub fn spawn(&self,f:impl FnOnce()->T+Send){self.queue.push(Box::new(f))}}',
+          YAR,
+          '#[derive(Debug,Serialize)]struct Response<T>{data:T,meta:Meta,status:u16}',
+          YAR,
+          'interface Config<T extends Record<string,unknown>>{endpoint:string;transform:(raw:unknown)=>T;retry?:number}',
+          YAR,
+          'type DeepPartial<T>={[K in keyof T]?:T[K] extends object?DeepPartial<T[K]>:T[K]}',
+          YAR,
+          'func fetchData()async throws->[Item]{let(data,_)=try await URLSession.shared.data(from:url);return try JSONDecoder().decode([Item].self,from:data)}',
+          YAR,
+          'SELECT u.name,COUNT(o.id)as orders FROM users u LEFT JOIN orders o ON o.user_id=u.id GROUP BY u.id HAVING orders>5',
+          YAR,
+          'suspend fun<T>retry(n:Int,block:suspend()->T):T{repeat(n-1){try{return block()}catch(e:Exception){delay(1000)}};return block()}',
+          YAR,
+          'data class User(val id:Long,val name:String,val roles:List<Role>){fun hasAccess(r:Role)=r in roles}',
+          YAR,
+          'val flow=channelFlow{launch{db.observe().collect{send(it)}};launch{cache.updates().collect{send(it)}}}',
+          YAR,
+          'template<typename T>class ThreadPool{std::vector<std::thread>workers;std::queue<std::function<void()>>tasks;std::mutex mtx;};',
+          YAR,
+          'auto result=std::transform(v.begin(),v.end(),v.begin(),[](auto x){return x*x;});',
+          YAR,
+          'std::unique_ptr<Node>parse(Lexer&lex){auto tok=lex.next();if(tok.type==Token::LParen)return parseExpr(lex);return std::make_unique<Literal>(tok);}',
+          YAR,
+        ];
+
+        // Build a long looping code stream from all snippets (strip any newlines)
+        const codeStream = snippets.join('  //  ').replace(/\n/g, ' ').repeat(3);
+        let codeOffset = 0;
+
+        const lines = original.split('\n');
+
+        // For each line, find "runs" of non-space characters.
+        // The first and last run on each line form the outer border (animate).
+        // All runs in between are the submarine interior (keep static).
+        const mask = lines.map(line => {
+          const m = new Array(line.length).fill(false);
+          const runs = [];
+          let inRun = false, start = 0;
+          for (let j = 0; j < line.length; j++) {
+            if (line[j] !== ' ') {
+              if (!inRun) { start = j; inRun = true; }
+            } else if (inRun) {
+              runs.push([start, j - 1]);
+              inRun = false;
+            }
+          }
+          if (inRun) runs.push([start, line.length - 1]);
+          if (runs.length === 0) return m;
+
+          // First run = border, last run = border (animate both)
+          const first = runs[0], last = runs[runs.length - 1];
+          for (let j = first[0]; j <= first[1]; j++) m[j] = true;
+          for (let j = last[0]; j <= last[1]; j++) m[j] = true;
+          return m;
+        });
+
+        // Animate specific interior runs that are part of the border decoration:
+        const animateRuns = ['FEEDEE','EEDEE','EDDDDDDDDDDDDDDEF','FEDDDDDDDDDDDDDEE'];
+        lines.forEach((line, i) => {
+          for (const word of animateRuns) {
+            let pos = 0;
+            while ((pos = line.indexOf(word, pos)) !== -1) {
+              for (let j = pos; j < pos + word.length; j++) mask[i][j] = true;
+              pos += word.length;
+            }
+          }
+        });
+
+        // Fix two submarine details the heuristic misses:
+        lines.forEach((line, i) => {
+          const trimmed = line.trim();
+          // Bottom connector of the submarine hull — first run is interior, keep last run animated
+          if (trimmed.startsWith('EEEEFFEEEEFF')) {
+            let j = 0;
+            while (j < line.length && line[j] === ' ') j++;
+            while (j < line.length && line[j] !== ' ') { mask[i][j] = false; j++; }
+          }
+          // Small circle bottom-left — spans 5 lines, first run on each is interior
+          if (
+            trimmed.startsWith('FEEEEE      ') ||
+            trimmed.startsWith('EEE  FEE') ||
+            trimmed.startsWith('EE    EE') ||
+            trimmed.startsWith('FEEEFEEF') ||
+            trimmed.startsWith('FEF     ')
+          ) {
+            let j = 0;
+            while (j < line.length && line[j] === ' ') j++;
+            while (j < line.length && line[j] !== ' ') { mask[i][j] = false; j++; }
+          }
+        });
+
+        function shimmer() {
+          let result = '';
+          for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            for (let j = 0; j < line.length; j++) {
+              if (mask[i][j]) {
+                result += codeStream[(codeOffset + i * 37 + j) % codeStream.length];
+              } else {
+                result += line[j];
+              }
+            }
+            if (i < lines.length - 1) result += '\n';
+          }
+          pre.textContent = result;
+          codeOffset += 3;
+        }
+
+        setInterval(shimmer, 80);
+      })();
+    </script>
+  </body>
+</html>
