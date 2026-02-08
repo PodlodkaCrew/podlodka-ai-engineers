@@ -326,18 +326,19 @@ ul {
 }
 
 .schedule-month {
-  display: grid;
-  grid-template-columns: 140px 1fr;
-  gap: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .schedule-label {
-  font-weight: 600;
-  font-size: 15px;
-  color: var(--text-faint);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding-top: 2px;
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  padding-bottom: 8px;
+  border-bottom: 3px solid var(--accent);
+  align-self: flex-start;
 }
 
 .schedule-events {
@@ -393,26 +394,14 @@ ul {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  transition: border-color 0.2s;
 }
 
-.expert-card:hover {
-  border-color: var(--accent);
-}
-
-.expert-ascii {
-  font-family: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", "Courier New", monospace;
-  font-size: 2.8px;
-  line-height: 3.3px;
-  letter-spacing: 0;
-  color: var(--ascii-expert);
-  user-select: none;
-  white-space: pre;
+.expert-photo {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  filter: grayscale(100%);
   margin-bottom: 16px;
-}
-
-.expert-ascii--mirrored {
-  transform: scaleX(-1);
 }
 
 .expert-name {
@@ -425,6 +414,13 @@ ul {
 .expert-company {
   font-size: 13px;
   color: var(--text-faint);
+}
+
+.experts-note {
+  margin-top: 24px;
+  font-size: 15px;
+  color: var(--text-muted);
+  line-height: 1.55;
 }
 
 /* ── Join section ────────────────────────────────────── */
@@ -588,8 +584,7 @@ ul {
   }
 
   .schedule-month {
-    grid-template-columns: 1fr;
-    gap: 8px;
+    gap: 12px;
   }
 
   .experts-grid {
