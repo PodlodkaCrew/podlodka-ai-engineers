@@ -374,6 +374,12 @@ ul {
   font-size: 15px;
 }
 
+.schedule-note {
+  margin-top: 24px;
+  font-size: 15px;
+  color: var(--text-muted);
+}
+
 /* ── Experts ─────────────────────────────────────────── */
 
 .experts-grid {
@@ -397,6 +403,13 @@ ul {
   object-fit: cover;
   filter: grayscale(100%);
   margin-bottom: 16px;
+}
+
+.expert-photo-placeholder {
+  width: 100%;
+  aspect-ratio: 1;
+  margin-bottom: 16px;
+  background: var(--rule);
 }
 
 .expert-name {
