@@ -316,6 +316,21 @@
               <div class="expert-name">Геннадий Евстратов</div>
               <div class="expert-company">Яндекс</div>
             </div>
+            <div class="expert-card">
+              <img class="expert-photo" src="experts/ibrahim-badertdinov.png" alt="Ибрагим Бадертдинов" />
+              <div class="expert-name">Ибрагим Бадертдинов</div>
+              <div class="expert-company">Nebius</div>
+            </div>
+            <div class="expert-card">
+              <img class="expert-photo" src="experts/ilya-shcherbak.png" alt="Илья Щербак" />
+              <div class="expert-name">Илья Щербак</div>
+              <div class="expert-company">CoreInfra</div>
+            </div>
+            <div class="expert-card">
+              <img class="expert-photo" src="experts/grigory-petrosyan.png" alt="Григорий Петросян" />
+              <div class="expert-name">Григорий Петросян</div>
+              <div class="expert-company">CoreInfra</div>
+            </div>
           </div>
           <p class="experts-note">Клуб только запустился, и каждую неделю мы продолжим приглашать новых экспертов с прикладным опытом в темах, интересных сообществу.</p>
         </div>
@@ -420,13 +435,6 @@
                   </div>
                 </div>
                 <div class="schedule-event">
-                  <div class="schedule-event-title">Разбираем OpenSpec</div>
-                  <div class="schedule-event-speaker">Антон Архипов, JetBrains</div>
-                  <div class="schedule-event-desc">
-                    Продолжаем погружение в SDD фреймворки. Антон покажет, с какими проблемами вы можете столкнуться в OpenSpec, как эти проблемы правильно дебажить, и как кастомизировать фреймворк под себя.
-                  </div>
-                </div>
-                <div class="schedule-event">
                   <div class="schedule-event-title">Пишем свой оркестратор агентов</div>
                   <div class="schedule-event-speaker">Геннадий Евстратов, Яндекс</div>
                   <div class="schedule-event-desc">
@@ -461,11 +469,25 @@
                     Внедрение в команду на AI – это сильно больше, чем выбор технического стека. Михаил Емельянов расскажет про свой опыт переобучения команды, где была и работа со скептиками, и продажа пользы от AI бизнесу, и построение обучения, и огромное количество смелых экспериментов.
                   </div>
                 </div>
+                <div class="schedule-event">
+                  <div class="schedule-event-title">Верификация и агентская разработка mission-critical систем</div>
+                  <div class="schedule-event-speaker">Илья Щербак, Григорий Петросян (CoreInfra)</div>
+                  <div class="schedule-event-desc">
+                    Илья и Григорий очень глубоко погружены в вопросы верификации агентского кода и делают свой стартап в этом направлении. Помимо чисто технических вопросов, они уже помогли нескольким своим очень серьезным энтерпрайзным клиентам внедрить разные подходы к верификации, которые позволили подпустить агентов к разработке mission-critical систем. На сессии мы поговорим о том, как работают исполняемые спецификации, какие паттерны дизайна существуют вокруг них, и прямо на примере разберемся, как их применить для агентской разработки в реальной системе.
+                  </div>
+                </div>
               </div>
             </div>
             <div class="schedule-month">
               <div class="schedule-label">Май</div>
               <div class="schedule-events">
+                <div class="schedule-event">
+                  <div class="schedule-event-title">Круглый стол про AI в DX в бигтехе (часть 2)</div>
+                  <div class="schedule-event-speaker">Роман Елизаров (Яндекс), Сергей Рыбалкин (Meta), Алексей Лукьянченко (Авито), Никита Завадин (DoorDash), Никита Мельников (Revolut) + другие спикеры</div>
+                  <div class="schedule-event-desc">
+                    Мы собираем инженеров и лидов, которые занимаются перестройкой процессов разработки в бигтехе и внедрением в них AI, чтобы честно и открыто поговорить о том, что работает, а что – нет.
+                  </div>
+                </div>
                 <div class="schedule-event">
                   <div class="schedule-event-title">Переписываем легаси с помощью Superpowers</div>
                   <div class="schedule-event-speaker">Дмитрий Полищук, Wildberries</div>
@@ -478,6 +500,13 @@
                   <div class="schedule-event-speaker">Андрей Володин, Gracia AI</div>
                   <div class="schedule-event-desc">
                     Полгода назад Андрей приходил в подкаст Подлодка и рассказывал про то, как его стартап Gracia активно адаптит AI. На тот момент ребята по степени безумия своих экспериментов довольно сильно опережали многие другие компании. С тех пор многое успело измениться – и Андрей расскажет про текущий статус внедрения AI в его компании. Среди тем – ночная смена AI джунов, которые разгребают бэклог, эволюция архитектуры под требования агентов, сливание кода и документации в единый источник правды, отказ от покупки SaaS, и правила экономии на токенах.
+                  </div>
+                </div>
+                <div class="schedule-event">
+                  <div class="schedule-event-title">Бенчмарки для агентов: как они работают, где врут, как сделать свой</div>
+                  <div class="schedule-event-speaker">Ибрагим Бадертдинов, Nebius</div>
+                  <div class="schedule-event-desc">
+                    Самый частый способ оценки качества новых моделей и агентов – это вайб-чек, когда мы прогоняем их на парочке привычных задач и на глаз оцениваем результат. Главный недостаток такого подхода – отсутствие системности. Ибрагим, занимающийся самым популярным агентским бенчмарком SWE-rebench, расскажет о том, как вообще работают такие бенчи, как понять, каким из них можно доверять, и как вообще собрать собственный бенчмарк, релевантный конкретно для вашего проекта.
                   </div>
                 </div>
               </div>
