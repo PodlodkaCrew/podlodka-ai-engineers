@@ -43,7 +43,7 @@
     <nav class="nav">
       <div class="nav-inner">
         <a class="nav-link" href="#about">О клубе</a>
-        <a class="nav-link" href="#experts">Эксперты</a>
+        <a class="nav-link" href="#speakers">Спикеры</a>
         <a class="nav-link" href="#schedule">Расписание</a>
         <a class="nav-link" href="#faq">FAQ</a>
         <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
@@ -208,128 +208,20 @@
       </div>
     </section>
 
-    <section class="section" id="experts">
+    <section class="section" id="speakers">
       <div class="section-inner">
-        <h2 class="section-heading">Эксперты</h2>
+        <h2 class="section-heading">Спикеры</h2>
         <div class="section-body">
-          <div class="experts-grid">
-            <div class="expert-card">
-              <img class="expert-photo" src="experts/stepan-goncharov.png" alt="Степан Гончаров" />
-              <div class="expert-name">Степан Гончаров</div>
-              <div class="expert-company">xAI</div>
+          <p class="experts-lead">
+            Каждый месяц мы приглашаем классных экспертов с докладами, воркшопами и лайвкодингом. В этом списке – те, кто уже выступал в клубе, или будет выступать в ближайшие недели.
+          </p>
+          <div class="experts-grid" id="experts-featured"></div>
+          <details class="experts-more" id="experts-more-block" hidden>
+            <summary class="experts-more-summary" id="experts-more-summary"></summary>
+            <div class="experts-more-body">
+              <div class="experts-grid" id="experts-rest"></div>
             </div>
-            <div class="expert-card">
-              <img class="expert-photo" src="experts/alexey-kozyatinsky.png" alt="Алексей Козятинский" />
-              <div class="expert-name">Алексей Козятинский</div>
-              <div class="expert-company">Cursor</div>
-            </div>
-            <div class="expert-card">
-              <img class="expert-photo" src="experts/max-strakhov.jpeg" alt="Макс Страхов" />
-              <div class="expert-name">Макс Страхов</div>
-              <div class="expert-company">Meta</div>
-            </div>
-            <div class="expert-card">
-              <img class="expert-photo" src="experts/andrey-breslav.png" alt="Андрей Бреслав" />
-              <div class="expert-name">Андрей Бреслав</div>
-              <div class="expert-company">CodeSpeak</div>
-            </div>
-            <div class="expert-card">
-              <img class="expert-photo" src="experts/roman-elizarov.png" alt="Роман Елизаров" />
-              <div class="expert-name">Роман Елизаров</div>
-              <div class="expert-company">Яндекс</div>
-            </div>
-            <div class="expert-card">
-              <img class="expert-photo" src="experts/anton-arhipov.jpeg" alt="Антон Архипов" />
-              <div class="expert-name">Антон Архипов</div>
-              <div class="expert-company">JetBrains</div>
-            </div>
-            <div class="expert-card">
-              <img class="expert-photo" src="experts/denis-neklyudov.jpeg" alt="Денис Неклюдов" />
-              <div class="expert-name">Денис Неклюдов</div>
-              <div class="expert-company">Google</div>
-            </div>
-            <div class="expert-card">
-              <img class="expert-photo" src="experts/mikhail-druzhinin.png" alt="Михаил Дружинин" />
-              <div class="expert-name">Михаил Дружинин</div>
-              <div class="expert-company">Finsi</div>
-            </div>
-            <div class="expert-card">
-              <img class="expert-photo" src="experts/andrey-volodin.jpeg" alt="Андрей Володин" />
-              <div class="expert-name">Андрей Володин</div>
-              <div class="expert-company">Gracia AI</div>
-            </div>
-            <div class="expert-card">
-              <img class="expert-photo" src="experts/sergey-kuznetsov.jpeg" alt="Сергей Кузнецов" />
-              <div class="expert-name">Сергей Кузнецов</div>
-              <div class="expert-company">EMCD</div>
-            </div>
-            <div class="expert-card">
-              <img class="expert-photo" src="experts/dmitry-savvinov.png" alt="Дмитрий Саввинов" />
-              <div class="expert-name">Дмитрий Саввинов</div>
-              <div class="expert-company">CodeSpeak</div>
-            </div>
-            <div class="expert-card">
-              <img class="expert-photo" src="experts/dmitry-rozhkov.jpg" alt="Дмитрий Рожков" />
-              <div class="expert-name">Дмитрий Рожков</div>
-              <div class="expert-company">Mapbox</div>
-            </div>
-            <div class="expert-card">
-              <img class="expert-photo" src="experts/vadim-briliantov.png" alt="Вадим Бриллиантов" />
-              <div class="expert-name">Вадим Бриллиантов</div>
-              <div class="expert-company">JetBrains</div>
-            </div>
-            <div class="expert-card">
-              <img class="expert-photo" src="experts/alex-lukyanchenko.jpg" alt="Александр Лукьянченко" />
-              <div class="expert-name">Александр Лукьянченко</div>
-              <div class="expert-company">Авито</div>
-            </div>
-            <div class="expert-card">
-              <img class="expert-photo" src="experts/alexey-verkhovskiy.png" alt="Алексей Верховский" />
-              <div class="expert-name">Алексей Верховский</div>
-              <div class="expert-company">BMAD Method</div>
-            </div>
-            <div class="expert-card">
-              <img class="expert-photo" src="experts/sergey-rybalkin.png" alt="Сергей Рыбалкин" />
-              <div class="expert-name">Сергей Рыбалкин</div>
-              <div class="expert-company">Meta</div>
-            </div>
-            <div class="expert-card">
-              <img class="expert-photo" src="experts/mikhail-emelyanov.png" alt="Михаил Емельянов" />
-              <div class="expert-name">Михаил Емельянов</div>
-              <div class="expert-company">VK RuStore</div>
-            </div>
-            <div class="expert-card">
-              <img class="expert-photo" src="experts/nikita-zavadin.png" alt="Никита Завадин" />
-              <div class="expert-name">Никита Завадин</div>
-              <div class="expert-company">ex DoorDash</div>
-            </div>
-            <div class="expert-card">
-              <img class="expert-photo" src="experts/dmitry-polishchuk.png" alt="Дмитрий Полищук" />
-              <div class="expert-name">Дмитрий Полищук</div>
-              <div class="expert-company">Wildberries</div>
-            </div>
-            <div class="expert-card">
-              <img class="expert-photo" src="experts/nikita-melnikov.png" alt="Никита Мельников" />
-              <div class="expert-name">Никита Мельников</div>
-              <div class="expert-company">Revolut</div>
-            </div>
-            <div class="expert-card">
-              <img class="expert-photo" src="experts/gennady-evstratov.png" alt="Геннадий Евстратов" />
-              <div class="expert-name">Геннадий Евстратов</div>
-              <div class="expert-company">Яндекс</div>
-            </div>
-            <div class="expert-card">
-              <img class="expert-photo" src="experts/ibrahim-badertdinov.png" alt="Ибрагим Бадертдинов" />
-              <div class="expert-name">Ибрагим Бадертдинов</div>
-              <div class="expert-company">Nebius</div>
-            </div>
-            <div class="expert-card">
-              <img class="expert-photo" src="experts/grigory-petrosyan.png" alt="Григорий Петросян" />
-              <div class="expert-name">Григорий Петросян</div>
-              <div class="expert-company">CoreInfra</div>
-            </div>
-          </div>
-          <p class="experts-note">Клуб только запустился, и каждую неделю мы продолжим приглашать новых экспертов с прикладным опытом в темах, интересных сообществу.</p>
+          </details>
         </div>
       </div>
     </section>
@@ -843,6 +735,110 @@
         }
 
         setInterval(shimmer, 120);
+      })();
+    </script>
+    <script>
+      (function () {
+        /* Random 8 slots each load are filled from this pool; must exist in ALL_SPEAKERS */
+        var FEATURED_SLOTS = 8;
+        var SPEAKER_FAVORITES = {
+          'experts/anton-arhipov.jpeg': true,
+          'experts/denis-neklyudov.jpeg': true,
+          'experts/denis-shiryaev.png': true,
+          'experts/sergey-rybalkin.png': true,
+          'experts/stepan-goncharov.png': true,
+          'experts/roman-elizarov.png': true,
+          'experts/andrey-breslav.png': true,
+          'experts/max-strakhov.jpeg': true,
+          'experts/alexey-kozyatinsky.png': true,
+          'experts/igor-somov.png': true,
+        };
+
+        var ALL_SPEAKERS = [
+          { photo: 'experts/stepan-goncharov.png', name: 'Степан Гончаров', company: 'xAI' },
+          { photo: 'experts/alexey-kozyatinsky.png', name: 'Алексей Козятинский', company: 'Cursor' },
+          { photo: 'experts/max-strakhov.jpeg', name: 'Макс Страхов', company: 'Meta' },
+          { photo: 'experts/andrey-breslav.png', name: 'Андрей Бреслав', company: 'CodeSpeak' },
+          { photo: 'experts/roman-elizarov.png', name: 'Роман Елизаров', company: 'Яндекс' },
+          { photo: 'experts/anton-arhipov.jpeg', name: 'Антон Архипов', company: 'JetBrains' },
+          { photo: 'experts/denis-neklyudov.jpeg', name: 'Денис Неклюдов', company: 'Google' },
+          { photo: 'experts/denis-shiryaev.png', name: 'Денис Ширяев', company: 'JetBrains' },
+          { photo: 'experts/daniil-serdyukov.png', name: 'Даниил Сердюков', company: 'Netflix' },
+          { photo: 'experts/mikhail-druzhinin.png', name: 'Михаил Дружинин', company: 'Finsi' },
+          { photo: 'experts/andrey-volodin.jpeg', name: 'Андрей Володин', company: 'Gracia AI' },
+          { photo: 'experts/sergey-kuznetsov.jpeg', name: 'Сергей Кузнецов', company: 'EMCD' },
+          { photo: 'experts/dmitry-savvinov.png', name: 'Дмитрий Саввинов', company: 'CodeSpeak' },
+          { photo: 'experts/dmitry-rozhkov.jpg', name: 'Дмитрий Рожков', company: 'Mapbox' },
+          { photo: 'experts/vadim-briliantov.png', name: 'Вадим Бриллиантов', company: 'JetBrains' },
+          { photo: 'experts/alex-lukyanchenko.jpg', name: 'Александр Лукьянченко', company: 'Авито' },
+          { photo: 'experts/alexey-verkhovskiy.png', name: 'Алексей Верховский', company: 'BMAD Method' },
+          { photo: 'experts/sergey-rybalkin.png', name: 'Сергей Рыбалкин', company: 'Meta' },
+          { photo: 'experts/sergey-ryabov.png', name: 'Сергей Рябов', company: 'TinyFish' },
+          { photo: 'experts/mikhail-emelyanov.png', name: 'Михаил Емельянов', company: 'VK RuStore' },
+          { photo: 'experts/nikita-zavadin.png', name: 'Никита Завадин', company: 'ex DoorDash' },
+          { photo: 'experts/dmitry-polishchuk.png', name: 'Дмитрий Полищук', company: 'Wildberries' },
+          { photo: 'experts/nikita-melnikov.png', name: 'Никита Мельников', company: 'Revolut' },
+          { photo: 'experts/gennady-evstratov.png', name: 'Геннадий Евстратов', company: 'Яндекс' },
+          { photo: 'experts/ibrahim-badertdinov.png', name: 'Ибрагим Бадертдинов', company: 'Nebius' },
+          { photo: 'experts/igor-somov.png', name: 'Игорь Сомов', company: 'NullClaw' },
+          { photo: 'experts/yuriy-rebrik.png', name: 'Юрий Ребрик', company: 'Fluently' },
+          { photo: 'experts/grigory-petrosyan.png', name: 'Григорий Петросян', company: 'CoreInfra' },
+        ];
+
+        function shuffle(arr) {
+          var a = arr.slice();
+          for (var i = a.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var t = a[i];
+            a[i] = a[j];
+            a[j] = t;
+          }
+          return a;
+        }
+
+        function makeCard(e) {
+          var wrap = document.createElement('div');
+          wrap.className = 'expert-card';
+          var img = document.createElement('img');
+          img.className = 'expert-photo';
+          img.src = e.photo;
+          img.alt = e.name;
+          var nameEl = document.createElement('div');
+          nameEl.className = 'expert-name';
+          nameEl.textContent = e.name;
+          var companyEl = document.createElement('div');
+          companyEl.className = 'expert-company';
+          companyEl.textContent = e.company;
+          wrap.appendChild(img);
+          wrap.appendChild(nameEl);
+          wrap.appendChild(companyEl);
+          return wrap;
+        }
+
+        var favoritePool = ALL_SPEAKERS.filter(function (s) { return SPEAKER_FAVORITES[s.photo]; });
+        var picked = shuffle(favoritePool).slice(0, Math.min(FEATURED_SLOTS, favoritePool.length));
+
+        var pickedPhotos = {};
+        for (var pi = 0; pi < picked.length; pi++) {
+          pickedPhotos[picked[pi].photo] = true;
+        }
+        var restList = shuffle(ALL_SPEAKERS.filter(function (s) { return !pickedPhotos[s.photo]; }));
+
+        var featured = document.getElementById('experts-featured');
+        var rest = document.getElementById('experts-rest');
+        var moreBlock = document.getElementById('experts-more-block');
+        var moreSummary = document.getElementById('experts-more-summary');
+
+        for (var i = 0; i < picked.length; i++) {
+          featured.appendChild(makeCard(picked[i]));
+        }
+        if (restList.length) {
+          moreBlock.hidden = false;
+          moreSummary.textContent = 'Посмотреть всех спикеров';
+          for (var k = 0; k < restList.length; k++) {
+            rest.appendChild(makeCard(restList[k]));
+          }
+        }
       })();
     </script>
     <script>

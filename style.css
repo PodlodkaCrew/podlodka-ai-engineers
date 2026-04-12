@@ -391,13 +391,25 @@ ul {
   margin-bottom: 0;
 }
 
-.past-schedule {
+.past-schedule,
+.experts-more {
   margin-top: 40px;
   border: 1px solid var(--border);
-  padding: 0 20px 20px;
+  /* No bottom padding when closed — avoids extra gap under the summary row */
+  padding: 0 20px 0;
 }
 
-.past-schedule-summary {
+.experts-more {
+  margin-top: 24px;
+}
+
+.past-schedule[open],
+.experts-more[open] {
+  padding-bottom: 20px;
+}
+
+.past-schedule-summary,
+.experts-more-summary {
   font-weight: 600;
   cursor: pointer;
   display: flex;
@@ -406,14 +418,17 @@ ul {
   list-style: none;
   letter-spacing: -0.01em;
   font-size: 22px;
-  padding: 20px 0 16px;
+  padding: 12px 0;
+  text-align: left;
 }
 
-.past-schedule-summary::-webkit-details-marker {
+.past-schedule-summary::-webkit-details-marker,
+.experts-more-summary::-webkit-details-marker {
   display: none;
 }
 
-.past-schedule-summary::after {
+.past-schedule-summary::after,
+.experts-more-summary::after {
   content: "▾";
   font-size: 1.2em;
   margin-left: 16px;
@@ -421,12 +436,17 @@ ul {
   flex-shrink: 0;
 }
 
-.past-schedule[open] > .past-schedule-summary::after {
+.past-schedule[open] > .past-schedule-summary::after,
+.experts-more[open] > .experts-more-summary::after {
   transform: rotate(180deg);
 }
 
 .past-schedule-body {
   padding-top: 4px;
+}
+
+.experts-more-body {
+  padding-top: 0;
 }
 
 .past-schedule-body .schedule {
@@ -482,6 +502,13 @@ ul {
   font-size: 15px;
   color: var(--text-muted);
   line-height: 1.55;
+}
+
+.experts-lead {
+  margin: 0 0 24px;
+  font-size: inherit;
+  line-height: inherit;
+  color: var(--text);
 }
 
 /* ── Join section ────────────────────────────────────── */
