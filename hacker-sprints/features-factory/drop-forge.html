@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="ru" class="theme-dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drop-Forge — архитектура простыми словами</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    (function() {
+      var saved = localStorage.getItem('theme');
+      var t = (saved === 'dark' || saved === 'light')
+        ? saved
+        : (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      document.documentElement.className = 'theme-' + t;
+    })();
+    window.addEventListener('storage', function(e) {
+      if (e.key === 'theme' && (e.newValue === 'dark' || e.newValue === 'light')) {
+        document.documentElement.className = 'theme-' + e.newValue;
+      }
+    });
+  </script>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script>Chart.defaults.animation = false;</script>  <style>
+    /* ===== Drop-Forge — уникальные секции (4 OpenSpec stages + cross-agent review) ===== */
+
+    /* Категории компонентов: state / core / pipeline / review / observe */
+    .component-card[data-cat="state"] { --cat-color: #14b8a6; }
+    .component-card[data-cat="core"] { --cat-color: #3b82f6; }
+    .component-card[data-cat="pipeline"] { --cat-color: #06b6d4; }
+    .component-card[data-cat="review"] { --cat-color: #f59e0b; }
+    .component-card[data-cat="observe"] { --cat-color: #8b5cf6; }
+    html.theme-light .component-card[data-cat="state"] { --cat-color: #0d9488; }
+    html.theme-light .component-card[data-cat="core"] { --cat-color: #2563eb; }
+    html.theme-light .component-card[data-cat="pipeline"] { --cat-color: #0891b2; }
+    html.theme-light .component-card[data-cat="review"] { --cat-color: #b45309; }
+    html.theme-light .component-card[data-cat="observe"] { --cat-color: #7c3aed; }
+
+    /* Stages — 4 OpenSpec: proposal / apply / archive / review */
+    .stages-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .stage-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      transition: all 0.25s;
+      display: flex; flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+    .stage-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--stage-color);
+      opacity: 0.85;
+    }
+    .stage-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--border-strong);
+      box-shadow: 0 16px 40px rgba(0,0,0,0.15);
+    }
+    .stage-card[data-stage="proposal"] { --stage-color: #3b82f6; }
+    .stage-card[data-stage="apply"] { --stage-color: #06b6d4; }
+    .stage-card[data-stage="archive"] { --stage-color: #8b5cf6; }
+    .stage-card[data-stage="review"] { --stage-color: #f59e0b; }
+    html.theme-light .stage-card[data-stage="proposal"] { --stage-color: #2563eb; }
+    html.theme-light .stage-card[data-stage="apply"] { --stage-color: #0891b2; }
+    html.theme-light .stage-card[data-stage="archive"] { --stage-color: #7c3aed; }
+    html.theme-light .stage-card[data-stage="review"] { --stage-color: #b45309; }
+
+    .stage-num {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 0.6875rem; font-weight: 700;
+      color: var(--stage-color);
+      letter-spacing: 0.12em; text-transform: uppercase;
+      padding: 4px 10px; border-radius: 6px;
+      background: color-mix(in srgb, var(--stage-color) 14%, transparent);
+      display: inline-block;
+      margin-bottom: 14px;
+    }
+    .stage-name {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 1.25rem; font-weight: 700;
+      color: var(--text); margin-bottom: 6px;
+    }
+    .stage-tag {
+      font-size: 0.8125rem; color: var(--stage-color);
+      font-style: italic;
+      margin-bottom: 18px;
+      font-weight: 500;
+    }
+    .stage-desc {
+      font-size: 0.9375rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+    .stage-desc strong { color: var(--text); font-weight: 500; }
+    .stage-meta {
+      margin-top: auto;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .stage-meta svg { color: var(--stage-color); flex-shrink: 0; }
+
+    /* Review spotlight — three pillars */
+    .review-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .review-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      transition: all 0.25s;
+      position: relative;
+      overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    .review-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--review-color);
+    }
+    .review-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--border-strong);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+    }
+    .review-card[data-pillar="trailer"] { --review-color: var(--accent); }
+    .review-card[data-pillar="schema"] { --review-color: var(--accent-secondary); }
+    .review-card[data-pillar="marker"] { --review-color: var(--positive); }
+
+    .review-num {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 0.75rem; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--review-color);
+      padding: 4px 10px; border-radius: 6px;
+      background: color-mix(in srgb, var(--review-color) 14%, transparent);
+      display: inline-block;
+      margin-bottom: 14px;
+    }
+    .review-title {
+      font-weight: 700; font-size: 1.0625rem;
+      color: var(--text); margin-bottom: 12px;
+      line-height: 1.4;
+    }
+    .review-card p {
+      color: var(--text-secondary);
+      font-size: 0.9375rem;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+    .review-card p strong { color: var(--text); font-weight: 500; }
+    .review-code {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      padding: 10px 12px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--review-color);
+      word-break: break-all;
+      line-height: 1.4;
+      margin-top: auto;
+    }
+
+    /* Responsive — уникальные сетки */
+    @media (max-width: 1024px) {
+      .stages-grid { grid-template-columns: repeat(2, 1fr); }
+      .review-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 768px) {
+      .stages-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 375px) {
+      .stage-card, .review-card { padding: 22px; }
+    }
+    @media print {
+      .stage-card, .review-card { break-inside: avoid; border: 1px solid #ddd; box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-to-content">К основному контенту</a>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="nav-link" href="../../index.html#about">О клубе</a>
+      <a class="nav-link" href="../../index.html#speakers">Спикеры</a>
+      <a class="nav-link" href="../../index.html#schedule">Расписание</a>
+      <a class="nav-link" href="../../index.html#hacker-sprints">Hacker Sprints</a>
+      <a class="nav-link" href="../../index.html#faq">FAQ</a>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+        <span id="theme-icon">☀</span>
+      </button>
+      <a class="nav-link nav-link--cta" href="../../index.html#join">Вступить</a>
+    </div>
+  </nav>
+
+  <main id="main-content" role="main">
+
+    <!-- ============== HERO ============== -->
+    <section class="hero" role="banner">
+      <div class="container hero-content">
+        <a href="index.html" class="hero-back animate">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          К каталогу
+        </a>
+        <h1 class="animate delay-1">Drop-Forge</h1>
+        <a href="https://github.com/podlodka-ai-club/drop-forge" class="hero-repo animate delay-1" target="_blank" rel="noopener">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+          github.com/podlodka-ai-club/drop-forge
+        </a>
+        <p class="hero-subtitle animate delay-2">
+          Go-конвейер, который превращает Linear-задачу в готовый PR на GitHub. Один тикующий мозг
+          раз в N секунд смотрит, какие задачи в каких статусах, и для каждого <strong style="color: var(--accent);">«активного» статуса</strong>
+          запускает соответствующий runner. <strong style="color: var(--accent);">Linear-статус — конечный автомат</strong>,
+          git-trailer — единственный канал передачи состояния между стадиями.
+        </p>
+
+        <div class="hero-stack animate delay-2">
+          <span class="stack-pill">Go</span>
+          <span class="stack-pill">Linear</span>
+          <span class="stack-pill">OpenSpec</span>
+          <span class="stack-pill">Codex CLI</span>
+        </div>
+
+        <div class="hero-stats">
+          <div class="stat-card animate delay-3">
+            <div class="stat-value accent" data-count="4" data-suffix="">4</div>
+            <div class="stat-label">Стадии OpenSpec</div>
+            <div class="stat-sublabel">proposal · apply · archive · review</div>
+          </div>
+          <div class="stat-card animate delay-3">
+            <div class="stat-value" data-count="11" data-suffix="">11</div>
+            <div class="stat-label">Компонентов архитектуры</div>
+            <div class="stat-sublabel">от <span class="mono">.env</span> до OpenSpec-каталога</div>
+          </div>
+          <div class="stat-card animate delay-4">
+            <div class="stat-value" data-count="6" data-suffix="">6</div>
+            <div class="stat-label">Наблюдаемых статусов</div>
+            <div class="stat-sublabel">3 producer + 3 AI-review</div>
+          </div>
+          <div class="stat-card animate delay-4">
+            <div class="stat-value" data-count="1" data-suffix="">1</div>
+            <div class="stat-label">Внешняя Go-зависимость</div>
+            <div class="stat-sublabel">только <span class="mono">godotenv</span> + stdlib</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== KEY IDEA ============== -->
+    <section style="padding-top: 0;">
+      <div class="container">
+        <div class="key-idea reveal" data-reveal>
+          <div class="section-eyebrow">Главная идея</div>
+          <h3>Никакого внутреннего durable state в боте нет</h3>
+          <p>
+            Между стадиями состояние передаётся не через базу или брокер, а через сам <strong>Linear</strong>
+            (статус + attached PR URL) и через <strong>git</strong> (producer-trailer прямо в commit message).
+            Упади процесс посреди работы — Linear и git помнят всё, что нужно: следующий тик увидит
+            ту же доску статусов и пойдёт по той же дорожке. Поэтому никакого SQLite, никаких очередей,
+            никаких state-файлов.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== ARCHITECTURE FLOW ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Высокоуровневая схема</div>
+        <h2 class="section-title">Как устроена «кузница»</h2>
+        <p class="section-subtitle">
+          Один компонент-диспетчер (<span class="mono" style="color: var(--accent);">CoreOrch</span>)
+          на каждом тике классифицирует задачи по статусу и для каждой подходящей запускает горутину
+          с нужным runner-ом. Между ними — Linear как source of truth.
+        </p>
+
+        <div class="arch-flow">
+          <div class="arch-diagram reveal" data-reveal>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">.env + config</div>
+                <div class="arch-node-meta">единственный «закон» проекта</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ читает</div>
+            <div class="arch-node active">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">CoreOrch (мозг)</div>
+                <div class="arch-node-meta">тик каждые ~30 сек · switch по state.id</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ опрос задач</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h6"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">TaskManager → Linear GraphQL</div>
+                <div class="arch-node-meta">фасад над Linear · move task · attach PR</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ запуск runner-а в горутине</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">Proposal · Apply · Archive · Review</div>
+                <div class="arch-node-meta">4 runner-а с похожим скелетом</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ git + gh + codex</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">GitManager + Codex CLI</div>
+                <div class="arch-node-meta">subprocess-обёртки · никаких SDK</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="reveal" data-reveal>
+            <h3 style="margin-bottom: 16px;">Что важно понять</h3>
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 14px;">
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Один синхронный тик.</strong> На каждом проходе главный поток собирает задачи, классифицирует и запускает горутины. Нет фоновых очередей, hook-ов, асинхронных подписок.</span>
+              </li>
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Linear — source of truth.</strong> Внутри бота нет ни БД, ни durable очереди. Перезапуск процесса теряет ровно нулевое количество прогресса.</span>
+              </li>
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Producer-trailer в commit message.</strong> Информация «кто и какой моделью писал артефакт» живёт прямо в <span class="mono">git log</span>. Review-стадия читает её оттуда — не из Linear и не из БД.</span>
+              </li>
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Только subprocess + HTTP.</strong> Никаких внешних брокеров. Сторонняя библиотека ровно одна — <span class="mono">godotenv</span>. Всё остальное — stdlib Go, три внешних CLI (<span class="mono">git</span>, <span class="mono">gh</span>, <span class="mono">codex</span>) и две HTTP-интеграции (Linear, Telegram).</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== 4 STAGES ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Конвейер</div>
+        <h2 class="section-title">Четыре стадии OpenSpec</h2>
+        <p class="section-subtitle">
+          Три producer-runner-а «как близнецы» (общий скелет: clone → codex → status → commit → push)
+          и review как четвёртая опциональная стадия. Каждая стадия — отдельный Linear-статус и
+          отдельный пакет в Go-модуле.
+        </p>
+
+        <div class="stages-grid" id="stagesGrid">
+          <!-- Stages injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== REVIEW SPOTLIGHT ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Самая сложная стадия</div>
+        <h2 class="section-title">Три опоры кросс-агентского ревью</h2>
+        <p class="section-subtitle">
+          <span class="mono" style="color: var(--accent);">ReviewRunner</span> — единственная стадия с собственными подпакетами.
+          Она читает commit-историю, форсит закрытую JSON-схему ответа Codex-а и публикует ревью
+          в GitHub идемпотентно через HTML-маркер.
+        </p>
+
+        <div class="review-grid reveal" data-reveal id="reviewGrid">
+          <!-- Review pillars injected -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== COMPONENTS ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Из чего собран</div>
+        <h2 class="section-title">Одиннадцать строительных блоков</h2>
+        <p class="section-subtitle">
+          От <span class="mono" style="color: var(--accent);">.env</span> и единого CLI-входа до OpenSpec-каталога самоописательных
+          требований. Используйте фильтр для просмотра по категориям.
+        </p>
+
+        <div class="components-filter">
+          <button class="filter-btn active" data-filter="all">Все · 11</button>
+          <button class="filter-btn" data-filter="state">Состояние</button>
+          <button class="filter-btn" data-filter="core">Ядро</button>
+          <button class="filter-btn" data-filter="pipeline">Конвейер</button>
+          <button class="filter-btn" data-filter="review">Ревью</button>
+          <button class="filter-btn" data-filter="observe">Наблюдаемость</button>
+        </div>
+
+        <div class="components-grid" id="componentsGrid">
+          <!-- Components injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== TIMELINE ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Жизненный цикл</div>
+        <h2 class="section-title">Что происходит с типичной задачей</h2>
+        <p class="section-subtitle">
+          От момента, когда оператор перевёл задачу в <span class="mono" style="color: var(--accent);">Ready to Propose</span>,
+          до закрытия финального archive-PR — пятнадцать конкретных шагов.
+        </p>
+
+        <div class="timeline" id="timeline">
+          <!-- Timeline injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== KEY PROPERTIES ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">На чём всё держится</div>
+        <h2 class="section-title">Ключевые свойства архитектуры</h2>
+        <p class="section-subtitle">
+          Десять решений, которые делают сервис простым, понятным для дебага и устойчивым к падениям
+          посреди работы.
+        </p>
+
+        <div class="properties-grid" id="propertiesGrid">
+          <!-- Properties injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== FOOTER ============== -->
+    <footer class="footer">
+      <div class="container">
+        <p>
+          Архитектурный обзор <strong style="color: var(--text);">drop-forge</strong> ·
+          Сгенерировано из <span class="mono">arch/drop-forge-arch-review.md</span>
+        </p>
+      </div>
+    </footer>
+
+  </main>
+
+  <script>
+
+    // === Scroll Reveal ===
+    document.querySelectorAll('[data-reveal]').forEach(function(el) { el.classList.add('reveal'); });
+    var revealObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          revealObserver.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.reveal').forEach(function(el) { revealObserver.observe(el); });
+
+    // === Number Counter ===
+    function animateCounters() {
+      document.querySelectorAll('[data-count]').forEach(function(el) {
+        if (el.dataset.counted) return;
+        el.dataset.counted = '1';
+        var target = parseFloat(el.dataset.count),
+            prefix = el.dataset.prefix || '',
+            suffix = el.dataset.suffix || '';
+        var start = performance.now(), duration = 1100;
+        (function tick(now) {
+          var p = Math.min((now - start) / duration, 1),
+              eased = 1 - Math.pow(1 - p, 3);
+          el.textContent = prefix + Math.round(target * eased).toLocaleString() + suffix;
+          if (p < 1) requestAnimationFrame(tick);
+        })(start);
+      });
+    }
+    var counterEl = document.querySelector('[data-count]');
+    if (counterEl) {
+      var cObs = new IntersectionObserver(function(entries) {
+        entries.forEach(function(e) {
+          if (e.isIntersecting) { animateCounters(); cObs.disconnect(); }
+        });
+      }, { threshold: 0.3 });
+      cObs.observe(counterEl);
+    }
+
+    // === DATA: 4 OpenSpec Stages ===
+    var stages = [
+      {
+        id: 'proposal', num: 'stage 01', name: 'proposal',
+        tag: '«написать спецификацию»',
+        desc: 'Codex получает skill <strong>openspec-propose</strong>, описывает изменение в SPEC-папке. Новая ветка с timestamp, открывается <strong>PR</strong>, финальное сообщение Codex-а постится как комментарий.',
+        meta: 'gh pr create · новая ветка'
+      },
+      {
+        id: 'apply', num: 'stage 02', name: 'apply',
+        tag: '«реализовать по спеке»',
+        desc: 'После merge proposal-PR — задача переходит в <strong>Ready to Code</strong>. Apply-runner работает в той же ветке: реализует код по принятой спецификации, коммитит, пушит. Новый PR не создаётся.',
+        meta: 'существующая ветка · push'
+      },
+      {
+        id: 'archive', num: 'stage 03', name: 'archive',
+        tag: '«запечатать в архив»',
+        desc: 'После merge apply-PR оператор переводит задачу в <strong>Ready to Archive</strong>. Archive-runner двигает SPEC-папку из <strong>changes/</strong> в <strong>archive/</strong>, коммитит, пушит — change «принят».',
+        meta: 'mv в archive/ · push'
+      },
+      {
+        id: 'review', num: 'stage 04', name: 'review',
+        tag: '«опциональное AI-ревью»',
+        desc: 'Между producer-стадией и человеком — кросс-агентское ревью. Reviewer выбирается противоположный producer-у (другая модель или роль), форсит JSON по закрытой схеме, публикует review атомарно через <strong>gh api</strong>.',
+        meta: '+ podpackages · идемпотентно'
+      }
+    ];
+
+    var stagesGrid = document.getElementById('stagesGrid');
+    stages.forEach(function(s) {
+      var el = document.createElement('article');
+      el.className = 'stage-card';
+      el.dataset.stage = s.id;
+      el.innerHTML =
+        '<span class="stage-num">' + s.num + '</span>' +
+        '<div class="stage-name">' + s.name + '</div>' +
+        '<div class="stage-tag">' + s.tag + '</div>' +
+        '<p class="stage-desc">' + s.desc + '</p>' +
+        '<div class="stage-meta">' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>' +
+          '<span>' + s.meta + '</span>' +
+        '</div>';
+      stagesGrid.appendChild(el);
+    });
+
+    // === DATA: Review Pillars ===
+    var reviewPillars = [
+      {
+        id: 'trailer',
+        num: 'Pillar 01',
+        title: 'Producer-trailer как cross-stage handoff',
+        desc: 'Reviewer клонирует ветку PR-а, читает HEAD commit message, выдирает оттуда <strong>Produced-By</strong>, <strong>Produced-Model</strong>, <strong>Produced-Stage</strong>. По этим полям выбирает противоположный reviewer-слот.',
+        code: 'Produced-By: codex\nProduced-Model: gpt-5\nProduced-Stage: proposal'
+      },
+      {
+        id: 'schema',
+        num: 'Pillar 02',
+        title: 'Закрытая JSON-схема + один repair-retry',
+        desc: 'Codex просят вернуть строго JSON: <strong>3 verdict</strong> · <strong>4 severity</strong> · stage-specific категории. Парсер форсит схему — LLM не может прислать «выдуманную» категорию. На parse-fail — ровно одна попытка перегенерации.',
+        code: 'verdict: approve | request_changes | comment\nseverity: blocker | major | minor | nit'
+      },
+      {
+        id: 'marker',
+        num: 'Pillar 03',
+        title: 'HTML-маркер для идемпотентности',
+        desc: 'Перед публикацией бот листает все ревью PR-а и ищет маркер. Если нашёл — silent skip. Это лечит весь класс гонок «упало где-то между публикацией и переходом статуса»: повторный запуск review-runner-а на том же commit ничего не сломает.',
+        code: '<!-- drop-forge-review-marker:\n  <reviewer>:<stage>:<sha> -->'
+      }
+    ];
+
+    var reviewGrid = document.getElementById('reviewGrid');
+    reviewPillars.forEach(function(r) {
+      var el = document.createElement('div');
+      el.className = 'review-card';
+      el.dataset.pillar = r.id;
+      el.innerHTML =
+        '<span class="review-num">' + r.num + '</span>' +
+        '<div class="review-title">' + r.title + '</div>' +
+        '<p>' + r.desc + '</p>' +
+        '<div class="review-code">' + r.code + '</div>';
+      reviewGrid.appendChild(el);
+    });
+
+    // === DATA: 11 Components ===
+    var components = [
+      { num: '01', cat: 'state', catLabel: 'Состояние', title: '.env + config', tagline: '«закон проекта»',
+        desc: 'Один <span class="mono">.env</span> рядом с бинарником. Никаких CLI-флагов, никаких YAML. Пакет <strong>config</strong> парсит файл в типизированную структуру и валидирует <strong>late-binding</strong> — каждый потребитель проверяет нужные поля перед использованием, а не разово на старте.' },
+      { num: '02', cat: 'core', catLabel: 'Ядро', title: 'cmd/orchv3', tagline: '«вход без рычагов»',
+        desc: 'Один бинарник, которому не передают аргументы. Любые args или непустой stdin отвергаются с usage error — manual single-run был сознательно удалён. CLI читает <span class="mono">.env</span>, собирает большой struct-граф <strong>appDeps</strong> — единственную точку DI — и запускает вечный polling-loop.' },
+      { num: '03', cat: 'core', catLabel: 'Ядро', title: 'CoreOrch', tagline: '«мозг и диспетчер»',
+        desc: 'Один компонент на тике делает три вещи: спрашивает <strong>TaskManager</strong> все managed-задачи, классифицирует каждую через большой <strong>switch</strong> из шести веток, запускает горутину со сценарием «in-progress → runner → attach PR → review». Знает только узкие интерфейсы — никаких git, Linear или Codex-деталей.' },
+      { num: '04', cat: 'pipeline', catLabel: 'Конвейер', title: 'TaskManager', tagline: '«фасад над Linear»',
+        desc: 'Слой между orchestrator-ом и Linear GraphQL. Хранит готовые query/mutation, пагинирует по 50 элементов, отдаёт наружу «свой» тип задачи. После каждого успешного move task публикует <strong>task.status_changed</strong> в локальный диспетчер. Дублирующий фильтр по проекту — на случай, если Linear отдаст лишнее.' },
+      { num: '05', cat: 'pipeline', catLabel: 'Конвейер', title: 'Producer-runners', tagline: '«три брата-конвейера»',
+        desc: 'Пакеты <strong>proposalrunner</strong>, <strong>applyrunner</strong>, <strong>archiverunner</strong> — почти близнецы. Один скелет: mkdtemp → clone → codex → <span class="mono">git status</span> → commit с producer-trailer → push. Отличаются лишь prompt-template-ом и тем, открывать ли PR (только proposal) или работать в существующей ветке.' },
+      { num: '06', cat: 'pipeline', catLabel: 'Конвейер', title: 'GitManager', tagline: '«все руки на git и gh»',
+        desc: 'Все git- и gh-операции producer-runner-ы делают через этот компонент: <span class="mono">clone</span>, <span class="mono">commit</span>, <span class="mono">push</span>, <span class="mono">gh pr create</span>, <span class="mono">gh pr comment</span>. Никакой git-библиотеки внутри Go — только subprocess. Каждое действие логируется как «вот команда, вот её stdout».' },
+      { num: '07', cat: 'pipeline', catLabel: 'Агент', title: 'Codex CLI', tagline: '«внешний агент»',
+        desc: 'LLM-агент живёт за пределами бота — отдельный бинарник <span class="mono">codex</span> запускается как subprocess. Общение через stdin (prompt), stdout (стрим логов в общий канал) и файл <span class="mono">--output-last-message</span> (финальный ответ). Sandbox <strong>danger-full-access</strong> явно прописан — нет неявных полномочий.' },
+      { num: '08', cat: 'review', catLabel: 'Ревью', title: 'ReviewRunner', tagline: '«кросс-агентское ревью»',
+        desc: 'Самая сложная часть проекта, единственная с собственными подпакетами (<strong>reviewrunner</strong> + <strong>prcommenter</strong> + <strong>reviewparse</strong>). Включается фичей, обрабатывает три отдельных «Need * AI Review» статуса. Читает producer-trailer, форсит закрытую JSON-схему, публикует review атомарно с HTML-маркером для идемпотентности.' },
+      { num: '09', cat: 'observe', catLabel: 'Наблюдаемость', title: 'events + Telegram', tagline: '«best-effort оповещения»',
+        desc: 'Локальная шина: «тип события → подписчики», синхронный fan-out, без буферизации. Сегодня тип события один — смена статуса задачи. Telegram-подписчик шлёт сообщение только при переходе в <strong>3 человеческих review-статуса</strong>; остальные переходы — технический шум, игнорируются.' },
+      { num: '10', cat: 'observe', catLabel: 'Наблюдаемость', title: 'steplog + ELK', tagline: '«единый JSON-канал логов»',
+        desc: 'Каждое значимое действие — одна JSON-строка с полями <span class="mono">time</span>, <span class="mono">service</span>, <span class="mono">module</span>, <span class="mono">type</span>, <span class="mono">message</span>. Stdout/stderr внешних CLI бьются построчно в тот же канал. Опционально включается асинхронный TCP-sink в Logstash с bounded queue и drop-on-overflow.' },
+      { num: '11', cat: 'state', catLabel: 'Состояние', title: 'openspec/ catalog', tagline: '«требования самого себя»',
+        desc: 'Drop-Forge сам управляет своими требованиями через OpenSpec: десяток capability-спецификаций и архив принятых changes. Не runtime-компонент, но часть архитектуры — каждый feature сначала описывается в SPEC-папке, а потом реализуется. Тот же протокол бот применяет и к чужим репозиториям.' }
+    ];
+
+    var grid = document.getElementById('componentsGrid');
+    components.forEach(function(c) {
+      var card = document.createElement('article');
+      card.className = 'component-card';
+      card.dataset.cat = c.cat;
+      card.innerHTML =
+        '<div class="component-header">' +
+          '<span class="component-num">' + c.num + '</span>' +
+          '<span class="component-cat">' + c.catLabel + '</span>' +
+        '</div>' +
+        '<h4>' + c.title + '</h4>' +
+        '<div class="component-tagline">' + c.tagline + '</div>' +
+        '<p class="component-desc">' + c.desc + '</p>';
+      grid.appendChild(card);
+    });
+
+    // Recalculate counts
+    var counts = { all: components.length, state: 0, core: 0, pipeline: 0, review: 0, observe: 0 };
+    components.forEach(function(c) { counts[c.cat]++; });
+    document.querySelectorAll('.filter-btn').forEach(function(btn) {
+      var f = btn.dataset.filter;
+      var label = btn.textContent.split(' · ')[0];
+      btn.textContent = label + ' · ' + counts[f];
+    });
+
+    document.querySelectorAll('.filter-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        var filter = btn.dataset.filter;
+        document.querySelectorAll('.component-card').forEach(function(card) {
+          if (filter === 'all' || card.dataset.cat === filter) {
+            card.classList.remove('hidden');
+          } else {
+            card.classList.add('hidden');
+          }
+        });
+      });
+    });
+
+    // === DATA: Timeline (15 steps) ===
+    var timelineSteps = [
+      { step: 'Шаг 01', title: 'Оператор заводит задачу', desc: 'Описывает суть в Linear, переводит в статус <code>Ready to Propose</code>. С этого момента всё остальное — за ботом.' },
+      { step: 'Шаг 02', title: 'Тик CoreOrch', desc: 'Где-то в фоне работает <code>orchv3</code>. Каждые ~30 секунд делает один проход: <code>TaskManager.list()</code>, классификация по <code>state.id</code>.' },
+      { step: 'Шаг 03', title: 'Задача попадает в выборку', desc: 'Её статус — один из шести наблюдаемых. CoreOrch видит <code>Ready to Propose</code> и стартует горутину под эту задачу.' },
+      { step: 'Шаг 04', title: 'Перевод в In Progress', desc: 'Горутина сначала двигает задачу в <code>Proposing In Progress</code> — сигнал другим возможным запускам и людям, что задачу взяли в работу.' },
+      { step: 'Шаг 05', title: 'ProposalRunner: clone + codex', desc: 'Mkdtemp, клонирует репо, запускает Codex с prompt-ом «используй skill <code>openspec-propose</code>». Codex пишет proposal-файлы в SPEC-папку.' },
+      { step: 'Шаг 06', title: 'Commit с producer-trailer + push', desc: 'Проверяет, что <code>git status</code> не пустой. Новая ветка с timestamp в имени, коммит с <code>Produced-By: codex</code> + <code>Produced-Model</code> + <code>Produced-Stage</code>. Push.' },
+      { step: 'Шаг 07', title: 'Открытие PR + комментарий', desc: 'Через <code>gh pr create</code>. Финальное сообщение Codex-а постится в PR как отдельный комментарий — runner сам ничего не пишет в body.' },
+      { step: 'Шаг 08', title: 'Attach PR в Linear + переход', desc: 'CoreOrch получает PR URL, говорит TaskManager-у привязать URL как attachment, потом двигает задачу в <code>Need Proposal AI Review</code> (если фича включена) или сразу в <code>Need Proposal Review</code> для человека.' },
+      { step: 'Шаг 09', title: 'Следующий тик видит AI-Review', desc: 'Если фича включена — на одном из следующих тиков CoreOrch увидит задачу уже в <code>Need Proposal AI Review</code> и запустит ReviewRunner.' },
+      { step: 'Шаг 10', title: 'ReviewRunner читает trailer', desc: 'Клонирует ветку, читает HEAD commit, извлекает producer-trailer. Выбирает противоположный reviewer-слот: если producer был <code>codex</code> с первой моделью — reviewer будет с другой моделью или ролью.' },
+      { step: 'Шаг 11', title: 'JSON-вердикт + repair', desc: 'Рендерит embedded-template на русском, гоняет Codex, парсит ответ по закрытой схеме. На parse-fail — один <code>repair-retry</code> с дословной ошибкой в prompt-е.' },
+      { step: 'Шаг 12', title: 'Атомарная публикация в GitHub', desc: 'Через <code>gh api</code>: один summary в body PR-review (с HTML-маркером для идемпотентности) + inline-комментарии с fix-prompt-ами. Если inline отвергнут — повтор без inline-ов, tripwire в summary.' },
+      { step: 'Шаг 13', title: 'Переход в human review', desc: 'CoreOrch двигает задачу в <code>Need Proposal Review</code> — это уже зона человека. TaskManager публикует событие, Telegram-подписчик шлёт сообщение в чат: «task ZIM-42, target Need Proposal Review, PR: …».' },
+      { step: 'Шаг 14', title: 'Оператор → merge → apply', desc: 'Человек смотрит PR, опираясь на сводку AI-reviewer-а. Либо мёржит и переводит в <code>Ready to Code</code> — тогда цикл повторится через ApplyRunner, потом через ArchiveRunner. Producer-trailer переходит из коммита в коммит.' },
+      { step: 'Шаг 15', title: 'Сервис ждёт следующий тик', desc: 'И идёт по той же дорожке для следующей задачи. Если шаг падает — задача просто остаётся в текущем статусе; идемпотентность через HTML-маркер гарантирует, что повторная попытка не сломается на ре-публикации.' }
+    ];
+
+    var timeline = document.getElementById('timeline');
+    timelineSteps.forEach(function(t) {
+      var el = document.createElement('div');
+      el.className = 'timeline-item reveal';
+      el.dataset.reveal = '';
+      el.innerHTML =
+        '<div class="timeline-step">' + t.step + '</div>' +
+        '<div class="timeline-title">' + t.title + '</div>' +
+        '<div class="timeline-desc">' + t.desc + '</div>';
+      timeline.appendChild(el);
+      revealObserver.observe(el);
+    });
+
+    // === DATA: Properties (10 ===
+    var properties = [
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h6"/></svg>',
+        title: 'Linear — единственный источник правды', desc: 'Никакой БД, durable очереди, state-store-а внутри бота. Перезапуск процесса теряет ровно нулевое количество прогресса — следующий тик увидит ту же доску статусов.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/></svg>',
+        title: 'Producer-trailer в git как handoff', desc: 'Информация «кто и какой моделью писал артефакт» живёт в commit message. Review-стадия читает её из git log — не из Linear или базы. Cross-stage memory без отдельного хранилища.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>',
+        title: 'Идемпотентность через HTML-маркер', desc: 'Повторная попытка опубликовать тот же <span class="mono">(reviewer, stage, sha)</span> молча превращается в no-op. Лечит весь класс «упало где-то между публикацией и переходом статуса» гонок.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+        title: 'Один синхронный тик', desc: 'Параллельные горутины внутри одного прохода. Нет фоновых очередей, асинхронных хуков, отложенных задач. Всё, что происходит в одном тике, ограничено одним тиком — просто для дебага.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+        title: 'Закрытые enum-ы + один repair-retry', desc: 'LLM-агент не может прислать «выдуманную» категорию — парсер форсит закрытую схему. При сбое — ровно одна попытка перегенерации с ошибкой в prompt-е.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>',
+        title: 'Безопасные дефолты Codex', desc: 'Каждый запуск изолирован своим временным каталогом. Sandbox <span class="mono">danger-full-access</span> явно прописан в командной строке — никаких неявных полномочий.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>',
+        title: 'Splittable seams везде, где есть IO', desc: 'Каждый компонент с внешним эффектом (git, gh, codex, http, Linear) держит свой контракт публичным interface-полем с ленивым defaults. Тесты подменяют его без mock-framework-а.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>',
+        title: 'Best-effort события', desc: 'Падение Telegram-уведомления никогда не откатит уже состоявшийся переход статуса в Linear. Real source of truth — Linear, остальное — наблюдатели.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>',
+        title: 'Late-binding валидации', desc: 'Конфиг проверяется не разово на старте, а каждым потребителем перед использованием. Пустой <span class="mono">REPOSITORY_URL</span> упадёт в первом проходе обработки — локальная и читаемая ошибка вместо абстрактной startup-ошибки.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
+        title: 'Никаких внешних брокеров и фреймворков', desc: 'Единственная сторонняя Go-библиотека — <span class="mono">godotenv</span>. Всё остальное — stdlib + три внешних CLI (<span class="mono">git</span>, <span class="mono">gh</span>, <span class="mono">codex</span>) + две HTTP-интеграции (Linear, Telegram).' }
+    ];
+
+    var propsGrid = document.getElementById('propertiesGrid');
+    properties.forEach(function(p) {
+      var el = document.createElement('div');
+      el.className = 'property reveal';
+      el.dataset.reveal = '';
+      el.innerHTML =
+        '<div class="property-icon">' + p.icon + '</div>' +
+        '<div><h4>' + p.title + '</h4><p>' + p.desc + '</p></div>';
+      propsGrid.appendChild(el);
+      revealObserver.observe(el);
+    });
+
+    function onThemeChange() {}
+  </script>
+  <script src="theme.js"></script>
+</body>
+</html>

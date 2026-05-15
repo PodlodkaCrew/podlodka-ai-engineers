@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="ru" class="theme-dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Steam Hammer — архитектура простыми словами</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    (function() {
+      var saved = localStorage.getItem('theme');
+      var t = (saved === 'dark' || saved === 'light')
+        ? saved
+        : (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      document.documentElement.className = 'theme-' + t;
+    })();
+    window.addEventListener('storage', function(e) {
+      if (e.key === 'theme' && (e.newValue === 'dark' || e.newValue === 'light')) {
+        document.documentElement.className = 'theme-' + e.newValue;
+      }
+    });
+  </script>
+  <style>
+    /* ===== Steam Hammer — уникальные секции ===== */
+
+    /* Категории компонентов: state / core / agent / infra */
+    .component-card[data-cat="state"] { --cat-color: #14b8a6; }
+    .component-card[data-cat="core"] { --cat-color: #3b82f6; }
+    .component-card[data-cat="agent"] { --cat-color: #8b5cf6; }
+    .component-card[data-cat="infra"] { --cat-color: #06b6d4; }
+    html.theme-light .component-card[data-cat="state"] { --cat-color: #0d9488; }
+    html.theme-light .component-card[data-cat="core"] { --cat-color: #2563eb; }
+    html.theme-light .component-card[data-cat="agent"] { --cat-color: #7c3aed; }
+    html.theme-light .component-card[data-cat="infra"] { --cat-color: #0891b2; }
+
+    /* Two-headed CLI: Go vs Python */
+    .heads-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      position: relative;
+    }
+    .head-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      position: relative;
+      overflow: hidden;
+      display: flex; flex-direction: column;
+      transition: all 0.25s;
+    }
+    .head-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--head-color);
+      opacity: 0.85;
+    }
+    .head-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--border-strong);
+      box-shadow: 0 14px 36px rgba(0,0,0,0.18);
+    }
+    .head-card[data-head="go"] { --head-color: #06b6d4; }
+    .head-card[data-head="py"] { --head-color: #f59e0b; }
+    html.theme-light .head-card[data-head="go"] { --head-color: #0891b2; }
+    html.theme-light .head-card[data-head="py"] { --head-color: #b45309; }
+
+    .head-tag {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 0.7rem; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--head-color);
+      padding: 4px 10px; border-radius: 6px;
+      background: color-mix(in srgb, var(--head-color) 15%, transparent);
+      align-self: flex-start;
+      margin-bottom: 16px;
+    }
+    .head-name {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 1.5rem; font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .head-role { font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 20px; }
+    .head-list { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+    .head-list li { display: flex; gap: 10px; align-items: flex-start; font-size: 0.9375rem; color: var(--text-secondary); }
+    .head-list li svg { flex-shrink: 0; color: var(--head-color); margin-top: 4px; }
+    .head-list li strong { color: var(--text); font-weight: 500; }
+    .head-bottom {
+      margin-top: auto; padding: 12px 14px;
+      background: color-mix(in srgb, var(--head-color) 8%, transparent);
+      border: 1px solid color-mix(in srgb, var(--head-color) 25%, transparent);
+      border-radius: 10px;
+      font-size: 0.8125rem;
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .head-bottom strong { color: var(--head-color); font-weight: 600; }
+
+    /* Markers / state-comments */
+    .markers-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+    }
+    .marker-chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      transition: all 0.2s;
+    }
+    .marker-chip:hover {
+      border-color: var(--border-strong);
+      background: var(--surface-hover);
+      transform: translateX(2px);
+    }
+    .marker-tag {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--accent);
+      background: var(--accent-glow);
+      padding: 3px 8px; border-radius: 6px;
+      display: inline-block;
+      margin-bottom: 8px;
+      word-break: break-all;
+    }
+    .marker-desc {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      line-height: 1.55;
+    }
+    .marker-desc strong { color: var(--text); font-weight: 600; }
+
+    /* Responsive — уникальные сетки */
+    @media (max-width: 1024px) {
+      .heads-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 375px) {
+      .head-card { padding: 22px; }
+    }
+    @media print {
+      .head-card, .marker-chip { break-inside: avoid; border: 1px solid #ddd; box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-to-content">К основному контенту</a>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="nav-link" href="../../index.html#about">О клубе</a>
+      <a class="nav-link" href="../../index.html#speakers">Спикеры</a>
+      <a class="nav-link" href="../../index.html#schedule">Расписание</a>
+      <a class="nav-link" href="../../index.html#hacker-sprints">Hacker Sprints</a>
+      <a class="nav-link" href="../../index.html#faq">FAQ</a>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+        <span id="theme-icon">☀</span>
+      </button>
+      <a class="nav-link nav-link--cta" href="../../index.html#join">Вступить</a>
+    </div>
+  </nav>
+
+  <main id="main-content" role="main">
+
+    <!-- ============== HERO ============== -->
+    <section class="hero" role="banner">
+      <div class="container hero-content">
+        <a href="index.html" class="hero-back animate">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          К каталогу
+        </a>
+        <h1 class="animate delay-1">Steam Hammer</h1>
+        <a href="https://github.com/podlodka-ai-club/steam-hammer" class="hero-repo animate delay-1" target="_blank" rel="noopener">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+          github.com/podlodka-ai-club/steam-hammer
+        </a>
+        <p class="hero-subtitle animate delay-2">
+          CLI-оркестратор, который из короткого GitHub-issue делает готовый
+          <strong style="color: var(--accent);">fix-branch + Pull Request</strong>. Внутри одного бинаря живут две реализации: новое Go-ядро и
+          старый Python-скрипт. Go-обёртка на каждой команде решает, кому отдать управление — это «двухголовый» CLI в середине миграции.
+        </p>
+
+        <div class="hero-stack animate delay-2">
+          <span class="stack-pill">Go</span>
+          <span class="stack-pill">Python</span>
+          <span class="stack-pill">Claude</span>
+          <span class="stack-pill">Codex</span>
+        </div>
+
+        <div class="hero-stats">
+          <div class="stat-card animate delay-3">
+            <div class="stat-value accent" data-count="2" data-suffix="">2</div>
+            <div class="stat-label">Runtime'а в одном бинаре</div>
+            <div class="stat-sublabel">Go-native + Python-fallback</div>
+          </div>
+          <div class="stat-card animate delay-3">
+            <div class="stat-value" data-count="11" data-suffix="">11</div>
+            <div class="stat-label">Компонентов архитектуры</div>
+            <div class="stat-sublabel">от трекера до budget-сторожа</div>
+          </div>
+          <div class="stat-card animate delay-4">
+            <div class="stat-value" data-count="2" data-suffix="">2</div>
+            <div class="stat-label">Режима исполнения</div>
+            <div class="stat-sublabel">one-shot и daemon-poll</div>
+          </div>
+          <div class="stat-card animate delay-4">
+            <div class="stat-value" data-count="0" data-suffix="">0</div>
+            <div class="stat-label">Локальных баз данных</div>
+            <div class="stat-sublabel">state живёт в issue/PR-комментариях</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== KEY IDEA ============== -->
+    <section style="padding-top: 0;">
+      <div class="container">
+        <div class="key-idea reveal" data-reveal>
+          <div class="section-eyebrow">Главная идея</div>
+          <h3>Двухголовый CLI с трекером вместо собственной БД</h3>
+          <p>
+            Снаружи это один бинарь <span class="mono" style="color: var(--accent);">orchestrator</span>, который всегда стартует через Go-обёртку.
+            Но при выполнении каждой команды Go спрашивает себя: «эту задачу я умею в native-режиме или мне нужно
+            дёрнуть старый Python-скрипт?». Если упирается в неподдерживаемый сценарий (Jira, декомпозиция, image-вложения) —
+            явно логирует <span class="mono" style="color: var(--accent);">falling back to python runner</span> и запускает
+            <span class="mono" style="color: var(--accent);">scripts/run_github_issues_to_opencode.py</span> как subprocess.
+            <strong>Состояние задачи не лежит в локальной БД</strong> — оно живёт прямо в issue/PR-комментариях GitHub
+            как append-only лента маркеров вида <span class="mono" style="color: var(--accent);">&lt;!-- orchestration-state:v1 --&gt;</span>.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== ARCHITECTURE FLOW ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Высокоуровневая схема</div>
+        <h2 class="section-title">Как устроен «паровой молот»</h2>
+        <p class="section-subtitle">
+          Go-диспетчер на каждой команде выбирает мотор: native-flow или Python-fallback.
+          Снаружи — единый CLI, единый state-формат, единый конфиг.
+        </p>
+
+        <div class="arch-flow">
+          <div class="arch-diagram reveal" data-reveal>
+            <div class="arch-node active">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M3 9h18"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">GitHub Issues / PRs</div>
+                <div class="arch-node-meta">внешний state-store — комментарии-маркеры с JSON</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ через gh CLI / git</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">orchestrator (Go бинарь)</div>
+                <div class="arch-node-meta">диспетчер + доменные правила</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ развилка на каждой команде</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">native Go flow ↔ python runner</div>
+                <div class="arch-node-meta">issue-flow / pr-review-flow / daemon · или fallback на legacy</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ subprocess со стримингом stdout</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">agentexec</div>
+                <div class="arch-node-meta">claude / opencode CLI с budget- и idle-предохранителями</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ worker.json + session.json</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">.orchestrator/workers/</div>
+                <div class="arch-node-meta">registry detached-воркеров для status --workers</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="reveal" data-reveal>
+            <h3 style="margin-bottom: 16px;">Что важно понять</h3>
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 14px;">
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Один CLI, два мотора.</strong> Оператор всегда запускает <span class="mono">orchestrator</span>, но за каждой командой стоит выбор: native-Go или fallback в <span class="mono">scripts/run_github_issues_to_opencode.py</span>. Граница явная — в stderr летит строка <span class="mono">falling back to python runner: &lt;reason&gt;</span>.</span>
+              </li>
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Трекер вместо БД.</strong> Все переходы FSM пишутся новыми комментариями с маркерами <span class="mono">:v1</span>. Recovery бесплатное, история на ладони, параллельные worker'ы координируются через ту же ленту.</span>
+              </li>
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Доменное ядро — чистые функции.</strong> Решения «какой статус PR», «когда переключаться на review-flow», «можно ли брать задачу» одинаково вызываются из one-shot, daemon и тестов с фейковыми данными.</span>
+              </li>
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Безопасные дефолты.</strong> Live-daemon требует явного <span class="mono">--allow-live-side-effects</span>. Перед каждой git-мутацией — проверка ветки и каталога. Budget- и idle-таймауты kill'ят агента.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== TWO HEADS ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Two-headed CLI</div>
+        <h2 class="section-title">Два мотора под одной обёрткой</h2>
+        <p class="section-subtitle">
+          Проект — в середине миграции «Python → Go». Go-ядро вытягивает функциональность по частям,
+          Python-runner остаётся хранителем легаси-сценариев. Оба видят один и тот же конфиг и одни и те же маркеры в трекере.
+        </p>
+
+        <div class="heads-grid reveal" data-reveal id="headsGrid">
+          <!-- Heads injected -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== MARKERS ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Tracker как state-store</div>
+        <h2 class="section-title">Семейство versioned-маркеров</h2>
+        <p class="section-subtitle">
+          Вместо SQLite или Postgres — append-only лента issue/PR-комментариев.
+          Каждый служебный комментарий начинается с HTML-маркера, к которому навсегда прибит суффикс <span class="mono" style="color: var(--accent);">:v1</span>
+          — чтобы будущая миграция схемы не сломала чтение старых записей.
+        </p>
+
+        <div class="markers-grid reveal" data-reveal id="markersGrid">
+          <!-- Markers injected -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== COMPONENTS ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Из чего собран</div>
+        <h2 class="section-title">Одиннадцать строительных блоков</h2>
+        <p class="section-subtitle">
+          От «двухголового CLI» до safeguard'ов перед git push — каждый компонент решает одну конкретную задачу.
+          Используйте фильтр для просмотра по категориям.
+        </p>
+
+        <div class="components-filter">
+          <button class="filter-btn active" data-filter="all">Все</button>
+          <button class="filter-btn" data-filter="state">Состояние</button>
+          <button class="filter-btn" data-filter="core">Ядро</button>
+          <button class="filter-btn" data-filter="agent">Агент</button>
+          <button class="filter-btn" data-filter="infra">Инфраструктура</button>
+        </div>
+
+        <div class="components-grid" id="componentsGrid">
+          <!-- Components injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== TIMELINE ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Жизненный цикл</div>
+        <h2 class="section-title">Что происходит с типичной задачей</h2>
+        <p class="section-subtitle">
+          От <span class="mono" style="color: var(--accent);">orchestrator init</span> до финального
+          <span class="mono" style="color: var(--accent);">ready-for-review</span> — пятнадцать конкретных шагов.
+        </p>
+
+        <div class="timeline" id="timeline">
+          <!-- Timeline injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== KEY PROPERTIES ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">На чём всё держится</div>
+        <h2 class="section-title">Ключевые свойства архитектуры</h2>
+        <p class="section-subtitle">
+          Десять решений, которые делают систему живучей, наблюдаемой и предсказуемой
+          даже на чужом репозитории с реальным деньгами на счёте у LLM-провайдера.
+        </p>
+
+        <div class="properties-grid" id="propertiesGrid">
+          <!-- Properties injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== FOOTER ============== -->
+    <footer class="footer">
+      <div class="container">
+        <p>
+          Архитектурный обзор <strong style="color: var(--text);">steam-hammer</strong> ·
+          Сгенерировано из <span class="mono">arch/steam-hammer-arch-review.md</span>
+        </p>
+      </div>
+    </footer>
+
+  </main>
+
+  <script>
+
+    // === Scroll Reveal ===
+    document.querySelectorAll('[data-reveal]').forEach(function(el) { el.classList.add('reveal'); });
+    var revealObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          revealObserver.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.reveal').forEach(function(el) { revealObserver.observe(el); });
+
+    // === Number Counter ===
+    function animateCounters() {
+      document.querySelectorAll('[data-count]').forEach(function(el) {
+        if (el.dataset.counted) return;
+        el.dataset.counted = '1';
+        var target = parseFloat(el.dataset.count),
+            prefix = el.dataset.prefix || '',
+            suffix = el.dataset.suffix || '';
+        var start = performance.now(), duration = 1100;
+        (function tick(now) {
+          var p = Math.min((now - start) / duration, 1),
+              eased = 1 - Math.pow(1 - p, 3);
+          el.textContent = prefix + Math.round(target * eased).toLocaleString() + suffix;
+          if (p < 1) requestAnimationFrame(tick);
+        })(start);
+      });
+    }
+    var counterEl = document.querySelector('[data-count]');
+    if (counterEl) {
+      var cObs = new IntersectionObserver(function(entries) {
+        entries.forEach(function(e) {
+          if (e.isIntersecting) { animateCounters(); cObs.disconnect(); }
+        });
+      }, { threshold: 0.3 });
+      cObs.observe(counterEl);
+    }
+
+    // === DATA: Two heads ===
+    var heads = [
+      {
+        id: 'go',
+        tag: 'Native',
+        name: 'Go-ядро',
+        role: 'cmd/orchestrator + internal/*',
+        bullets: [
+          'Команды <strong>init / doctor / verify / status</strong>, оба run-режима для GitHub-issue и PR',
+          'Доменное ядро в <strong>internal/core/orchestration</strong> — чистые функции, тестируются без сети',
+          'Native-flows: issue-flow и pr-review-flow с пошаговым state-комментарием на каждой стадии',
+          'Daemon-режим с claim/release-протоколом и signature-based идемпотентностью'
+        ],
+        bottom: '<strong>Когда побеждает:</strong> tracker=github, codehost=github, без image-вложений, без декомпозиции, без <code>--detach</code> с legacy-флагами.'
+      },
+      {
+        id: 'py',
+        tag: 'Fallback',
+        name: 'Python-runner',
+        role: 'scripts/run_github_issues_to_opencode.py',
+        bullets: [
+          'Большой стажёр-монолит: остаётся «полным» исполнителем для всего, что Go ещё не вытянул',
+          '<strong>Jira</strong>, <strong>Bitbucket</strong>, custom proxy, image-вложения, evidence-policy',
+          'Декомпозиция большой issue в child-issues, autonomous queue sorting',
+          'Post-batch verification, follow-up issue creation с уникальным маркером'
+        ],
+        bottom: '<strong>Как зовётся:</strong> Go-обёртка пишет в stderr <code>falling back to python runner: &lt;reason&gt;</code> и делает <code>exec.CommandContext("python3", ...)</code>.'
+      }
+    ];
+
+    var headsGrid = document.getElementById('headsGrid');
+    heads.forEach(function(h) {
+      var el = document.createElement('article');
+      el.className = 'head-card';
+      el.dataset.head = h.id;
+
+      var bullets = h.bullets.map(function(b) {
+        return '<li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span>' + b + '</span></li>';
+      }).join('');
+
+      el.innerHTML =
+        '<span class="head-tag">' + h.tag + '</span>' +
+        '<div class="head-name">' + h.name + '</div>' +
+        '<div class="head-role">' + h.role + '</div>' +
+        '<ul class="head-list">' + bullets + '</ul>' +
+        '<div class="head-bottom">' + h.bottom + '</div>';
+      headsGrid.appendChild(el);
+    });
+
+    // === DATA: Markers ===
+    var markers = [
+      { tag: 'orchestration-state:v1', desc: '<strong>Главный маркер.</strong> Текущее состояние задачи. Любой переход FSM — новый комментарий с этим маркером и JSON под ним.' },
+      { tag: 'orchestration-claim:v1', desc: 'Daemon-worker «занимает» issue: <code>{run_id, worker, expires_at}</code>. Самый свежий claim в ленте — победитель.' },
+      { tag: 'orchestration-plan:v1', desc: 'План декомпозиции большой issue на child-issues. Пишется только Python-runner\'ом.' },
+      { tag: 'orchestration-grooming:v1', desc: 'Итоги grooming-итерации: ясность, scope, missing context.' },
+      { tag: 'orchestration-clarification-request:v1', desc: '<strong>Synthetic-протокол.</strong> Агент задаёт вопрос автору issue — оркестратор переводит в статус <code>waiting-for-author</code>.' },
+      { tag: 'orchestration-noop-result:v1', desc: '<strong>Synthetic-протокол.</strong> Агент: «уже сделано, менять нечего» с объяснением.' },
+      { tag: 'orchestration-review-outcome:v1', desc: 'Результат прохода по review-thread\'ам PR: что было закрыто, что осталось.' },
+      { tag: 'orchestration-dependencies:v1', desc: 'Declared dependencies issue — daemon учитывает при решении «можно ли брать».' }
+    ];
+
+    var markersGrid = document.getElementById('markersGrid');
+    markers.forEach(function(m) {
+      var el = document.createElement('div');
+      el.className = 'marker-chip';
+      el.innerHTML =
+        '<div class="marker-tag">' + m.tag + '</div>' +
+        '<div class="marker-desc">' + m.desc + '</div>';
+      markersGrid.appendChild(el);
+    });
+
+    // === DATA: Components ===
+    var components = [
+      { num: '01', cat: 'core', catLabel: 'Ядро', title: 'CLI orchestrator', tagline: '«единый диспетчер, два мотора»',
+        desc: 'Входная точка. Команды <code>init</code>, <code>doctor</code>, <code>verify</code>, <code>status</code>, <code>run issue/pr/batch/daemon</code>. Внутри каждой — развилка: native-Go или fallback в Python. Позволяет добавлять native-функциональность по частям без полного паритета.' },
+      { num: '02', cat: 'state', catLabel: 'Состояние', title: 'Tracker comments', tagline: '«база данных» проекта',
+        desc: 'Issue/PR-комментарии GitHub как <strong>append-only state store</strong>. Семейство HTML-маркеров с явным versioning\'ом (<code>:v1</code>): state, claim, plan, grooming, clarification, noop, review-outcome, dependencies. Чтение «где задача сейчас» = «самый свежий с нужным маркером».' },
+      { num: '03', cat: 'core', catLabel: 'Ядро', title: 'internal/core/orchestration', tagline: '«закон проекта»',
+        desc: 'Сердце Go-части. Чистые функции без побочных эффектов: статус PR из <code>mergeStateStatus</code>/<code>reviewDecision</code>, что считать actionable-review-комментарием, когда переключаться issue→pr-flow, follow-up issue при провале verification. Единый источник правды для FSM.' },
+      { num: '04', cat: 'core', catLabel: 'Ядро', title: 'Native Go flows', tagline: '«пошаговые исполнители»',
+        desc: 'Issue-flow и pr-review-flow. Чёткий порядок шагов: fetch → execution-mode → branch (create/reuse/sync) → prompt → agent → worktree check → commit → push → PR → state-комментарий. На каждом шаге пишется промежуточный state — daemon продолжит, если что.' },
+      { num: '05', cat: 'core', catLabel: 'Ядро', title: 'Python-runner', tagline: '«большой стажёр»',
+        desc: 'Монолит-исполнитель для всего, что Go ещё не вытянул: <strong>Jira</strong>, Bitbucket, custom proxy, декомпозиция, post-batch verification, image-вложения, evidence-policy, autonomous queue sorting. Видит те же tracker-маркеры и тот же project-config.' },
+      { num: '06', cat: 'agent', catLabel: 'Агент', title: 'agentexec', tagline: '«обёртка над агентом с предохранителями»',
+        desc: 'Узкая прослойка над <code>claude</code> и <code>opencode</code>. Собирает argv (для claude — <code>--dangerously-skip-permissions</code>, для opencode — <code>run --agent build</code>), стримит stdout/stderr построчно, парсит <strong>token/cost-метрики регексами</strong>, kill\'ит при превышении budget или <code>IdleTimeout</code>.' },
+      { num: '07', cat: 'infra', catLabel: 'Инфраструктура', title: 'githublifecycle', tagline: '«глаза и руки в GitHub»',
+        desc: 'Тонкий адаптер поверх <code>gh</code> CLI: <code>gh issue view/list --json</code>, <code>gh pr view</code>, <code>gh api repos/.../check-runs</code>. Review-threads — через inline-GraphQL (REST не отдаёт <code>isResolved</code>). Эвристика «найти PR по issue»: closingIssuesReferences → <code>#N</code> в title/body → номер в имени ветки.' },
+      { num: '08', cat: 'infra', catLabel: 'Инфраструктура', title: 'Daemon + claim-протокол', tagline: '«координатор без БД»',
+        desc: 'Бесконечный poll-loop. «Занять» issue — запостить claim-комментарий с <code>{run_id, worker, expires_at}</code>, перечитать ленту, убедиться, что свежий claim твой. TTL = <code>poll_interval × 2</code>. Signature-based идемпотентность: sha1 от состояния — если совпал, issue пропускается.' },
+      { num: '09', cat: 'infra', catLabel: 'Инфраструктура', title: 'worker.json + session.json', tagline: '«наблюдаемость без UI»',
+        desc: 'Detached-worker пишет на диск <code>worker.json</code> (PID, command, log path, clone path, push remote, batch siblings) и <code>session.json</code> (progress daemon-цикла). <code>status --workers</code> обходит <code>.orchestrator/workers/</code>, проверяет PID, читает хвост лога, собирает картину «что работает / застряло / закончено».' },
+      { num: '10', cat: 'infra', catLabel: 'Инфраструктура', title: 'Project-config + presets + budgets', tagline: '«закон, спущенный сверху»',
+        desc: 'Три слоя: built-in defaults → <code>project-config.json</code> (контракт, в репо) → <code>local-config.json</code> (per-user). Словарь <code>presets</code> (cheap/default/hard), правила <code>routing</code> по label\'ам, <code>budgets</code>-потолки (понижают слишком жирные пресеты), <code>scope.defaults</code>, <code>workflow.commands</code>, политики readiness/merge.' },
+      { num: '11', cat: 'agent', catLabel: 'Агент', title: 'Branch-safeguards + synthetic-протоколы', tagline: '«защита и диалог»',
+        desc: 'Перед каждой git-мутацией — проверка, что worktree на ожидаемой ветке и в ожидаемом каталоге: иначе <code>refusing to push: expected X, got Y</code>. В промпт агенту даны два маркера — <code>clarification-request:v1</code> (вопрос автору) и <code>noop-result:v1</code> (нечего менять). Оркестратор парсит блок из stdout и превращает в комментарий + статус.' }
+    ];
+
+    var grid = document.getElementById('componentsGrid');
+    components.forEach(function(c) {
+      var card = document.createElement('article');
+      card.className = 'component-card';
+      card.dataset.cat = c.cat;
+      card.innerHTML =
+        '<div class="component-header">' +
+          '<span class="component-num">' + c.num + '</span>' +
+          '<span class="component-cat">' + c.catLabel + '</span>' +
+        '</div>' +
+        '<h4>' + c.title + '</h4>' +
+        '<div class="component-tagline">' + c.tagline + '</div>' +
+        '<p class="component-desc">' + c.desc + '</p>';
+      grid.appendChild(card);
+    });
+
+    // Recalculate counts
+    var counts = { all: components.length, state: 0, core: 0, agent: 0, infra: 0 };
+    components.forEach(function(c) { counts[c.cat]++; });
+    document.querySelectorAll('.filter-btn').forEach(function(btn) {
+      var f = btn.dataset.filter;
+      var label = btn.textContent.split(' · ')[0];
+      btn.textContent = label + ' · ' + counts[f];
+    });
+
+    document.querySelectorAll('.filter-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        var filter = btn.dataset.filter;
+        document.querySelectorAll('.component-card').forEach(function(card) {
+          if (filter === 'all' || card.dataset.cat === filter) {
+            card.classList.remove('hidden');
+          } else {
+            card.classList.add('hidden');
+          }
+        });
+      });
+    });
+
+    // === DATA: Timeline ===
+    var timelineSteps = [
+      { step: 'Шаг 01', title: 'Оператор готовит репозиторий', desc: 'Клонит репо, делает <code>orchestrator init</code> (положит scaffold-конфиги), правит <code>project-config.json</code> под команду, авторизуется в <code>gh</code>, проверяет <code>orchestrator doctor</code>.' },
+      { step: 'Шаг 02', title: 'Запуск команды', desc: 'Запускает <code>orchestrator run issue --id 42 --repo owner/name</code> (или ставит <code>run daemon</code> фоном с <code>--allow-live-side-effects</code>).' },
+      { step: 'Шаг 03', title: 'Go-обёртка читает конфиг', desc: 'Мерджит built-in defaults → project-config → local-config → CLI-флаги, проверяет budget-потолки, выбирает preset. Решает: tracker=github, codehost=github, без <code>--detach</code> → <strong>native-Go-flow</strong>.' },
+      { step: 'Шаг 04', title: 'Fetch issue + история', desc: 'Через <code>gh</code> читает issue и все её комментарии, ищет среди них самый свежий с маркером <code>orchestration-state:v1</code> (если retry — он расскажет, где остановились), проверяет наличие открытого PR на эту issue.' },
+      { step: 'Шаг 05', title: 'Выбор execution-mode', desc: 'Нет PR\'а → <strong>issue-flow</strong>. Есть PR и state был <code>waiting-for-ci</code>/<code>ready-for-review</code>/<code>ready-to-merge</code> → <strong>pr-review-flow</strong>. <code>blocked</code> или <code>waiting-for-author</code> без новых ответов → skip.' },
+      { step: 'Шаг 06', title: 'Подготовка ветки', desc: 'Проверка чистоты worktree, резолв base-branch, детерминированное имя <code>issue-fix/42-slug-of-title</code>. Если ветка уже есть — переиспользование с rebase/merge-sync, пропуск или fail (зависит от флагов).' },
+      { step: 'Шаг 07', title: 'in-progress + prompt', desc: 'В трекер постится state-комментарий <code>in-progress</code>. Собирается prompt с инструкцией: «если непонятно — выведи clarification-маркер; если ничего не поменял — выведи noop-маркер».' },
+      { step: 'Шаг 08', title: 'Запуск агента через agentexec', desc: '<code>agentexec</code> запускает <code>claude --dangerously-skip-permissions -p "&lt;prompt&gt;"</code>, стримит stdout/stderr построчно, считает токены и cost регексами. Budget превышен → kill. 5 минут нет вывода → kill.' },
+      { step: 'Шаг 09', title: 'Разбор вывода агента', desc: 'Если в выводе был <code>clarification-request:v1</code> → постится вопрос автору, статус <code>waiting-for-author</code>. Если <code>noop-result:v1</code> → объяснение в комментарий. Иначе — продолжаем.' },
+      { step: 'Шаг 10', title: 'Branch-safeguards перед commit', desc: 'Перед каждой git-мутацией проверка: worktree реально на ожидаемой ветке и в ожидаемом каталоге. Несоответствие → <code>refusing to push: expected branch X, got Y</code>. Спасает от worst-case daemon-bug.' },
+      { step: 'Шаг 11', title: 'Commit + push + PR', desc: '<code>git add</code> всего изменённого относительно baseline, commit <code>Fix issue #42: &lt;title&gt;</code>, push (с <code>--force-with-lease</code> для rebased ветки), <code>gh pr create</code> с <code>Closes #42</code>.' },
+      { step: 'Шаг 12', title: 'ready-for-review', desc: 'Финальный state-комментарий с PR-номером, branch-name, runner, model, attempt, статистикой токенов. Issue видит всю историю одной лентой.' },
+      { step: 'Шаг 13', title: 'Daemon: claim → release → next', desc: 'В daemon-режиме после release claim\'а (отдельным комментарием) идём к следующей issue в текущем цикле. <code>sleep poll_interval</code>, следующий цикл.' },
+      { step: 'Шаг 14', title: 'Post-batch verification', desc: 'Если включён <code>--post-batch-verify</code> — между циклами в clone-каталоге прогоняются workflow-команды (<code>setup</code> → <code>test</code>/<code>lint</code>/<code>build</code>/<code>e2e</code>). Падение → автоматический follow-up issue с уникальным маркером.' },
+      { step: 'Шаг 15', title: 'Fallback на Python (если что)', desc: 'Если Go упёрся в неподдерживаемое — <code>--tracker jira</code> или декомпозиция — пишет в stderr <code>falling back to python runner: &lt;reason&gt;</code> и <code>exec.CommandContext("python3", "scripts/run_github_issues_to_opencode.py", ...)</code>. Оператор не замечает разницы — кроме строки fallback.' }
+    ];
+
+    var timeline = document.getElementById('timeline');
+    timelineSteps.forEach(function(t) {
+      var el = document.createElement('div');
+      el.className = 'timeline-item reveal';
+      el.dataset.reveal = '';
+      el.innerHTML =
+        '<div class="timeline-step">' + t.step + '</div>' +
+        '<div class="timeline-title">' + t.title + '</div>' +
+        '<div class="timeline-desc">' + t.desc + '</div>';
+      timeline.appendChild(el);
+      revealObserver.observe(el);
+    });
+
+    // === DATA: Properties ===
+    var properties = [
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
+        title: 'Двухголовый CLI с явной fallback-границей', desc: 'Go-обёртка единая, но реально выполнить задачу могут либо Go-native flow, либо Python-runner. Решение — на каждой команде, оператор видит, кто реально запустился (строка <code>falling back to python runner</code>).' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M3 9h18"/></svg>',
+        title: 'Tracker как state-store', desc: 'Никаких локальных БД. Восстановление после reboot бесплатное, история на ладони, оператор и оркестратор смотрят на одну и ту же ленту комментариев.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+        title: 'Versioned маркеры с <code>:v1</code>', desc: 'Каждый тип служебного комментария имеет явный версионный суффикс, чтобы будущая миграция схемы не сломала чтение старых записей.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>',
+        title: 'Claim/release через append-only лог', desc: 'Параллельные daemon-worker\'ы координируются комментариями, без отдельного lock-сервиса. Перебитый claim просто отступает, TTL = <code>poll_interval × 2</code>.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>',
+        title: 'Signature-based идемпотентность', desc: 'Daemon вычисляет sha1-отпечаток состояния задачи и не повторяет уже обработанные в текущей session. Крутить poll-loop с любой частотой безопасно.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+        title: 'Budget-предохранители для агента', desc: 'Token-budget и cost-budget применяются регексами по stdout — работают с любым CLI-агентом без интеграции с API провайдера. Ценой — завязка на стабильность текстового формата.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>',
+        title: 'Branch-safeguards перед git-мутацией', desc: 'Невозможно случайно push в чужую ветку, даже если worker запутался в каталогах. Отказ с понятным <code>refusing to push: expected X, got Y</code>.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>',
+        title: 'Synthetic clarification/no-op-протокол', desc: 'Агент через специальные маркеры может попросить уточнение или сказать «нечего менять», и это автоматически становится комментарием и статусом для оператора. Трекер — двусторонняя переписка.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',
+        title: 'Detached workers с worker.json-registry', desc: 'Фоновое исполнение наблюдаемо через <code>status --workers</code>. Имя worker\'а — это и есть его lock-key: повторный запуск с тем же именем и живым PID отказывается стартовать.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>',
+        title: 'Project-config с preset\'ами и budget-cap\'ами', desc: 'Стратегия выбора модели/попыток/ретраев живёт в репо, а не в коде. Budget\'ы могут принудительно понизить слишком жирный preset, чтобы случайно не сжечь $.' }
+    ];
+
+    var propsGrid = document.getElementById('propertiesGrid');
+    properties.forEach(function(p) {
+      var el = document.createElement('div');
+      el.className = 'property reveal';
+      el.dataset.reveal = '';
+      el.innerHTML =
+        '<div class="property-icon">' + p.icon + '</div>' +
+        '<div><h4>' + p.title + '</h4><p>' + p.desc + '</p></div>';
+      propsGrid.appendChild(el);
+      revealObserver.observe(el);
+    });
+  </script>
+  <script src="theme.js"></script>
+</body>
+</html>

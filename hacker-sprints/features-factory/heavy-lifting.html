@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="ru" class="theme-dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Heavy Lifting — архитектура простыми словами</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    (function() {
+      var saved = localStorage.getItem('theme');
+      var t = (saved === 'dark' || saved === 'light')
+        ? saved
+        : (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      document.documentElement.className = 'theme-' + t;
+    })();
+    window.addEventListener('storage', function(e) {
+      if (e.key === 'theme' && (e.newValue === 'dark' || e.newValue === 'light')) {
+        document.documentElement.className = 'theme-' + e.newValue;
+      }
+    });
+  </script>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script>Chart.defaults.animation = false;</script>  <style>
+    /* ===== Heavy Lifting — уникальные секции (3 worker'а + task types + Story Points) ===== */
+
+    /* Категории компонентов: state / infra / pipeline / agent / ui */
+    .component-card[data-cat="state"] { --cat-color: #14b8a6; }
+    .component-card[data-cat="infra"] { --cat-color: #3b82f6; }
+    .component-card[data-cat="pipeline"] { --cat-color: #06b6d4; }
+    .component-card[data-cat="agent"] { --cat-color: #8b5cf6; }
+    .component-card[data-cat="ui"] { --cat-color: #ec4899; }
+    html.theme-light .component-card[data-cat="state"] { --cat-color: #0d9488; }
+    html.theme-light .component-card[data-cat="infra"] { --cat-color: #2563eb; }
+    html.theme-light .component-card[data-cat="pipeline"] { --cat-color: #0891b2; }
+    html.theme-light .component-card[data-cat="agent"] { --cat-color: #7c3aed; }
+    html.theme-light .component-card[data-cat="ui"] { --cat-color: #db2777; }
+
+    /* Arch fan-out (3 параллельные ноды на одной строке внутри arch-diagram) */
+    .arch-fanout {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+      margin-bottom: 12px;
+    }
+    .arch-fanout .arch-node { margin-bottom: 0; padding: 14px 12px; flex-direction: column; align-items: flex-start; gap: 8px; }
+    .arch-fanout .arch-node-title { font-size: 0.8125rem; }
+    .arch-fanout .arch-node-meta { font-size: 0.75rem; }
+    .arch-fanout .arch-icon { width: 32px; height: 32px; }
+
+    /* Three workers grid */
+    .workers-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    .worker-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 30px;
+      transition: all 0.25s;
+      position: relative;
+      overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    .worker-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--worker-color);
+    }
+    .worker-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--border-strong);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+    }
+    .worker-card[data-worker="1"] { --worker-color: var(--positive); }
+    .worker-card[data-worker="2"] { --worker-color: var(--accent); }
+    .worker-card[data-worker="3"] { --worker-color: var(--accent-secondary); }
+
+    .worker-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .worker-num {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 0.75rem; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--worker-color);
+      padding: 4px 10px; border-radius: 6px;
+      background: color-mix(in srgb, var(--worker-color) 15%, transparent);
+    }
+    .worker-emoji { font-size: 1.5rem; filter: grayscale(0.1); }
+    .worker-name {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-weight: 700; font-size: 1.0625rem;
+      color: var(--text); margin-bottom: 4px;
+    }
+    .worker-role {
+      font-size: 0.9375rem; color: var(--worker-color);
+      font-weight: 500; font-style: italic;
+      margin-bottom: 18px;
+    }
+    .worker-list { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+    .worker-list li { display: flex; gap: 10px; align-items: flex-start; font-size: 0.9375rem; color: var(--text-secondary); }
+    .worker-list li svg { flex-shrink: 0; color: var(--worker-color); margin-top: 4px; }
+    .worker-list li strong { color: var(--text); font-weight: 500; }
+    .worker-spawn {
+      margin-top: auto; padding: 12px 14px;
+      background: color-mix(in srgb, var(--worker-color) 8%, transparent);
+      border: 1px solid color-mix(in srgb, var(--worker-color) 25%, transparent);
+      border-radius: 10px;
+      font-size: 0.875rem;
+      color: var(--text);
+    }
+    .worker-spawn strong { color: var(--worker-color); font-weight: 600; }
+
+    /* Task types */
+    .types-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+    .type-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px;
+      transition: all 0.25s;
+      position: relative;
+      overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    .type-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--type-color);
+      opacity: 0.8;
+    }
+    .type-card:hover { transform: translateY(-3px); border-color: var(--border-strong); }
+    .type-card[data-type="fetch"] { --type-color: #14b8a6; }
+    .type-card[data-type="execute-triage"] { --type-color: #8b5cf6; }
+    .type-card[data-type="execute-impl"] { --type-color: var(--accent); }
+    .type-card[data-type="pr_feedback"] { --type-color: var(--warning); }
+    .type-card[data-type="tracker_feedback"] { --type-color: #ec4899; }
+    .type-card[data-type="deliver"] { --type-color: var(--accent-secondary); }
+    html.theme-light .type-card[data-type="fetch"] { --type-color: #0d9488; }
+    html.theme-light .type-card[data-type="execute-triage"] { --type-color: #7c3aed; }
+    html.theme-light .type-card[data-type="pr_feedback"] { --type-color: #b45309; }
+    html.theme-light .type-card[data-type="tracker_feedback"] { --type-color: #db2777; }
+
+    .type-name {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-weight: 700; font-size: 0.9375rem;
+      color: var(--type-color);
+      margin-bottom: 8px;
+    }
+    .type-owner {
+      font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--text-secondary); font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .type-desc { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.55; }
+    .type-desc strong { color: var(--text); font-weight: 600; }
+
+    /* Story Points (6 значений) */
+    .sp-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-top: 24px; }
+    .sp-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 16px;
+      text-align: center;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .sp-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--sp-color);
+    }
+    .sp-card:hover { transform: translateY(-3px); border-color: var(--border-strong); }
+    .sp-card[data-sp="1"], .sp-card[data-sp="2"], .sp-card[data-sp="3"] { --sp-color: var(--positive); }
+    .sp-card[data-sp="5"] { --sp-color: var(--warning); }
+    .sp-card[data-sp="8"], .sp-card[data-sp="13"] { --sp-color: var(--negative); }
+    .sp-num {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 2rem; font-weight: 800;
+      color: var(--sp-color);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .sp-label {
+      font-size: 0.75rem; color: var(--text-secondary);
+      text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;
+    }
+    .sp-meta { font-size: 0.75rem; color: var(--text-secondary); margin-top: 6px; }
+
+    /* Responsive — уникальные сетки */
+    @media (max-width: 1024px) {
+      .workers-grid { grid-template-columns: 1fr; }
+      .types-grid { grid-template-columns: repeat(2, 1fr); }
+      .sp-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 768px) {
+      .types-grid { grid-template-columns: 1fr; }
+      .arch-fanout { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 375px) {
+      .worker-card, .type-card { padding: 22px; }
+      .sp-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media print {
+      .worker-card, .type-card, .sp-card { break-inside: avoid; border: 1px solid #ddd; box-shadow: none; }
+    }
+
+    /* heavy-lifting key-idea имеет несколько <p> внутри — добавим отбивку */
+    .key-idea p { margin-bottom: 14px; }
+    .key-idea p:last-child { margin-bottom: 0; }
+    /* heavy-lifting key-idea имеет уникальный subtitle/title-width */
+    .section-subtitle { max-width: 760px; }
+    .hero-subtitle { max-width: 760px; }
+    /* heavy-lifting use-case: arch-flow начинается «сверху», не центрируется */
+    .arch-flow { align-items: start; }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-to-content">К основному контенту</a>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="nav-link" href="../../index.html#about">О клубе</a>
+      <a class="nav-link" href="../../index.html#speakers">Спикеры</a>
+      <a class="nav-link" href="../../index.html#schedule">Расписание</a>
+      <a class="nav-link" href="../../index.html#hacker-sprints">Hacker Sprints</a>
+      <a class="nav-link" href="../../index.html#faq">FAQ</a>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+        <span id="theme-icon">☀</span>
+      </button>
+      <a class="nav-link nav-link--cta" href="../../index.html#join">Вступить</a>
+    </div>
+  </nav>
+
+  <main id="main-content" role="main">
+
+    <!-- ============== HERO ============== -->
+    <section class="hero" role="banner">
+      <div class="container hero-content">
+        <a href="index.html" class="hero-back animate">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          К каталогу
+        </a>
+        <h1 class="animate delay-1">Heavy Lifting</h1>
+        <a href="https://github.com/podlodka-ai-club/heavy-lifting" class="hero-repo animate delay-1" target="_blank" rel="noopener">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+          github.com/podlodka-ai-club/heavy-lifting
+        </a>
+        <p class="hero-subtitle animate delay-2">
+          Backend-оркестратор, превращающий задачу в <strong style="color: var(--accent);">Linear</strong>
+          в Pull Request на <strong style="color: var(--accent);">GitHub</strong>. Flask-сервис плюс
+          три фоновых воркера разносят работу по общей Postgres-таблице через
+          cooperative polling — без брокера и без шины событий.
+        </p>
+
+        <div class="hero-stack animate delay-2">
+          <span class="stack-pill">Python</span>
+          <span class="stack-pill">Flask</span>
+          <span class="stack-pill">Postgres</span>
+          <span class="stack-pill">React</span>
+          <span class="stack-pill">Linear</span>
+        </div>
+
+        <div class="hero-stats">
+          <div class="stat-card animate delay-3">
+            <div class="stat-value accent" data-count="12" data-suffix="">12</div>
+            <div class="stat-label">Компонентов архитектуры</div>
+            <div class="stat-sublabel">от tasks-таблицы до React-фронта</div>
+          </div>
+          <div class="stat-card animate delay-3">
+            <div class="stat-value" data-count="3" data-suffix="">3</div>
+            <div class="stat-label">Фоновых воркера</div>
+            <div class="stat-sublabel">intake · execute · deliver</div>
+          </div>
+          <div class="stat-card animate delay-4">
+            <div class="stat-value" data-count="5" data-suffix="">5</div>
+            <div class="stat-label">Типов задач</div>
+            <div class="stat-sublabel">fetch · execute · deliver · feedback ×2</div>
+          </div>
+          <div class="stat-card animate delay-4">
+            <div class="stat-value" data-count="6" data-suffix="">6</div>
+            <div class="stat-label">Story Point значений</div>
+            <div class="stat-sublabel">{1, 2, 3, 5, 8, 13} — больше нет</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== KEY IDEA ============== -->
+    <section style="padding-top: 0;">
+      <div class="container">
+        <div class="key-idea reveal" data-reveal>
+          <div class="section-eyebrow">Главная идея</div>
+          <h3>Один лонг-таблица состояний + cooperative polling</h3>
+          <p>
+            Вся правда о происходящем лежит в одной Postgres-таблице <span class="mono" style="color: var(--accent);">tasks</span>.
+            Три воркера разносят по ней работу: каждый периодически берёт строку «своего» типа через
+            <span class="mono" style="color: var(--accent);">FOR UPDATE SKIP LOCKED</span>, делает свой шаг и пишет результат обратно.
+            <strong>Нет шины событий, нет брокера, нет message queue</strong> — только Postgres и три цикла
+            <span class="mono">while True: sleep(N)</span>.
+          </p>
+          <p>
+            Вторая большая идея — <strong>single handoff contract</strong>: между воркерами передаётся не свободный текст,
+            а pydantic-структуры с <span class="mono" style="color: var(--accent);">extra="forbid"</span>. Любое решение —
+            что делать дальше, в какой статус двигать тикет, какой комментарий писать — сидит в структурированных полях,
+            а не в <span class="mono">summary</span> или <span class="mono">details</span>.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== ARCHITECTURE FLOW ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Высокоуровневая схема</div>
+        <h2 class="section-title">Как устроен «тяжёлый подъём»</h2>
+        <p class="section-subtitle">
+          Один Flask + три воркера + один Postgres. Снаружи — два моста (Linear и GitHub) с mock-двойниками.
+          Между воркерами — только таблица состояний.
+        </p>
+
+        <div class="arch-flow">
+          <div class="arch-diagram reveal" data-reveal>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">Linear / Mock Tracker</div>
+                <div class="arch-node-meta">внешний трекер задач + комменты</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ HTTP intake / poll</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M5 12l4-4M5 12l4 4"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">Flask API</div>
+                <div class="arch-node-meta">/tasks/intake · /settings · /tasks/{id}/restart</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ create_task</div>
+            <div class="arch-node active">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 11v6c0 1.66 4 3 9 3s9-1.34 9-3v-6"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">Postgres tasks — единый источник истины</div>
+                <div class="arch-node-meta">fetch · execute · deliver · pr_feedback · tracker_feedback</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ FOR UPDATE SKIP LOCKED · poll каждые N сек</div>
+            <div class="arch-fanout">
+              <div class="arch-node" style="border-color: rgba(16,185,129,0.4);">
+                <div class="arch-icon" style="background: rgba(16,185,129,0.12); color: var(--positive);">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 10v6M4.22 4.22l4.24 4.24m7.07 7.07l4.24 4.24M1 12h6m10 0h6M4.22 19.78l4.24-4.24m7.07-7.07l4.24-4.24"/></svg>
+                </div>
+                <div>
+                  <div class="arch-node-title">worker1</div>
+                  <div class="arch-node-meta">intake + feedback poll</div>
+                </div>
+              </div>
+              <div class="arch-node" style="border-color: rgba(59,130,246,0.4);">
+                <div class="arch-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                </div>
+                <div>
+                  <div class="arch-node-title">worker2</div>
+                  <div class="arch-node-meta">triage + execute</div>
+                </div>
+              </div>
+              <div class="arch-node" style="border-color: rgba(6,182,212,0.4);">
+                <div class="arch-icon" style="background: rgba(6,182,212,0.12); color: var(--accent-secondary);">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8l-9 5-9-5"/><path d="M3 8v9a2 2 0 002 2h14a2 2 0 002-2V8l-9-5z"/></svg>
+                </div>
+                <div>
+                  <div class="arch-node-title">worker3</div>
+                  <div class="arch-node-meta">deliver</div>
+                </div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ AgentRunner subprocess + SCM ops</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">GitHub / Mock SCM</div>
+                <div class="arch-node-meta">clone · branch · push · PR (с base64url-footer)</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="reveal" data-reveal>
+            <h3 style="margin-bottom: 16px;">Что важно понять</h3>
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 14px;">
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Postgres = очередь + state store.</strong> Никакого RabbitMQ/Redis/Celery. Воркеры держат всё состояние в БД и не помнят ничего между циклами.</span>
+              </li>
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Кластер задач под одним root_id.</strong> Один внешний тикет = много строк <span class="mono">tasks</span>: fetch, под ним triage execute, потом impl execute как sibling, deliver'ы, feedback-итерации. Всё связано через <span class="mono">parent_id</span> и <span class="mono">root_id</span>.</span>
+              </li>
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Бэкенд владеет публикацией.</strong> Агент по контракту правит только файлы. <span class="mono">git commit</span> / <span class="mono">git push</span> / <span class="mono">gh pr create</span> делает воркер — и только после успешного прогона.</span>
+              </li>
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Скрытые блоки в Linear/GitHub.</strong> Служебные метаданные живут в HTML-комментариях в description и base64url-footer'е в теле PR. Без отдельной таблицы маппингов.</span>
+              </li>
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Local runner — не stub.</strong> <span class="mono">LocalAgentRunner</span> правдоподобно имитирует триаж и execute, поэтому <span class="mono">make demo</span> гоняет полный pipeline без LLM.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== THREE WORKERS ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Три воркера</div>
+        <h2 class="section-title">Глаза, пресс и почтальон</h2>
+        <p class="section-subtitle">
+          Каждый воркер живёт в своём цикле, забирает «свой» тип задач из общей таблицы и не знает про существование двух других.
+          Между ними — только pydantic-контракт и Postgres-строки.
+        </p>
+
+        <div class="workers-grid reveal" data-reveal id="workersGrid">
+          <!-- Workers injected -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== TASK TYPES ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Типы задач</div>
+        <h2 class="section-title">Пять видов строк в таблице</h2>
+        <p class="section-subtitle">
+          В таблице <span class="mono" style="color: var(--accent);">tasks</span> живут пять разных типов строк.
+          Каждый воркер берёт только «свой» тип — это разделяет работу без явного routing'а.
+        </p>
+
+        <div class="types-grid" id="typesGrid">
+          <!-- Types injected -->
+        </div>
+
+        <div style="margin-top: 48px;">
+          <h3 style="margin-bottom: 8px;">Story Point — только шесть значений</h3>
+          <p style="color: var(--text-secondary); font-size: 0.9375rem; margin-bottom: 0;">
+            Триаж по контракту обязан выдать ровно одно SP из этого набора. 4/6/7/10 не существуют — парсер их отклоняет.
+            SP 1/2/3 идут в имплементацию автоматически; SP 5/8/13 уходят в трекер репликой без открытия следующего шага.
+          </p>
+          <div class="sp-grid">
+            <div class="sp-card" data-sp="1"><div class="sp-num">1</div><div class="sp-label">SP-1</div><div class="sp-meta">→ impl</div></div>
+            <div class="sp-card" data-sp="2"><div class="sp-num">2</div><div class="sp-label">SP-2</div><div class="sp-meta">→ impl</div></div>
+            <div class="sp-card" data-sp="3"><div class="sp-num">3</div><div class="sp-label">SP-3</div><div class="sp-meta">→ impl</div></div>
+            <div class="sp-card" data-sp="5"><div class="sp-num">5</div><div class="sp-label">SP-5</div><div class="sp-meta">RFI / split</div></div>
+            <div class="sp-card" data-sp="8"><div class="sp-num">8</div><div class="sp-label">SP-8</div><div class="sp-meta">split / block</div></div>
+            <div class="sp-card" data-sp="13"><div class="sp-num">13</div><div class="sp-label">SP-13</div><div class="sp-meta">block</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== COMPONENTS ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Из чего собран</div>
+        <h2 class="section-title">Двенадцать строительных блоков</h2>
+        <p class="section-subtitle">
+          От общей таблицы состояний до React-фронта. Используйте фильтр для просмотра по категориям.
+        </p>
+
+        <div class="components-filter">
+          <button class="filter-btn active" data-filter="all">Все · 12</button>
+          <button class="filter-btn" data-filter="state">Состояние · 2</button>
+          <button class="filter-btn" data-filter="infra">Инфраструктура · 3</button>
+          <button class="filter-btn" data-filter="pipeline">Конвейер · 5</button>
+          <button class="filter-btn" data-filter="agent">Агент · 1</button>
+          <button class="filter-btn" data-filter="ui">UI · 1</button>
+        </div>
+
+        <div class="components-grid" id="componentsGrid">
+          <!-- Components injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== TIMELINE ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Жизненный цикл</div>
+        <h2 class="section-title">Что происходит с типичной задачей</h2>
+        <p class="section-subtitle">
+          От момента, когда оператор создал тикет в Linear, до закрытия PR — пятнадцать конкретных шагов.
+        </p>
+
+        <div class="timeline" id="timeline">
+          <!-- Timeline injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== KEY PROPERTIES ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">На чём всё держится</div>
+        <h2 class="section-title">Ключевые свойства архитектуры</h2>
+        <p class="section-subtitle">
+          Девять решений, которые делают конвейер простым, объяснимым и переживающим падения.
+        </p>
+
+        <div class="properties-grid" id="propertiesGrid">
+          <!-- Properties injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== FOOTER ============== -->
+    <footer class="footer">
+      <div class="container">
+        <p>
+          Архитектурный обзор <strong style="color: var(--text);">heavy-lifting</strong> ·
+          Сгенерировано из <span class="mono">arch/heavy-lifting-arch-review.md</span>
+        </p>
+      </div>
+    </footer>
+
+  </main>
+
+  <script>
+
+    // === Scroll Reveal ===
+    document.querySelectorAll('[data-reveal]').forEach(function(el) { el.classList.add('reveal'); });
+    var revealObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          revealObserver.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.reveal').forEach(function(el) { revealObserver.observe(el); });
+
+    // === Number Counter ===
+    function animateCounters() {
+      document.querySelectorAll('[data-count]').forEach(function(el) {
+        if (el.dataset.counted) return;
+        el.dataset.counted = '1';
+        var target = parseFloat(el.dataset.count),
+            prefix = el.dataset.prefix || '',
+            suffix = el.dataset.suffix || '';
+        var start = performance.now(), duration = 1100;
+        (function tick(now) {
+          var p = Math.min((now - start) / duration, 1),
+              eased = 1 - Math.pow(1 - p, 3);
+          el.textContent = prefix + Math.round(target * eased).toLocaleString() + suffix;
+          if (p < 1) requestAnimationFrame(tick);
+        })(start);
+      });
+    }
+    var counterEl = document.querySelector('[data-count]');
+    if (counterEl) {
+      var cObs = new IntersectionObserver(function(entries) {
+        entries.forEach(function(e) {
+          if (e.isIntersecting) { animateCounters(); cObs.disconnect(); }
+        });
+      }, { threshold: 0.3 });
+      cObs.observe(counterEl);
+    }
+
+    // === DATA: Workers ===
+    var workers = [
+      {
+        n: 1,
+        name: 'worker1 (tracker_intake)',
+        role: '«глаза в мире»',
+        emoji: '👁',
+        actions: [
+          'Опрашивает <strong>трекер</strong>: фетчит новые задачи, заводит fetch + первый triage execute',
+          'Опрашивает <strong>PR\'ы</strong>: дедуплицирует комменты, заводит <span class="mono">pr_feedback</span> дочек',
+          'Опрашивает <strong>комменты трекера</strong> для эстимационных тикетов'
+        ],
+        spawn: 'Самый головоломный кусок — <strong>re-triage protocol</strong>: SHA-256 от пользовательского контента решает, надо ли пересоздавать triage.'
+      },
+      {
+        n: 2,
+        name: 'worker2 (execute_worker)',
+        role: '«пресс»',
+        emoji: '🔨',
+        actions: [
+          'Один цикл: <strong>poll → run agent → publish → write back</strong>',
+          'Триаж работает без репо или с temp-папкой; impl — с веткой и PR',
+          '<span class="mono">pr_feedback</span> работает на той же ветке без создания новой'
+        ],
+        spawn: 'Все SCM-действия идут <strong>после</strong> успешного прогона агента. Агент завалился — ни ветки, ни коммита, ни PR.'
+      },
+      {
+        n: 3,
+        name: 'worker3 (deliver_worker)',
+        role: '«почтальон»',
+        emoji: '📬',
+        actions: [
+          'Берёт deliver-задачу, по цепочке предков резолвит external_parent_id',
+          'Постит <strong>один</strong> коммент в трекер с маркером <span class="mono">source = "heavy_lifting"</span>',
+          'Двигает статус и вешает лейблы <span class="mono">sp:N</span>, <span class="mono">triage:ready|rfi|split|block</span>'
+        ],
+        spawn: 'Никаких решений сам не принимает — только исполняет инструкции из <span class="mono">result_payload.delivery</span>.'
+      }
+    ];
+
+    var workersGrid = document.getElementById('workersGrid');
+    workers.forEach(function(w) {
+      var el = document.createElement('div');
+      el.className = 'worker-card';
+      el.dataset.worker = w.n;
+
+      var listItems = w.actions.map(function(a) {
+        return '<li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span>' + a + '</span></li>';
+      }).join('');
+
+      el.innerHTML =
+        '<div class="worker-header">' +
+          '<span class="worker-num">Worker ' + w.n + '</span>' +
+          '<span class="worker-emoji" aria-hidden="true">' + w.emoji + '</span>' +
+        '</div>' +
+        '<div class="worker-name">' + w.name + '</div>' +
+        '<div class="worker-role">' + w.role + '</div>' +
+        '<ul class="worker-list">' + listItems + '</ul>' +
+        '<div class="worker-spawn">' + w.spawn + '</div>';
+      workersGrid.appendChild(el);
+    });
+
+    // === DATA: Task types ===
+    var types = [
+      { id: 'fetch', name: 'fetch', owner: 'worker1', desc: '<strong>Слепок входа.</strong> Создаётся сразу со статусом done, под каждый новый тикет в трекере. Корень кластера задач.' },
+      { id: 'execute-triage', name: 'execute<br>(triage)', owner: 'worker2', desc: '<strong>Гейткипер.</strong> Без репозитория. Выдаёт ровно один SP и решение — куда дальше.' },
+      { id: 'execute-impl', name: 'execute<br>(impl)', owner: 'worker2', desc: '<strong>Имплементер.</strong> Sibling к triage под общим fetch\'ем. Заводит ветку, пушит, открывает PR.' },
+      { id: 'pr_feedback', name: 'pr_feedback', owner: 'worker1 → worker2', desc: '<strong>Итератор по PR.</strong> Работает на существующей ветке. Не создаёт новый PR, дополняет коммитами.' },
+      { id: 'tracker_feedback', name: 'tracker_feedback', owner: 'worker1 → worker2', desc: '<strong>Ответчик в трекере.</strong> Реагирует на комменты в Linear-треде. Чаще всего без SCM-артефактов.' }
+    ];
+
+    var typesGrid = document.getElementById('typesGrid');
+    types.forEach(function(t) {
+      var el = document.createElement('div');
+      el.className = 'type-card';
+      el.dataset.type = t.id;
+      el.innerHTML =
+        '<div class="type-name">' + t.name + '</div>' +
+        '<div class="type-owner">' + t.owner + '</div>' +
+        '<div class="type-desc">' + t.desc + '</div>';
+      typesGrid.appendChild(el);
+    });
+
+    // Add deliver as additional card spanning
+    var deliverCard = document.createElement('div');
+    deliverCard.className = 'type-card';
+    deliverCard.dataset.type = 'deliver';
+    deliverCard.style.gridColumn = '1 / -1';
+    deliverCard.style.display = 'flex';
+    deliverCard.style.flexDirection = 'row';
+    deliverCard.style.gap = '24px';
+    deliverCard.style.alignItems = 'center';
+    deliverCard.innerHTML =
+      '<div style="flex: 0 0 auto;">' +
+        '<div class="type-name" style="margin-bottom: 4px;">deliver</div>' +
+        '<div class="type-owner" style="margin-bottom: 0;">worker3</div>' +
+      '</div>' +
+      '<div class="type-desc" style="flex: 1;"><strong>Почтальон.</strong> Создаётся под каждый execute (triage и impl). Не принимает решений — постит структурированную секцию <span class="mono">delivery</span> из execute-результата: один коммент, статус, лейблы, ссылки.</div>';
+    typesGrid.appendChild(deliverCard);
+
+    // === DATA: Components ===
+    var components = [
+      { num: '01', cat: 'state', catLabel: 'Состояние', title: 'tasks-таблица', tagline: '«общая лента жизни»',
+        desc: 'Одна Postgres-таблица — единственный источник истины. Каждая строка знает свой тип, статус (<strong>new / processing / done / failed</strong>), <strong>parent_id</strong>, <strong>root_id</strong> и три JSON-куска контракта. Никакого in-memory state\'а у воркеров — упал воркер, другой возьмёт ту же строку.' },
+      { num: '02', cat: 'infra', catLabel: 'Инфраструктура', title: 'TrackerProtocol + ScmProtocol', tagline: '«два моста наружу»',
+        desc: 'Два тонких Python-Protocol-интерфейса. <strong>LinearTracker</strong> и <strong>GitHubScm</strong> — настоящие реализации, <strong>MockTracker</strong> и <strong>MockScm</strong> — in-memory двойники, чтобы <span class="mono">make demo</span> гонял полный pipeline без внешних зависимостей.' },
+      { num: '03', cat: 'infra', catLabel: 'Инфраструктура', title: 'composition.py', tagline: '«собиральщик системы»',
+        desc: 'Один файл, три фабричные мапы: <span class="mono">tracker_adapter</span>, <span class="mono">scm_adapter</span>, <span class="mono">agent_runner_adapter</span>. По переменным окружения выбирается тройка и собирается в <strong>RuntimeContainer</strong>. Маленький DI без фреймворка.' },
+      { num: '04', cat: 'infra', catLabel: 'Инфраструктура', title: 'Settings + application_settings', tagline: '«конфиг в двух слоях»',
+        desc: 'Env — bootstrap-дефолты при старте процесса, БД-таблица <strong>application_settings</strong> — runtime-overrides, редактируемые из UI. Изменения применяются после рестарта; исключение — execute batch size, читается каждый цикл, чтобы менять параллелизм живьём.' },
+      { num: '05', cat: 'pipeline', catLabel: 'Конвейер', title: 'worker1 (tracker_intake)', tagline: '«глаза в мире»',
+        desc: 'Три петли в одном цикле: фетч новых задач из трекера, опрос PR-комментариев, опрос трекер-комментариев. Самый ветвистый кусок — <strong>re-triage protocol</strong> через SHA-256 хэш «пользовательского контента» задачи.' },
+      { num: '06', cat: 'pipeline', catLabel: 'Конвейер', title: 'worker2 (execute_worker)', tagline: '«пресс»',
+        desc: 'Самый толстый модуль. Один цикл <strong>poll → run agent → publish → write back</strong>, но веток внутри много: triage без репо, impl с веткой/PR, pr_feedback на существующей ветке, tracker_feedback решает сам, нужны ли SCM-артефакты.' },
+      { num: '07', cat: 'pipeline', catLabel: 'Конвейер', title: 'TriageStep + triage_parser', tagline: '«гейткипер»',
+        desc: 'Стейтлес-классы, через которые проходит каждая новая задача. Триаж по контракту обязан выдать ровно одно SP из <strong>{1,2,3,5,8,13}</strong>. Парсер валидирует один блок <span class="mono">&lt;triage_result&gt;</span>, один <span class="mono">&lt;markdown&gt;</span>, согласованность SP и outcome. Любое отклонение — failed.' },
+      { num: '08', cat: 'pipeline', catLabel: 'Конвейер', title: 'ContextBuilder', tagline: '«склеиватель контекста»',
+        desc: 'Воркер не возит на каждом шаге всю историю — показывает агенту <strong>EffectiveTaskContext</strong>, собранный из цепочки родителей. Знает специальные правила для deliver, pr_feedback и handover brief из триажа.' },
+      { num: '09', cat: 'pipeline', catLabel: 'Конвейер', title: 'worker3 (deliver_worker)', tagline: '«почтальон»',
+        desc: 'Самый маленький воркер. Резолвит external_parent_id по цепочке предков (текущий → execute-ancestor → fetch → root), постит коммент с маркером <span class="mono">source = "heavy_lifting"</span>, двигает статус, вешает лейблы.' },
+      { num: '10', cat: 'agent', catLabel: 'Агент', title: 'AgentRunner (Local + Cli)', tagline: '«две руки»',
+        desc: '<strong>LocalAgentRunner</strong> — не stub, а honest placeholder: имитирует триаж по длине описания, выдаёт правдоподобный token usage. <strong>CliAgentRunner</strong> запускает <span class="mono">opencode run --format json</span> как subprocess и парсит JSON-event\'ы.' },
+      { num: '11', cat: 'state', catLabel: 'Состояние', title: 'Скрытые блоки в Linear / GitHub', tagline: '«побочный канал хранения»',
+        desc: 'Linear не даёт места под служебные поля — решение: JSON-метаданные в HTML-комментариях в теле issue (<span class="mono">&lt;!-- heavy-lifting:input --&gt;</span>). В GitHub PR — <strong>base64url-сериализованный footer</strong>. Без отдельной таблицы маппингов.' },
+      { num: '12', cat: 'ui', catLabel: 'UI', title: 'Frontend на React', tagline: '«обзорный мостик»',
+        desc: 'Семь страниц, каждая — один <span class="mono">.tsx</span>-файл. <strong>FactoryPage</strong>, <strong>EconomicsPage</strong>, <strong>RetroPage</strong>, <strong>MicromanagementPage</strong>, <strong>SettingsPage</strong>. Никаких state-менеджеров, никакого React Router — useState + window.history.pushState.' }
+    ];
+
+    var grid = document.getElementById('componentsGrid');
+    components.forEach(function(c) {
+      var card = document.createElement('article');
+      card.className = 'component-card';
+      card.dataset.cat = c.cat;
+      card.innerHTML =
+        '<div class="component-header">' +
+          '<span class="component-num">' + c.num + '</span>' +
+          '<span class="component-cat">' + c.catLabel + '</span>' +
+        '</div>' +
+        '<h4>' + c.title + '</h4>' +
+        '<div class="component-tagline">' + c.tagline + '</div>' +
+        '<p class="component-desc">' + c.desc + '</p>';
+      grid.appendChild(card);
+    });
+
+    // Recalculate counts
+    var counts = { all: components.length, state: 0, infra: 0, pipeline: 0, agent: 0, ui: 0 };
+    components.forEach(function(c) { counts[c.cat]++; });
+    document.querySelectorAll('.filter-btn').forEach(function(btn) {
+      var f = btn.dataset.filter;
+      var label = btn.textContent.split(' · ')[0];
+      btn.textContent = label + ' · ' + counts[f];
+    });
+
+    document.querySelectorAll('.filter-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        var filter = btn.dataset.filter;
+        document.querySelectorAll('.component-card').forEach(function(card) {
+          if (filter === 'all' || card.dataset.cat === filter) {
+            card.classList.remove('hidden');
+          } else {
+            card.classList.add('hidden');
+          }
+        });
+      });
+    });
+
+    // === DATA: Timeline ===
+    var timelineSteps = [
+      { step: 'Шаг 01', title: 'Оператор создаёт тикет в Linear', desc: 'Либо дёргает <code>POST /tasks/intake</code>, который через <code>TrackerProtocol.create_task</code> записывает в Linear hidden-блок с repo coordinates.' },
+      { step: 'Шаг 02', title: 'worker1 видит свежий тикет', desc: 'На следующем тике polling считает SHA-256 от пользовательского контента, заводит в БД <code>fetch</code>-строку и под ней первый <code>execute(action="triage")</code>.' },
+      { step: 'Шаг 03', title: 'worker2 берёт triage execute', desc: 'Через <code>ContextBuilder</code> собирает контекст, готовит либо реальную клон-папку, либо временный пустой каталог (для триажа репо может быть неизвестно).' },
+      { step: 'Шаг 04', title: 'Агент возвращает структурированный результат', desc: '<code>triage_parser</code> валидирует: SP в наборе из шести значений, outcome согласован с SP, markdown с правильным заголовком. Любое отклонение — failed.' },
+      { step: 'Шаг 05', title: 'Воркер пишет result_payload', desc: 'Структурированные <code>classification</code> / <code>estimate</code> / <code>routing</code> / <code>delivery</code>. Заводит deliver-задачу и для SP 1/2/3 — sibling implementation execute (под fetch, не под triage).' },
+      { step: 'Шаг 06', title: 'worker3 постит триаж в трекер', desc: 'Комментарий «триаж прошёл, SP=N, передано в работу», лейблы <code>sp:N</code> + <code>triage:ready</code>, статус не трогает. Для SP 5/8/13 цикл здесь и кончается.' },
+      { step: 'Шаг 07', title: 'worker2 берёт implementation execute', desc: 'Готовит SCM-workspace (<code>git clone</code> или <code>git fetch</code>), создаёт ветку от base, делает snapshot HEAD, запускает агента в этой папке.' },
+      { step: 'Шаг 08', title: 'Агент правит файлы', desc: 'Завершается. Воркер проверяет exit code, stdout-event\'ы, stderr. Если хоть один сигнал об ошибке (traceback или <code>&lt;Class&gt;Error</code>) — задача в <code>failed</code> без коммитов и PR.' },
+      { step: 'Шаг 09', title: 'Если чисто — открывается PR', desc: 'Воркер коммитит, пушит ветку, открывает PR с <strong>base64url-footer</strong>\'ом в body. Под impl execute заводится новый deliver.' },
+      { step: 'Шаг 10', title: 'worker3 публикует impl deliver', desc: 'В трекер летит сообщение со ссылками на ветку и PR, статус тикета двигается в <code>done</code>.' },
+      { step: 'Шаг 11', title: 'worker1 опрашивает PR', desc: 'Параллельно появились новые комменты к PR? Под каждый дедуплицированный коммент заводит <code>pr_feedback</code>-дочку.' },
+      { step: 'Шаг 12', title: 'worker2 обрабатывает PR-фидбэк', desc: 'Готовит ту же ветку <strong>без создания новой</strong>, пускает агента с инструкцией «доделай по фидбэку, PR не создавать». Коммитит и пушит в существующую ветку.' },
+      { step: 'Шаг 13', title: 'worker3 постит обновление', desc: 'В трекер летит сообщение про новую итерацию и ссылка на коммит.' },
+      { step: 'Шаг 14', title: 'Re-triage на правку описания', desc: 'Если пользователь правит описание тикета на любом этапе — worker1 пересчитывает хэш, видит расхождение, и по матрице состояний обновляет <code>fetch.context</code>, или проваливает ещё-не-стартовавший implementation, или создаёт новый триаж.' },
+      { step: 'Шаг 15', title: 'Цикл идёт до закрытия', desc: 'До тех пор, пока триаж не выдаст финальный verdict или пока PR не смержат и тикет не закроют. Если воркер упал — задача в <code>failed</code>, оператор через <code>MicromanagementPage</code> дёргает <code>POST /tasks/{id}/restart</code>.' }
+    ];
+
+    var timeline = document.getElementById('timeline');
+    timelineSteps.forEach(function(t) {
+      var el = document.createElement('div');
+      el.className = 'timeline-item reveal';
+      el.dataset.reveal = '';
+      el.innerHTML =
+        '<div class="timeline-step">' + t.step + '</div>' +
+        '<div class="timeline-title">' + t.title + '</div>' +
+        '<div class="timeline-desc">' + t.desc + '</div>';
+      timeline.appendChild(el);
+      revealObserver.observe(el);
+    });
+
+    // === DATA: Properties ===
+    var properties = [
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 11v6c0 1.66 4 3 9 3s9-1.34 9-3v-6"/></svg>',
+        title: 'Postgres = очередь + state store', desc: 'Никакого RabbitMQ/Redis/Celery — только <span class="mono">SELECT … FOR UPDATE SKIP LOCKED</span>. Работает, пока на одном execute-воркере не нужно параллелить больше, чем 1 / poll_interval задач в секунду.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
+        title: 'Single handoff contract на pydantic', desc: 'Любой неизвестный ключ в <span class="mono">input_payload</span>/<span class="mono">result_payload</span> валит валидацию (<span class="mono">extra="forbid"</span>). Воркеры не могут молча принять «почти правильный» JSON.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>',
+        title: 'Stable user-content hash', desc: 'SHA-256 считается только по тому, что в трекер написал пользователь; всё, что туда пишет сам оркестратор, помечается <span class="mono">origin="own_write"</span> и в хэш не идёт. Без этого re-triage уходил бы в бесконечный цикл.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>',
+        title: 'Sibling-impl-execute, а не parent-child', desc: 'Implementation execute — это <strong>брат</strong> триажу под общим fetch\'ем, не его потомок. Это нужно, чтобы deliver для impl видел в lineage именно impl, а не подхватывал триажный handover brief как «execute result».' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+        title: 'Скрытые блоки внутри трекера и PR', desc: 'Служебные поля живут в HTML-комментариях в description и base64url-footer\'е в body PR — то есть прямо там, где их видит интеграция. Это снимает нужду в отдельной таблице маппингов.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><polyline points="9 14 11 16 15 12"/></svg>',
+        title: 'Бекенд владеет публикацией', desc: 'Агент по контракту правит файлы, но не коммитит, не пушит и не создаёт PR. Воркер делает это сам, после успешного прогона. Любая ошибка агента — нет SCM-артефактов.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>',
+        title: 'Деривитивный триаж', desc: 'Решение «SP=N + routing» принимается по таблице, не «LLM-as-a-judge». Markdown-заголовки и enum\'ы валидируются жёстко, что делает поведение триажа объяснимым.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>',
+        title: 'Двухслойный конфиг', desc: 'Env — bootstrap-дефолты, БД — runtime-overrides, изменения применяются после рестарта. UI редактирует БД, а не env-файл. Размер execute-батча — исключение, читается живьём.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>',
+        title: 'Operator restart без exactly-once', desc: 'Кнопка retry на failed-задаче — явный operator-controlled retry, может повторить уже сделанные внешние эффекты. Сознательный компромисс ради простоты.' }
+    ];
+
+    var propGrid = document.getElementById('propertiesGrid');
+    properties.forEach(function(p) {
+      var el = document.createElement('div');
+      el.className = 'property';
+      el.innerHTML =
+        '<div class="property-icon">' + p.icon + '</div>' +
+        '<div><h4>' + p.title + '</h4><p>' + p.desc + '</p></div>';
+      propGrid.appendChild(el);
+    });
+  </script>
+  <script src="theme.js"></script>
+</body>
+</html>

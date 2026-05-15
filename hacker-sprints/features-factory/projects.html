@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ru" class="theme-dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hacker Sprint #1: Фабрика фичей — каталог проектов</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    (function() {
+      var saved = localStorage.getItem('theme');
+      var t = (saved === 'dark' || saved === 'light')
+        ? saved
+        : (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      document.documentElement.className = 'theme-' + t;
+    })();
+    window.addEventListener('storage', function(e) {
+      if (e.key === 'theme' && (e.newValue === 'dark' || e.newValue === 'light')) {
+        document.documentElement.className = 'theme-' + e.newValue;
+      }
+    });
+  </script>
+  <style>
+    /* ===== Projects page overrides ===== */
+    .hero { padding: 80px 0 48px; }
+    h1 { font-size: clamp(36px, 6vw, 64px); }
+
+    .hero-back {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: var(--text-secondary);
+      font-size: 14px; text-decoration: none;
+      margin-bottom: 32px;
+      transition: color 0.2s;
+    }
+    .hero-back:hover { color: var(--accent); }
+
+    /* ===== Rank groups ===== */
+    .rank-block { margin-bottom: 64px; }
+    .rank-block:last-child { margin-bottom: 0; }
+
+    .rank-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .rank-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      line-height: 1.3;
+      margin: 0;
+      padding-bottom: 8px;
+      border-bottom: 3px solid var(--accent);
+    }
+    .rank-count {
+      font-size: 13px;
+      color: var(--text-secondary);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .rank-desc {
+      color: var(--text-secondary);
+      font-size: 15px;
+      line-height: 1.6;
+      max-width: 720px;
+      margin-bottom: 24px;
+    }
+
+    /* ===== Project grid ===== */
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 0;
+      border-top: 1px solid var(--border);
+      border-left: 1px solid var(--border);
+    }
+    .project-card {
+      position: relative;
+      display: flex; flex-direction: column;
+      background: transparent;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      border-radius: 0 !important;
+      padding: 24px;
+      text-decoration: none; color: inherit;
+      transition: background 0.2s;
+      overflow: hidden;
+      min-height: 220px;
+      box-shadow: none !important;
+    }
+    .project-card::before {
+      content: ''; position: absolute; top: 0; left: 0; bottom: 0; width: 3px;
+      background: var(--accent);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .project-card:hover {
+      background: var(--surface-hover);
+      transform: none !important;
+    }
+    .project-card:hover::before { opacity: 1; }
+
+    .project-card.winner {
+      border-left: 3px solid var(--accent);
+    }
+    .project-card.winner::before { display: none; }
+
+    .project-header {
+      display: flex; align-items: center; justify-content: flex-start;
+      gap: 10px; margin-bottom: 14px;
+    }
+    .project-num {
+      font-size: 11px; font-weight: 700;
+      color: var(--text-secondary);
+      letter-spacing: 0.12em;
+    }
+    .project-medal {
+      font-size: 11px; font-weight: 700;
+      padding: 2px 8px;
+      background: var(--accent);
+      color: #111;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .project-name {
+      font-size: 22px; font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+      line-height: 1.2;
+    }
+    .project-tagline {
+      font-size: 13px; color: var(--accent);
+      font-weight: 500;
+      margin-bottom: 12px;
+    }
+    .project-desc {
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.6;
+      flex: 1;
+    }
+    .project-footer {
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+    .project-stack { display: flex; gap: 6px; flex-wrap: wrap; }
+    .stack-chip {
+      font-size: 11px;
+      padding: 2px 8px;
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 768px) {
+      section { padding: 48px 0; }
+      .hero { padding: 56px 0 40px; }
+      .projects-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 375px) {
+      .project-card { padding: 20px; }
+    }
+    @media print {
+      .project-card { break-inside: avoid; border: 1px solid #ddd; box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-to-content">К основному контенту</a>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="nav-link" href="../../index.html#about">О клубе</a>
+      <a class="nav-link" href="../../index.html#speakers">Спикеры</a>
+      <a class="nav-link" href="../../index.html#schedule">Расписание</a>
+      <a class="nav-link" href="../../index.html#hacker-sprints">Hacker Sprints</a>
+      <a class="nav-link" href="../../index.html#faq">FAQ</a>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+        <span id="theme-icon">☀</span>
+      </button>
+      <a class="nav-link nav-link--cta" href="../../index.html#join">Вступить</a>
+    </div>
+  </nav>
+
+  <main id="main-content" role="main">
+
+    <!-- ============== HERO ============== -->
+    <section class="hero" role="banner">
+      <div class="container hero-content">
+        <a href="index.html" class="hero-back">← К итогам спринта</a>
+        <h1 class="animate delay-1">Каталог проектов</h1>
+        <p class="hero-subtitle animate delay-2">
+          Все 14 проектов Hacker Sprint #1 «Фабрика фичей». Каждая команда за две недели
+          собирала оркестратор кодинг-агентов: систему, которая берёт задачу из бэклога,
+          прогоняет через воркфлоу и доводит до PR. Здесь — визуальные обзоры архитектуры
+          каждой реализации.
+        </p>
+
+        <div class="hero-stats animate delay-3">
+          <div class="stat-card">
+            <div class="stat-value accent">14</div>
+            <div class="stat-label">Проектов</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">15</div>
+            <div class="stat-label">Команд</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">50</div>
+            <div class="stat-label">Участников</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">2</div>
+            <div class="stat-label">Недели</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== PROJECTS ============== -->
+    <section id="projects">
+      <div class="container">
+
+        <!-- Winner -->
+        <div class="rank-block">
+          <div class="rank-header">
+            <h3 class="rank-title">Победитель</h3>
+            <span class="rank-count">1 место</span>
+          </div>
+          <p class="rank-desc">
+            Команда, которая удержала баланс между фичами поверх минимума
+            и доведением каждой из них до продакшн-состояния.
+          </p>
+          <div class="projects-grid" id="winnerGrid"></div>
+        </div>
+
+        <!-- Shortlist -->
+        <div class="rank-block">
+          <div class="rank-header">
+            <h3 class="rank-title">Шортлист</h3>
+            <span class="rank-count" id="shortlistCount"></span>
+          </div>
+          <p class="rank-desc">
+            Проекты, которые были очень близки к победе и заметно выделялись среди остальных —
+            по комментариям жюри.
+          </p>
+          <div class="projects-grid" id="shortlistGrid"></div>
+        </div>
+
+        <!-- Остальные -->
+        <div class="rank-block">
+          <div class="rank-header">
+            <h3 class="rank-title">Остальные финалисты</h3>
+            <span class="rank-count" id="restCount"></span>
+          </div>
+          <p class="rank-desc">
+            Проекты, дошедшие до финиша. Каждый — со своим взглядом на оркестрацию,
+            сэндбоксинг и воркфлоу.
+          </p>
+          <div class="projects-grid" id="restGrid"></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============== FOOTER ============== -->
+    <footer class="footer">
+      <div class="container">
+        <p>
+          Hacker Sprint #1 · Фабрика фичей ·
+          <a href="index.html">К итогам спринта</a>
+        </p>
+      </div>
+    </footer>
+
+  </main>
+
+  <script>
+
+    // === DATA: Projects, упорядочены по призовым местам ===
+    var winner = {
+      name: 'the-foundry', tagline: 'литейный цех', file: 'the-foundry.html',
+      stack: ['Python', 'FastAPI', 'SQLite', 'React', 'SSE'],
+      desc: 'Линейный конвейер от GitHub issue до PR вокруг одной SQLite-базы. Шесть стадий dev_task с идемпотентностью через stage_results, четыре CLI-агента под одним протоколом, append-only event log + SSE с resume по Last-Event-ID и второй контур pr-feedback для review.'
+    };
+
+    var shortlist = [
+      { name: 'X15', tagline: 'диспетчер · Archon', file: 'X15.html',
+        stack: ['TypeScript', 'Bun', 'Hono', 'SQLite', 'React', 'Claude', 'Codex', 'Pi'],
+        desc: 'Диспетчер AI-агентов над GitHub: workflow\'ы как DAG в YAML, семь типов узлов, единый IAgentProvider для Claude/Codex/Pi, isolation через git worktree, backlog-orchestrator с лейблами как state machine и шесть платформ-адаптеров.' },
+      { name: 'iron-press', tagline: 'железный пресс', file: 'iron-press.html',
+        stack: ['TypeScript', 'Node.js', 'React Flow', 'Linear'],
+        desc: 'Конвейер из Linear-issue в GitHub PR. GraphologyEngine ходит по направленному графу, закрытый enum из трёх статусов Pass/Fail/WaitUserInput, единый интерфейс на агентов и скрипты, drag-and-drop Studio на React Flow.' },
+      { name: 'heavy-lifting', tagline: 'тяжёлый подъём', file: 'heavy-lifting.html',
+        stack: ['Python', 'Flask', 'Postgres', 'React', 'Linear'],
+        desc: 'Backend-оркестратор Linear → PR на Flask + Postgres. Три фоновых воркера разносят работу через cooperative polling, единый pydantic-контракт между шагами, скрытые блоки метаданных в Linear и GitHub, шесть Story Point значений.' },
+      { name: 'the-furnace', tagline: 'плавильная печь', file: 'the-furnace.html',
+        stack: ['TypeScript', 'Node.js', 'Temporal', 'Docker', 'Claude SDK', 'Zod'],
+        desc: 'Конвейер из Linear-тикета в PR на Temporal + Docker. Состояние целиком в Temporal-истории, каждая агентская фаза — одноразовый docker run --rm контейнер, трёхтактная схема spec/coder/review с read-only ревьюером и Zod-контрактами на каждой границе.' },
+      { name: 'gear-grinders', tagline: 'шлифовка шестерён', file: 'gear-grinders.html',
+        stack: ['Python', 'git worktree', 'Codex', 'Claude'],
+        desc: 'Локальный Python-конвейер от issue до PR. State machine на 15 состояний с durable-журналом, N параллельных кандидатов в worktree, sandbox-by-default, deterministic-скоринг и final-verification gate из четырёх проверок.' }
+    ];
+
+    var rest = [
+      { name: 'blast-furnace', tagline: 'доменная печь', file: 'blast-furnace.html',
+        stack: ['TypeScript', 'Fastify', 'BullMQ', 'Redis', 'Codex CLI'],
+        desc: 'Домашняя фабрика для одного GitHub-репозитория. Polling раз в минуту, конвейер из 9 стадий, BullMQ + Codex CLI.' },
+      { name: 'boiler-room', tagline: 'котельная', file: 'boiler-room.html',
+        stack: ['Python', 'GitHub Projects', 'Claude', 'Copilot', 'Codex'],
+        desc: 'Python-CLI «бригадир» для GitHub Project board. Worktree-per-task, ThreadPoolExecutor на 2 worker\'а, three-tier fallback и три агента: Claude / Copilot / Codex.' },
+      { name: 'drop-forge', tagline: 'молотовая ковка', file: 'drop-forge.html',
+        stack: ['Go', 'Linear', 'OpenSpec', 'Codex CLI'],
+        desc: 'Go-конвейер из Linear-задачи в PR. CoreOrch-диспетчер тикает раз в N секунд, 4 стадии OpenSpec (proposal/apply/archive/review), Codex CLI как subprocess и кросс-агентское ревью с producer-trailer-ом.' },
+      { name: 'night-shift', tagline: 'ночная смена', file: 'night-shift.html',
+        stack: ['TypeScript', 'Temporal', 'GitHub Projects', 'Codex', 'Claude'],
+        desc: 'Автомат для разбора issue в GitHub Projects на Temporal. Три фазы Specify → Implement → Review с inline-эскалацией, intake-слой переводит движения карточки в start/signal/noop, единый AgentSession поверх Codex и Claude.' },
+      { name: 'spark-gap', tagline: 'искровой разряд', file: 'spark-gap.html',
+        stack: ['Python', 'PyGithub', 'Claude', 'Codex'],
+        desc: 'Stateless Python-надсмотрщик над GitHub Issues. State machine на 10 workflow-лейблов, состояние в pinned-комментариях, hardened git против собственного агента, HITL как диалог, два бэкенда (claude / codex) с lock-on-first-spawn.' },
+      { name: 'steam-hammer', tagline: 'паровой молот', file: 'steam-hammer.html',
+        stack: ['Go', 'Python', 'Claude', 'Codex'],
+        desc: 'Двухголовый CLI-оркестратор GitHub issue → PR. Go-ядро + Python-runner как fallback, трекер вместо БД (versioned-маркеры :v1), daemon с claim/release-протоколом, agentexec с budget/idle-предохранителями.' },
+      { name: 'the-anvils', tagline: 'наковальни', file: 'the-anvils.html',
+        stack: ['Python', 'FastAPI', 'Postgres', 'HTMX', 'Claude CLI'],
+        desc: 'Whilly Orchestrator — распределённый диспетчер кодинг-агентов на Postgres + FastAPI. SKIP LOCKED + version, чистое ядро под import-linter\'ом, два тела воркера под одним FSM, defense-in-depth с blake2s-envelope и shell-deny-сканером.' },
+      { name: 'the-smelters', tagline: 'плавильщики', file: 'the-smelters.html',
+        stack: ['Python', 'asyncio', 'SQLite', 'Agno', 'opencode CLI', 'Claude Agent SDK'],
+        desc: 'Хакатон-оркестратор markdown-задач в закрытые тикеты. Два независимых runtime\'а в одном репо (голый asyncio + фреймворковый Agno), SQLite-очередь с атомарным claim, worktree-песочница на задачу, четыре кастомных агента и три рубежа безопасности.' }
+    ];
+
+    function pluralizeProjects(n) {
+      var mod10 = n % 10, mod100 = n % 100;
+      if (mod10 === 1 && mod100 !== 11) return n + ' проект';
+      if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return n + ' проекта';
+      return n + ' проектов';
+    }
+
+    function buildCard(p, idx, isWinner) {
+      var card = document.createElement('a');
+      card.className = 'project-card' + (isWinner ? ' winner' : '');
+      card.href = p.file;
+      var num = String(idx).padStart(2, '0');
+      var stackChips = p.stack.map(function(s) {
+        return '<span class="stack-chip">' + s + '</span>';
+      }).join('');
+      var medal = isWinner ? '<span class="project-medal">1 место</span>' : '';
+      card.innerHTML =
+        '<div class="project-header">' +
+          '<span class="project-num">' + num + '</span>' +
+          medal +
+        '</div>' +
+        '<div class="project-name">' + p.name + '</div>' +
+        '<div class="project-tagline">' + p.tagline + '</div>' +
+        '<p class="project-desc">' + p.desc + '</p>' +
+        '<div class="project-footer">' +
+          '<div class="project-stack">' + stackChips + '</div>' +
+        '</div>';
+      return card;
+    }
+
+    // Winner
+    document.getElementById('winnerGrid').appendChild(buildCard(winner, 1, true));
+
+    // Shortlist
+    var shortlistGrid = document.getElementById('shortlistGrid');
+    shortlist.forEach(function(p, i) { shortlistGrid.appendChild(buildCard(p, i + 2, false)); });
+
+    // Rest (alphabetical by name)
+    var restSorted = rest.slice().sort(function(a, b) { return a.name.localeCompare(b.name); });
+    var restGrid = document.getElementById('restGrid');
+    restSorted.forEach(function(p, i) { restGrid.appendChild(buildCard(p, i + 7, false)); });
+
+    document.getElementById('shortlistCount').textContent = pluralizeProjects(shortlist.length);
+    document.getElementById('restCount').textContent = pluralizeProjects(rest.length);
+  </script>
+  <script src="theme.js"></script>
+</body>
+</html>

@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="ru" class="theme-dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Smelters — архитектура простыми словами</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    (function() {
+      var saved = localStorage.getItem('theme');
+      var t = (saved === 'dark' || saved === 'light')
+        ? saved
+        : (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      document.documentElement.className = 'theme-' + t;
+    })();
+    window.addEventListener('storage', function(e) {
+      if (e.key === 'theme' && (e.newValue === 'dark' || e.newValue === 'light')) {
+        document.documentElement.className = 'theme-' + e.newValue;
+      }
+    });
+  </script>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script>Chart.defaults.animation = false;</script>  <style>
+    /* ===== The Smelters — уникальные секции (два мира + safety + категории) ===== */
+
+    /* Категории компонентов: queue / orchestrator / agent / observability / safety */
+    .component-card[data-cat="queue"]        { --cat-color: #14b8a6; }
+    .component-card[data-cat="orchestrator"] { --cat-color: #3b82f6; }
+    .component-card[data-cat="agent"]        { --cat-color: #8b5cf6; }
+    .component-card[data-cat="observability"]{ --cat-color: #06b6d4; }
+    .component-card[data-cat="safety"]       { --cat-color: #f59e0b; }
+    html.theme-light .component-card[data-cat="queue"]        { --cat-color: #0d9488; }
+    html.theme-light .component-card[data-cat="orchestrator"] { --cat-color: #2563eb; }
+    html.theme-light .component-card[data-cat="agent"]        { --cat-color: #7c3aed; }
+    html.theme-light .component-card[data-cat="observability"]{ --cat-color: #0891b2; }
+    html.theme-light .component-card[data-cat="safety"]       { --cat-color: #b45309; }
+
+    /* === Two worlds comparison === */
+    .worlds-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .world-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 36px;
+      position: relative;
+      overflow: hidden;
+      display: flex; flex-direction: column;
+      transition: all 0.25s;
+    }
+    .world-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--world-color);
+      opacity: 0.85;
+    }
+    .world-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--border-strong);
+      box-shadow: 0 16px 40px rgba(0,0,0,0.18);
+    }
+    .world-card[data-world="custom"] { --world-color: #3b82f6; }
+    .world-card[data-world="agno"]   { --world-color: #8b5cf6; }
+    html.theme-light .world-card[data-world="custom"] { --world-color: #2563eb; }
+    html.theme-light .world-card[data-world="agno"]   { --world-color: #7c3aed; }
+
+    .world-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+    .world-label {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 0.6875rem; font-weight: 700;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--world-color);
+      padding: 5px 11px; border-radius: 6px;
+      background: color-mix(in srgb, var(--world-color) 15%, transparent);
+    }
+    .world-runtime {
+      font-size: 0.75rem; padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--surface-elevated);
+      color: var(--text-secondary);
+      letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600;
+      border: 1px solid var(--border);
+    }
+    .world-name {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 1.5rem; font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+      letter-spacing: -0.02em;
+    }
+    .world-tagline {
+      font-size: 0.9375rem; color: var(--world-color);
+      font-style: italic; font-weight: 500;
+      margin-bottom: 20px;
+    }
+    .world-list { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-bottom: 22px; }
+    .world-list li { display: flex; gap: 12px; align-items: flex-start; font-size: 0.9375rem; color: var(--text-secondary); line-height: 1.55; }
+    .world-list li svg { flex-shrink: 0; color: var(--world-color); margin-top: 4px; }
+    .world-list li strong { color: var(--text); font-weight: 500; }
+    .world-mode {
+      margin-top: auto;
+      padding: 14px 16px;
+      background: color-mix(in srgb, var(--world-color) 8%, transparent);
+      border: 1px solid color-mix(in srgb, var(--world-color) 25%, transparent);
+      border-radius: 10px;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      line-height: 1.55;
+    }
+    .world-mode strong { color: var(--world-color); font-weight: 600; }
+
+    /* Shared bridge between worlds */
+    .worlds-bridge {
+      grid-column: 1 / -1;
+      margin-top: 16px;
+      padding: 18px 22px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      display: flex; align-items: center; gap: 14px;
+      font-size: 0.9375rem;
+      color: var(--text-secondary);
+      line-height: 1.55;
+    }
+    .worlds-bridge strong { color: var(--text); }
+
+    /* === Safety invariants — three lines of defense === */
+    .safety-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    .safety-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+      display: flex; flex-direction: column;
+      transition: all 0.25s;
+    }
+    .safety-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: var(--warning);
+    }
+    .safety-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--border-strong);
+      box-shadow: 0 12px 28px rgba(0,0,0,0.15);
+    }
+    .safety-num {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 0.6875rem; font-weight: 700;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--warning);
+      margin-bottom: 12px;
+    }
+    .safety-title { font-size: 1.0625rem; font-weight: 600; color: var(--text); margin-bottom: 10px; line-height: 1.35; }
+    .safety-desc { font-size: 0.9375rem; color: var(--text-secondary); line-height: 1.6; }
+    .safety-desc code {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      padding: 1px 6px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .worlds-grid { grid-template-columns: 1fr; }
+      .safety-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 375px) {
+      .world-card { padding: 26px; }
+      .safety-card { padding: 20px; }
+    }
+    @media print {
+      .world-card, .safety-card { break-inside: avoid; border: 1px solid #ddd; box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-to-content">К основному контенту</a>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="nav-link" href="../../index.html#about">О клубе</a>
+      <a class="nav-link" href="../../index.html#speakers">Спикеры</a>
+      <a class="nav-link" href="../../index.html#schedule">Расписание</a>
+      <a class="nav-link" href="../../index.html#hacker-sprints">Hacker Sprints</a>
+      <a class="nav-link" href="../../index.html#faq">FAQ</a>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+        <span id="theme-icon">☀</span>
+      </button>
+      <a class="nav-link nav-link--cta" href="../../index.html#join">Вступить</a>
+    </div>
+  </nav>
+
+  <main id="main-content" role="main">
+
+    <!-- ============== HERO ============== -->
+    <section class="hero" role="banner">
+      <div class="container hero-content">
+        <a href="index.html" class="hero-back animate">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          К каталогу
+        </a>
+        <h1 class="animate delay-1">The Smelters</h1>
+        <a href="https://github.com/podlodka-ai-club/the-smelters" class="hero-repo animate delay-1" target="_blank" rel="noopener">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+          github.com/podlodka-ai-club/the-smelters
+        </a>
+        <p class="hero-subtitle animate delay-2">
+          Хакатон-оркестратор, превращающий markdown-задачи в закрытые тикеты руками
+          двух агентов — <strong style="color: var(--accent);">кодера</strong> и
+          <strong style="color: var(--accent);">ревьюера</strong>. Очередь живёт в SQLite,
+          роли — это отдельные <code style="color: var(--accent);">subprocess</code>'ы,
+          общение — через stdout и append-only JSONL. Внутри живут два независимых
+          оркестратора одновременно — «голый» <code style="color: var(--accent);">asyncio</code>
+          и фреймворковый <code style="color: var(--accent);">Agno</code>.
+        </p>
+
+        <div class="hero-stack animate delay-2">
+          <span class="stack-pill">Python</span>
+          <span class="stack-pill">asyncio</span>
+          <span class="stack-pill">SQLite</span>
+          <span class="stack-pill">Agno</span>
+          <span class="stack-pill">opencode CLI</span>
+          <span class="stack-pill">Claude Agent SDK</span>
+          <span class="stack-pill">Gradle</span>
+        </div>
+
+        <div class="hero-stats">
+          <div class="stat-card animate delay-3">
+            <div class="stat-value accent" data-count="2" data-suffix="">2</div>
+            <div class="stat-label">Параллельных оркестратора</div>
+            <div class="stat-sublabel">asyncio · Agno — общие промпты, разный runtime</div>
+          </div>
+          <div class="stat-card animate delay-3">
+            <div class="stat-value" data-count="12" data-suffix="">12</div>
+            <div class="stat-label">Строительных блоков</div>
+            <div class="stat-sublabel">от SQLite-очереди до DiffTracker'а</div>
+          </div>
+          <div class="stat-card animate delay-4">
+            <div class="stat-value" data-count="4" data-suffix="">4</div>
+            <div class="stat-label">Кастомных агента</div>
+            <div class="stat-sublabel">coder · reviewer · checker · android_coder</div>
+          </div>
+          <div class="stat-card animate delay-4">
+            <div class="stat-value" data-count="3" data-suffix="">3</div>
+            <div class="stat-label">Рубежа безопасности</div>
+            <div class="stat-sublabel">containment · deny-листы · compile-gate</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== KEY IDEA ============== -->
+    <section style="padding-top: 0;">
+      <div class="container">
+        <div class="key-idea reveal" data-reveal>
+          <div class="section-eyebrow">Главная идея</div>
+          <h3>Оркестратор сам ничего не знает про LLM</h3>
+          <p>
+            Очередь задач лежит в <strong>SQLite</strong>, каждая роль — отдельный
+            <strong>subprocess</strong>, общение идёт через stdout и append-only
+            <strong>events.jsonl</strong>. Оркестратор лишь дёргает дочерние процессы
+            и читает последнюю строку stdout как JSON-результат. Граница процессов — это
+            и есть граница SDK: подменить backend = подменить модуль. Параллельно живёт
+            второй мир — <code style="color: var(--accent);">Agno</code>-workflow, где те
+            же роли собраны не из subprocess'ов, а из step'ов внутри одного процесса.
+            Оба мира делят <code style="color: var(--accent);">shared/prompts.py</code>,
+            но в runtime изолированы — сознательное двоежёнство для сравнения подходов.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== ARCHITECTURE FLOW ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Высокоуровневая схема</div>
+        <h2 class="section-title">Как устроена «плавильня»</h2>
+        <p class="section-subtitle">
+          Markdown-задача попадает в SQLite через <code>seed.py</code>. Оркестратор
+          атомарно «клеймит» её, готовит worktree-песочницу и поочерёдно запускает
+          кодера и ревьюера. Каждый агент пишет финальную JSON-строку в stdout —
+          это и есть результат.
+        </p>
+
+        <div class="arch-flow">
+          <div class="arch-diagram reveal" data-reveal>
+            <div class="arch-node active">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">tasks/&lt;project&gt;/*.md</div>
+                <div class="arch-node-meta">markdown-задачи с описанием — единственный вход системы</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ seed.py идёмпотентно</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0018 0V5M3 12a9 3 0 0018 0"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">SQLite (WAL) — очередь</div>
+                <div class="arch-node-meta">BEGIN IMMEDIATE + claim_next_ready_task — атомарный захват</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ atomic claim</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">Orchestrator (asyncio loop)</div>
+                <div class="arch-node-meta">poll → claim → spawn subprocess → parse last-line-JSON</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ cwd = worktree, env = config</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">worktrees/&lt;project&gt;/task-N/</div>
+                <div class="arch-node-meta">изолированная копия + git init + local.properties для Android</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ subprocess + stdout drain</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">coder · reviewer · checker · android_coder</div>
+                <div class="arch-node-meta">claude-agent-sdk или opencode CLI — JSON-строка в финале</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ append per line</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">events.jsonl + tui.py / printer.py</div>
+                <div class="arch-node-meta">единственная шина наблюдаемости — tail-friendly</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="reveal" data-reveal>
+            <h3 style="margin-bottom: 16px;">Что важно понять</h3>
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 14px;">
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Очередь — это SQLite с одним write-lock'ом на claim.</strong> Никаких брокеров, никакого Redis. Атомарность <code class="mono">BEGIN IMMEDIATE</code> гарантирует, что два worker'а не возьмут одну задачу.</span>
+              </li>
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Граница процессов = граница SDK.</strong> Оркестратор не импортирует ни Anthropic, ни Gemini SDK. Контракт с агентом — «запусти команду, прочитай последнюю строку stdout как JSON».</span>
+              </li>
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>WAL разрешает read-only наблюдателей.</strong> <code class="mono">tui.py</code>, <code class="mono">printer.py</code>, прямой <code class="mono">sqlite3</code> — всё работает параллельно с оркестратором без блокировок.</span>
+              </li>
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Recovery — это просто рестарт.</strong> На старте <code class="mono">reset_stuck_tasks</code> возвращает всех висящих <code class="mono">running</code>/<code class="mono">review</code> обратно в <code class="mono">ready</code>. Падение не теряет работу.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== TWO WORLDS ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Двоежёнство архитектуры</div>
+        <h2 class="section-title">Два оркестратора в одном репозитории</h2>
+        <p class="section-subtitle">
+          В <code>the-smelters</code> живут <strong>два независимых оркестратора одновременно</strong>.
+          Оба читают те же markdown-файлы и шарят системные промпты, но в runtime изолированы —
+          это сознательный приём, чтобы сравнивать «голый» подход с фреймворковым на тех же задачах.
+        </p>
+
+        <div class="worlds-grid reveal" data-reveal>
+          <article class="world-card" data-world="custom">
+            <div class="world-header">
+              <span class="world-label">Мир №1</span>
+              <span class="world-runtime">asyncio · daemon</span>
+            </div>
+            <div class="world-name">orchestrator.py</div>
+            <div class="world-tagline">«голый» asyncio-loop над SQLite-очередью</div>
+            <ul class="world-list">
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                <span><strong>Daemon в <code>--watch</code>-режиме</strong> крутит весь батч задач подряд</span>
+              </li>
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>Каждая роль — отдельный <code>subprocess</code>, результат — последняя строка stdout</span>
+              </li>
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>Атомарный claim через <code>BEGIN IMMEDIATE</code> — всё concurrency без локов в коде</span>
+              </li>
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>На старте <code>reset_stuck_tasks</code> поднимает «висящих» обратно в <code>ready</code></span>
+              </li>
+            </ul>
+            <div class="world-mode">
+              <strong>Когда хорош:</strong> производственный батч-режим. Перезапустил упавший оркестратор — подхватил очередь с того же места. Параллельно глядишь состояние через любой <code>sqlite3</code>-клиент.
+            </div>
+          </article>
+
+          <article class="world-card" data-world="agno">
+            <div class="world-header">
+              <span class="world-label">Мир №2</span>
+              <span class="world-runtime">Agno · interactive</span>
+            </div>
+            <div class="world-name">agno_orchestrator.py</div>
+            <div class="world-tagline">интерактивный workflow с live-телеметрией</div>
+            <ul class="world-list">
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                <span><strong>Одна задача за раз</strong> с богатой телеметрией: live-таблица, разбивка токенов, cost</span>
+              </li>
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>Две схемы: <code>smelters-mode</code> (Loop) и <code>class-mode</code> (TDD-цепочка)</span>
+              </li>
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                <span><strong>DiffTracker</strong> подмешивает diff предыдущей итерации в input кодера</span>
+              </li>
+              <li>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>Resume-from-crash через свою SQLite — пропускает уже сделанные шаги</span>
+              </li>
+            </ul>
+            <div class="world-mode">
+              <strong>Когда хорош:</strong> интерактивный запуск одной задачи. Эксперименты с фреймворковым подходом. Пошаговая TDD-разработка одного класса по конвенции <code>&lt;module&gt;/src/{test,main}/kotlin/...</code>.
+            </div>
+          </article>
+
+          <div class="worlds-bridge">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+            <span><strong>Общая земля:</strong> оба мира читают одни markdown-файлы, делят <code>shared/prompts.py</code> и валидаторы, но в runtime никогда не пересекаются. Это позволяет крутить эксперименты «голый <code>asyncio</code> против фреймворка» на тех же задачах без переписывания.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== COMPONENTS ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Из чего собран</div>
+        <h2 class="section-title">Двенадцать строительных блоков</h2>
+        <p class="section-subtitle">
+          От markdown-источника задач до multi-layer safety-инвариантов — каждый компонент
+          решает одну конкретную проблему. Используйте фильтр для просмотра по категориям.
+        </p>
+
+        <div class="components-filter">
+          <button class="filter-btn active" data-filter="all">Все · 12</button>
+          <button class="filter-btn" data-filter="queue">Очередь · 2</button>
+          <button class="filter-btn" data-filter="orchestrator">Оркестратор · 4</button>
+          <button class="filter-btn" data-filter="agent">Агенты · 3</button>
+          <button class="filter-btn" data-filter="observability">Наблюдаемость · 3</button>
+        </div>
+
+        <div class="components-grid" id="componentsGrid">
+          <!-- Components injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== SAFETY INVARIANTS ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Multi-layer защита</div>
+        <h2 class="section-title">Три рубежа безопасности</h2>
+        <p class="section-subtitle">
+          Каждый рубеж отдельно может показаться избыточным, но вместе они закрывают разные
+          классы ошибок: «агент полез не туда», «агент сделал опасную команду», «агент написал
+          то, что не собирается».
+        </p>
+
+        <div class="safety-grid reveal" data-reveal>
+          <article class="safety-card">
+            <div class="safety-num">Рубеж 01 · Containment</div>
+            <div class="safety-title">Рабочая директория не выходит за <code>worktrees/</code></div>
+            <div class="safety-desc">
+              Жёсткая проверка через <code>path.resolve()</code>: resolved-путь обязан лежать под
+              <code>worktrees/&lt;project&gt;/task-N/</code> и не совпадать с оригиналом. Защита от
+              ситуации, когда в БД случайно затёрся путь и агент собрался писать в исходный репозиторий.
+            </div>
+          </article>
+
+          <article class="safety-card">
+            <div class="safety-num">Рубеж 02 · Bash deny-листы</div>
+            <div class="safety-title">Несколько списков запрещённых команд на разных слоях</div>
+            <div class="safety-desc">
+              Кое-где запрещён <code>sudo</code>, кое-где <code>git push</code>, кое-где
+              <code>npm install</code>. У ревьюера ещё и нет <code>Write</code>/<code>Edit</code> в allowed-tools
+              — разделение ролей закреплено разными deny-листами bash-команд.
+            </div>
+          </article>
+
+          <article class="safety-card">
+            <div class="safety-num">Рубеж 03 · Compile-gate</div>
+            <div class="safety-title">Для Android: <code>./gradlew assembleDebug</code> обязан пройти</div>
+            <div class="safety-desc">
+              Даже если агент сам сказал «всё ок» и <code>RUN_TESTS.sh</code> формально прошёл —
+              неудачный билд срывает задачу. Этот rубеж ловит случаи, когда модель написала
+              синтаксически валидный, но не собирающийся код.
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== TIMELINE ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Жизненный цикл задачи</div>
+        <h2 class="section-title">Что происходит с типичной задачей</h2>
+        <p class="section-subtitle">
+          От markdown-файла в <code>tasks/</code> до закрытого тикета или провала после трёх
+          попыток — четырнадцать конкретных шагов в custom-режиме плюс альтернативный путь Agno.
+        </p>
+
+        <div class="timeline" id="timeline">
+          <!-- Timeline injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== KEY PROPERTIES ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">На чём всё держится</div>
+        <h2 class="section-title">Ключевые свойства архитектуры</h2>
+        <p class="section-subtitle">
+          Девять решений, которые делают сервис простым, наблюдаемым и устойчивым к падениям —
+          даже при работе с самыми дешёвыми моделями.
+        </p>
+
+        <div class="properties-grid" id="propertiesGrid">
+          <!-- Properties injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== FOOTER ============== -->
+    <footer class="footer">
+      <div class="container">
+        <p>
+          Архитектурный обзор <strong style="color: var(--text);">the-smelters</strong> ·
+          Сгенерировано из <span class="mono">arch/the-smelters-arch-review.md</span>
+        </p>
+      </div>
+    </footer>
+
+  </main>
+
+  <script>
+
+    // === Scroll Reveal ===
+    document.querySelectorAll('[data-reveal]').forEach(function(el) { el.classList.add('reveal'); });
+    var revealObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          revealObserver.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.reveal').forEach(function(el) { revealObserver.observe(el); });
+
+    // === Number Counter ===
+    function animateCounters() {
+      document.querySelectorAll('[data-count]').forEach(function(el) {
+        if (el.dataset.counted) return;
+        el.dataset.counted = '1';
+        var target = parseFloat(el.dataset.count),
+            prefix = el.dataset.prefix || '',
+            suffix = el.dataset.suffix || '';
+        var start = performance.now(), duration = 1100;
+        (function tick(now) {
+          var p = Math.min((now - start) / duration, 1),
+              eased = 1 - Math.pow(1 - p, 3);
+          el.textContent = prefix + Math.round(target * eased).toLocaleString() + suffix;
+          if (p < 1) requestAnimationFrame(tick);
+        })(start);
+      });
+    }
+    var counterEl = document.querySelector('[data-count]');
+    if (counterEl) {
+      var cObs = new IntersectionObserver(function(entries) {
+        entries.forEach(function(e) {
+          if (e.isIntersecting) { animateCounters(); cObs.disconnect(); }
+        });
+      }, { threshold: 0.3 });
+      cObs.observe(counterEl);
+    }
+
+    // === DATA: Components ===
+    var components = [
+      { num: '01', cat: 'queue', catLabel: 'Очередь', title: 'tasks/ + seed.py', tagline: '«вход системы»',
+        desc: 'Markdown-файлы вида <strong>&lt;N&gt;-&lt;slug&gt;.md</strong> лежат по подпроектам. <code>seed.py</code> пробегается по ним и заводит запись в SQLite со статусом <strong>ready</strong>. Если markdown поправили — повторный seed идёмпотентен. Оркестратор сам ничего не сочиняет.' },
+      { num: '02', cat: 'queue', catLabel: 'Очередь', title: 'SQLite-трекер (WAL)', tagline: '«единственное persistent-состояние»',
+        desc: 'Одна таблица <strong>tasks</strong> с шестью статусами: <code>ready → running → review → closed/failed</code> плюс возврат в <code>ready</code> после reject\'а. Главный приём — <code>claim_next_ready_task</code>: транзакция <strong>BEGIN IMMEDIATE</strong> атомарно берёт первую готовую задачу и переводит её в <code>running</code>.' },
+      { num: '03', cat: 'orchestrator', catLabel: 'Оркестратор', title: 'Orchestrator (asyncio)', tagline: '«диспетчер на корутинах»',
+        desc: 'Один процесс, который в цикле: спрашивает трекер о готовой задаче → готовит worktree → запускает кодера → ловит результат → запускает ревьюера → обновляет статус. Намеренно ничего не знает про Anthropic / Gemini SDK. Контракт с агентами — «запусти команду, прочитай последнюю строку stdout как JSON».' },
+      { num: '04', cat: 'orchestrator', catLabel: 'Оркестратор', title: 'Worktree-песочница', tagline: '«изолированная копия на задачу»',
+        desc: 'На каждую задачу копируется срез репозитория в <code>worktrees/&lt;project&gt;/task-N/</code>, делается свежий <code>git init</code> со снапшот-коммитом и веткой <code>task-N</code>. Кодер работает только в этой папке. Для Android-проектов сюда же дописывается <code>local.properties</code> с путём к SDK.' },
+      { num: '05', cat: 'orchestrator', catLabel: 'Оркестратор', title: 'Subprocess-runner', tagline: '«мост к агентам»',
+        desc: 'Тонкая обёртка: запускает <code>python -m agents.&lt;role&gt; &lt;task_id&gt;</code> с правильным env и <code>cwd=worktree</code>, дренирует stdout/stderr параллельно, включает wall-clock таймаут с <code>process.kill()</code>, вылавливает последнюю непустую строку stdout как «результат». Если в role есть точка — runner понимает, что это тестовый fake.' },
+      { num: '06', cat: 'agent', catLabel: 'Кастомный агент', title: 'coder + reviewer', tagline: '«писатель и судья»',
+        desc: '<code>coder</code> пишет код и в конце печатает финальную JSON-строку. <code>reviewer</code> — только читает и выносит вердикт <code>{"approved": ..., "notes": "..."}</code>. Разделение ролей закреплено разными allowed-tools (у ревьюера нет <code>Write</code>/<code>Edit</code>) и разными deny-листами bash-команд.' },
+      { num: '07', cat: 'agent', catLabel: 'Кастомный агент', title: 'code_checker', tagline: '«строго структурированный отчёт»',
+        desc: 'Выполняет тестовый скрипт и выдаёт отчёт со списком провалов в чётко заданном формате. Этим занимается отдельный модуль, потому что reviewer и coder должны видеть разный диапазон инструментов — а проверка тестов должна быть однообразной, без «пересказа от LLM».' },
+      { num: '08', cat: 'agent', catLabel: 'Кастомный агент', title: 'android_coder', tagline: '«самый большой и сложный»',
+        desc: 'Работает через <code>opencode</code> CLI, имеет watchdog по неактивности, проверяет <code>RUN_TESTS.sh</code>, что не сделан autocommit (ревьюер ждёт diff в working-tree), запускает <code>./gradlew assembleDebug</code> как compile-gate. Уникальный <strong>out-of-band recovery</strong>: если CLI завис — лезет напрямую в SQLite-store opencode и достаёт последнее сообщение модели.' },
+      { num: '09', cat: 'orchestrator', catLabel: 'Agno-pipeline', title: 'Agno-workflow', tagline: '«второй мир — фреймворковый»',
+        desc: 'Отдельный оркестратор на <code>Agno</code>. По содержимому markdown определяет один из двух режимов: <strong>smelters-mode</strong> (<code>Loop[AndroidCoder → CodeChecker → DiffTracker]</code> с end-condition «status: passed») и <strong>class-mode</strong> (линейная TDD-цепочка <code>TestCase → TestWriter → Impl → LintLoop → TestLoop</code> с опциональными human-gates).' },
+      { num: '10', cat: 'observability', catLabel: 'Наблюдаемость', title: 'DiffTracker', tagline: '«память между итерациями»',
+        desc: 'Маленький не-LLM step внутри Agno smelters-loop\'а. На каждой итерации делает <code>git stash create</code> (теневой коммит, не трогающий рабочее дерево), сохраняет SHA, на следующей итерации показывает diff против предыдущего SHA и подмешивает его в input кодера блоком <code>PREVIOUS_ITERATION_DIFF</code>. Лекарство от code thrashing на дешёвых моделях.' },
+      { num: '11', cat: 'observability', catLabel: 'Наблюдаемость', title: 'events.jsonl', tagline: '«единственная шина»',
+        desc: 'Append-only файл, в который пишут все: оркестратор, runner, агенты, watchdog\'и. Один JSON-объект на строку. Никаких отдельных таблиц, никакого брокера. Можно читать <code>tail -f</code>, можно подписываться позиционно. Цена — нет индексов и SQL-запросов, но для масштабов хакатона это сознательно достаточная цена за простоту.' },
+      { num: '12', cat: 'observability', catLabel: 'Наблюдаемость', title: 'printer.py + tui.py', tagline: '«два разных взгляда»',
+        desc: '<code>printer.py</code> — цветной <code>tail -f</code> событийного файла, с раскраской по актору. <code>tui.py</code> — полноценный Textual-дашборд: слева таблица задач (SQLite каждые 0.5 с), справа лог событий (JSONL каждые 200 мс). Оба не пишут — только читают, WAL разрешает работу параллельно с оркестратором.' }
+    ];
+
+    var grid = document.getElementById('componentsGrid');
+    components.forEach(function(c) {
+      var card = document.createElement('article');
+      card.className = 'component-card';
+      card.dataset.cat = c.cat;
+      card.innerHTML =
+        '<div class="component-header">' +
+          '<span class="component-num">' + c.num + '</span>' +
+          '<span class="component-cat">' + c.catLabel + '</span>' +
+        '</div>' +
+        '<h4>' + c.title + '</h4>' +
+        '<div class="component-tagline">' + c.tagline + '</div>' +
+        '<p class="component-desc">' + c.desc + '</p>';
+      grid.appendChild(card);
+    });
+
+    // Recalculate counts
+    var counts = { all: components.length, queue: 0, orchestrator: 0, agent: 0, observability: 0 };
+    components.forEach(function(c) { counts[c.cat]++; });
+    document.querySelectorAll('.filter-btn').forEach(function(btn) {
+      var f = btn.dataset.filter;
+      var label = btn.textContent.split(' · ')[0];
+      if (counts[f] !== undefined) btn.textContent = label + ' · ' + counts[f];
+    });
+
+    document.querySelectorAll('.filter-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        var filter = btn.dataset.filter;
+        document.querySelectorAll('.component-card').forEach(function(card) {
+          if (filter === 'all' || card.dataset.cat === filter) {
+            card.classList.remove('hidden');
+          } else {
+            card.classList.add('hidden');
+          }
+        });
+      });
+    });
+
+    // === DATA: Timeline ===
+    var timelineSteps = [
+      { step: 'Шаг 01', title: 'Оператор кладёт markdown-задачу', desc: 'Файл <code>tasks/DemoApp/7-some-feature.md</code> с описанием. Запускает <code>seed.py</code> — задача появляется в SQLite со статусом <code>ready</code>. Повторный seed идёмпотентен.' },
+      { step: 'Шаг 02', title: 'Старт orchestrator.py', desc: 'Запускается <code>orchestrator.py --project DemoApp --watch</code>. На старте зовёт <code>reset_stuck_tasks</code> — переводит висящие <code>running</code>/<code>review</code> обратно в <code>ready</code> (recovery после креша).' },
+      { step: 'Шаг 03', title: 'Атомарный claim', desc: 'На первом тике трекер «забирает» задачу: <code>BEGIN IMMEDIATE</code> → <code>SELECT ready</code> → <code>UPDATE running</code>. Одно атомарное действие, write-lock защищает от параллельного захвата. Возвращается объект <strong>Task</strong>.' },
+      { step: 'Шаг 04', title: 'Подготовка worktree', desc: 'Если ещё нет — копирует репозиторий в <code>worktrees/DemoApp/task-7/</code>, делает там свежий <code>git init</code>, кладёт <code>local.properties</code> для Android, записывает путь обратно в трекер. Containment-проверка через <code>path.resolve()</code>.' },
+      { step: 'Шаг 05', title: 'Запуск android_coder', desc: 'Subprocess <code>python -m agents.android_coder 7</code> с <code>cwd=worktree</code>. Stdout дренируется построчно, каждая строка попадает в <code>events.jsonl</code>. Wall-clock таймер тикает.' },
+      { step: 'Шаг 06', title: 'Кодер работает', desc: 'Исследует код, пишет тесты сначала, потом имплементацию, в конце генерирует <code>RUN_TESTS.sh</code> и печатает финальную JSON-строку. Anthropic rate-limit ловится внутренним retry с экспонентой <code>5 → 10 → 20 → 40 → 80</code> сек.' },
+      { step: 'Шаг 07', title: 'Перевод в review', desc: 'Оркестратор парсит последнюю строку stdout. Если кодер сказал «ok», <code>RUN_TESTS.sh</code> действительно есть и HEAD не сдвинут — задача переводится в статус <code>review</code>.' },
+      { step: 'Шаг 08', title: 'Запуск reviewer', desc: 'Subprocess ревьюера. Read-only набор инструментов, максимум 10 turn\'ов. Сам решает, какие тесты запустить. В конце печатает <code>{"approved": true|false, "notes": "..."}</code>.' },
+      { step: 'Шаг 09', title: 'Approved → closed', desc: 'Если вердикт <code>approved</code> — статус <code>closed</code>, событие <code>task_closed</code> летит в JSONL. Цикл сразу идёт за следующей задачей.' },
+      { step: 'Шаг 10', title: 'Rejected → retry', desc: 'Если <code>rejected</code> — заметки ревьюера сохраняются в <code>review_notes</code>, счётчик <code>attempts</code> инкрементируется, статус возвращается в <code>ready</code>. На следующей итерации кодер увидит блок <code>Previous review said: ...</code>.' },
+      { step: 'Шаг 11', title: 'Превышение попыток → failed', desc: 'Если <code>attempts &gt;= max_attempts</code> (по умолчанию три) — задача переводится в <code>failed</code>. Цикл идёт дальше, не блокируется.' },
+      { step: 'Шаг 12', title: 'TUI в соседнем окне', desc: 'Параллельно <code>tui.py</code> перерисовывает таблицу задач из SQLite (каждые 0.5 с) и лог событий из JSONL (каждые 200 мс). Дашборд показывает прогресс по всему батчу.' },
+      { step: 'Шаг 13', title: 'Crash → reset_stuck_tasks', desc: 'Если процесс падает или его убивают — на следующем старте <code>reset_stuck_tasks</code> снова поднимет всех «висящих» обратно в <code>ready</code>. Работа продолжится почти с того же места.' },
+      { step: 'Шаг 14', title: 'Альтернативно: Agno-вариант', desc: 'В <code>agno_orchestrator.py</code> сценарий другой: одна задача, один live-progress, шаги <code>coder → checker → diff</code> крутятся в Loop\'е до <code>status: passed</code> или исчерпания итераций. При <code>--task-id N</code> Agno кеширует шаги и при повторном запуске пропускает уже сделанные.' }
+    ];
+
+    var timeline = document.getElementById('timeline');
+    timelineSteps.forEach(function(t) {
+      var el = document.createElement('div');
+      el.className = 'timeline-item reveal';
+      el.dataset.reveal = '';
+      el.innerHTML =
+        '<div class="timeline-step">' + t.step + '</div>' +
+        '<div class="timeline-title">' + t.title + '</div>' +
+        '<div class="timeline-desc">' + t.desc + '</div>';
+      timeline.appendChild(el);
+      revealObserver.observe(el);
+    });
+
+    // === DATA: Properties ===
+    var properties = [
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0018 0V5M3 12a9 3 0 0018 0"/></svg>',
+        title: 'Очередь — это SQLite с одним write-lock\'ом на claim', desc: 'Никаких брокеров, никаких блокировок в коде. Атомарность <code>BEGIN IMMEDIATE</code> гарантирует, что два worker\'а не возьмут одну задачу.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+        title: 'WAL разрешает read-only наблюдателей', desc: '<code>tui.py</code>, <code>printer.py</code>, прямой <code>sqlite3</code> в shell — всё работает параллельно с оркестратором, не тормозя его.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
+        title: 'Граница процессов — это и есть граница SDK', desc: 'Оркестратор не импортирует ни Anthropic, ни Gemini SDK. Кодеры/ревьюеры — независимые Python-модули, общающиеся через stdout. Подменить backend = подменить модуль.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+        title: 'Контракт результата — последняя строка stdout как JSON', desc: 'Простой, текстовый, ловится <code>grep</code>\'ом, легко мокается fake-агентами в тестах. Если в role есть точка — runner понимает, что это путь к тестовому fake\'у.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>',
+        title: 'Worktree containment как закон', desc: 'Любая запись агента — внутри <code>worktrees/&lt;project&gt;/task-N/</code>, и <code>path.resolve()</code> это проверяет жёстко. Случайный путь в БД не позволит затереть исходники.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>',
+        title: 'JSONL — единственная шина событий', desc: 'Один append-only файл вместо отдельных таблиц / брокеров. Tail-friendly, position-friendly, портабельно куда угодно. Цена — нет SQL-фильтров, но это сознательно достаточная цена за простоту.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>',
+        title: 'Recovery — это просто рестарт', desc: '<code>reset_stuck_tasks</code> на старте возвращает всех висящих в <code>ready</code>. Падение оркестратора не теряет работу, только текущую попытку. Никакой recovery-логики кроме этого.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',
+        title: 'Hot-feedback между итерациями через diff', desc: '<code>forward_iteration_output</code> + <strong>DiffTracker</strong> дают кодеру память о собственных правках. Лекарство от code thrashing на дешёвых моделях вроде <code>gemini-flash</code>, которые любят перепиливать туда-обратно.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>',
+        title: 'Два оркестратора, общие промпты', desc: 'Custom и Agno-варианты делят <code>shared/prompts.py</code> и валидаторы, но runtime изолированы. Это позволяет крутить эксперименты «голый <code>asyncio</code> против фреймворка» на тех же задачах без переписывания.' }
+    ];
+
+    var propsGrid = document.getElementById('propertiesGrid');
+    properties.forEach(function(p) {
+      var el = document.createElement('div');
+      el.className = 'property reveal';
+      el.dataset.reveal = '';
+      el.innerHTML =
+        '<div class="property-icon">' + p.icon + '</div>' +
+        '<div><h4>' + p.title + '</h4><p>' + p.desc + '</p></div>';
+      propsGrid.appendChild(el);
+      revealObserver.observe(el);
+    });
+
+    function onThemeChange() {}
+  </script>
+  <script src="theme.js"></script>
+</body>
+</html>
