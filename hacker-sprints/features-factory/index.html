@@ -67,6 +67,23 @@
       margin-bottom: 28px;
       max-width: 800px;
     }
+    .winner-video {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      margin: 0 0 28px;
+      border: 1px solid var(--border);
+      background: #000;
+      overflow: hidden;
+    }
+    .winner-video iframe {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      border: 0;
+    }
     .winner-criteria {
       list-style: none; padding: 0; margin: 0;
       display: grid; gap: 10px;
@@ -122,7 +139,7 @@
       text-decoration: none;
       color: inherit;
     }
-    .shortlist-row:hover { background: var(--surface-hover); padding-left: 16px; padding-right: 16px; }
+    .shortlist-row:hover { background: var(--surface-hover); }
     .shortlist-name {
       font-size: 22px; font-weight: 700;
       color: var(--text); letter-spacing: -0.02em;
@@ -150,12 +167,10 @@
     }
     .shortlist-arrow {
       font-size: 24px; color: var(--text-faint);
-      transition: color 0.2s, transform 0.2s;
+      transition: color 0.2s;
       align-self: center;
     }
-    .shortlist-row:hover .shortlist-arrow {
-      color: var(--accent); transform: translateX(4px);
-    }
+    .shortlist-row:hover .shortlist-arrow { color: var(--accent); }
 
     /* ===== Lessons grid ===== */
     .lessons-grid {
@@ -170,10 +185,8 @@
       border-right: 1px solid var(--border);
       border-bottom: 1px solid var(--border);
       background: transparent;
-      transition: background 0.2s;
       position: relative;
     }
-    .lesson-card:hover { background: var(--surface-hover); }
     .lesson-num {
       display: inline-block;
       font-size: 11px; font-weight: 700;
@@ -377,6 +390,15 @@
             и тем, чтобы довести каждую из них до продакшн состояния. Оркестратор
             выглядит так, что его можно с минимальными усилиями забрать под любой проект.
           </p>
+          <div class="winner-video">
+            <iframe
+              src="https://www.loom.com/embed/de2d7abbb7104649842b2ec1f53dfde4"
+              title="The Foundry — демо"
+              allow="fullscreen"
+              allowfullscreen
+              loading="lazy">
+            </iframe>
+          </div>
           <ul class="winner-criteria">
             <li>Очень понятный и чистый UI — оркестрацией задач легко управлять, благодаря хорошо проработанному observability на каждом шаге.</li>
             <li>Хорошо сделан двухуровневый quality gate: сначала детерминистическая проверка линтерами, и только потом запускается LLM-ревьюер.</li>
@@ -387,7 +409,6 @@
           </ul>
           <div class="winner-cta">
             <a href="the-foundry.html" class="primary">Архитектурный обзор →</a>
-            <a href="https://www.loom.com/share/de2d7abbb7104649842b2ec1f53dfde4" target="_blank" rel="noopener">Демо на Loom ↗</a>
             <a href="https://github.com/podlodka-ai-club/the-foundry/blob/main/task-25-execution.md" target="_blank" rel="noopener">Пример execution лога ↗</a>
           </div>
         </div>
