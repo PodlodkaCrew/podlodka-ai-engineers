@@ -616,7 +616,7 @@ ul {
 
 .hacker-sprint-stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 0;
   margin: 24px 0;
   border-top: 1px solid var(--border);
@@ -682,7 +682,7 @@ ul {
 
 @media (max-width: 768px) {
   .hacker-sprint-stats {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
   }
   .hacker-sprint-title {
     font-size: 22px;

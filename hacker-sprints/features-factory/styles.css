@@ -113,6 +113,75 @@ p, li, td, th, span, label { color: var(--text); }
 .container { max-width: 1080px; margin: 0 auto; padding: 0 32px; position: relative; z-index: 1; }
 section { padding: 64px 0; }
 
+/* ===== NAV — mirrors the main site navigation ===== */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--nav-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--nav-border);
+}
+
+.nav-inner {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 32px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 32px;
+}
+
+.nav-link {
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.nav-link:hover {
+  color: var(--text);
+}
+
+.nav-link--cta {
+  display: inline-block;
+  padding: 4px 12px;
+  background: var(--text);
+  color: var(--bg);
+  font-weight: 400;
+  font-size: 14px;
+}
+
+.nav-link--cta:hover {
+  color: var(--bg);
+}
+
+.theme-toggle {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-family: "Fira Code", monospace;
+  font-size: 19px;
+  line-height: 1;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  margin-right: -24px;
+}
+
+.theme-toggle:hover {
+  color: var(--text);
+  border-color: var(--text-secondary);
+}
+
 /* Каждая секция получает горизонтальную хейрлайн-черту сверху на 100vw — как на podlodka-ai-engineers */
 section { position: relative; }
 section::before {
@@ -558,6 +627,13 @@ section.hero::before { display: none; }
   .arch-flow { grid-template-columns: 1fr; }
 }
 @media (max-width: 768px) {
+  .nav-inner {
+    padding: 8px 20px;
+    height: auto;
+    gap: 12px 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
   .container { padding: 0 20px; }
   section { padding: 48px 0; }
   .hero { padding: 56px 0 40px; }

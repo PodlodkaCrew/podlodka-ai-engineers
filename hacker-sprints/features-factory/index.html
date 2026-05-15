@@ -254,23 +254,10 @@
     }
     .lesson-refs a:hover { color: var(--accent); }
 
-    /* ===== Jury ===== */
-    .jury-list {
-      list-style: none; padding: 0; margin: 16px 0 0;
-      display: flex; flex-wrap: wrap; gap: 12px;
-    }
-    .jury-list li {
-      padding: 6px 12px;
-      border: 1px solid var(--border);
-      font-size: 14px;
-      color: var(--text-secondary);
-    }
-    .jury-list li strong { color: var(--text); font-weight: 600; }
-
     /* ===== Stats row ===== */
     .stats-row {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 0;
       margin-top: 32px;
       border-top: 1px solid var(--border);
@@ -280,6 +267,24 @@
       border-right: 1px solid var(--border);
       border-bottom: 1px solid var(--border);
       padding: 24px;
+    }
+    .stats-catalog-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 24px;
+      color: #111;
+      background: var(--accent);
+      padding: 10px 20px;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .stats-catalog-btn:hover {
+      background: transparent;
+      color: var(--accent);
+      outline: 1px solid var(--accent);
     }
 
     /* ===== CTA Banner ===== */
@@ -316,7 +321,7 @@
 
     /* ===== Responsive ===== */
     @media (max-width: 1024px) {
-      .stats-row { grid-template-columns: repeat(3, 1fr); }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
       .shortlist-row { grid-template-columns: 200px 1fr; }
       .shortlist-arrow { display: none; }
     }
@@ -333,6 +338,19 @@
 </head>
 <body>
   <a href="#main-content" class="skip-to-content">К основному контенту</a>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="nav-link" href="../../index.html#about">О клубе</a>
+      <a class="nav-link" href="../../index.html#speakers">Спикеры</a>
+      <a class="nav-link" href="../../index.html#schedule">Расписание</a>
+      <a class="nav-link" href="../../index.html#hacker-sprints">Hacker Sprints</a>
+      <a class="nav-link" href="../../index.html#faq">FAQ</a>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+        <span id="theme-icon">☀</span>
+      </button>
+      <a class="nav-link nav-link--cta" href="../../index.html#join">Вступить</a>
+    </div>
+  </nav>
 
   <main id="main-content" role="main">
 
@@ -366,11 +384,8 @@
             <div class="stat-value">2</div>
             <div class="stat-label">Недели</div>
           </div>
-          <div class="stat-card">
-            <div class="stat-value">8</div>
-            <div class="stat-label">Уроков</div>
-          </div>
         </div>
+        <a class="stats-catalog-btn animate delay-4" href="projects.html">Посмотреть каталог</a>
       </div>
     </section>
 
@@ -440,24 +455,6 @@
         </p>
 
         <div class="lessons-grid" id="lessonsGrid"></div>
-      </div>
-    </section>
-
-    <!-- ============== JURY ============== -->
-    <section>
-      <div class="container">
-        <span class="section-eyebrow">Жюри</span>
-        <h2 class="section-title">Кто выбирал победителя</h2>
-        <p class="section-subtitle">
-          Победителя выбирали Егор Толстой и кураторы спринта — эксперты, которые
-          уже рассказывали в Клубе про свои оркестраторы.
-        </p>
-        <ul class="jury-list">
-          <li><strong>Егор Толстой</strong></li>
-          <li><strong>Гена Евстратов</strong></li>
-          <li><strong>Степан Гончаров</strong></li>
-          <li><strong>Михаил Мужаровский</strong></li>
-        </ul>
       </div>
     </section>
 
@@ -675,5 +672,6 @@
     var lessonsGrid = document.getElementById('lessonsGrid');
     lessons.forEach(function(l, i) { lessonsGrid.appendChild(buildLessonCard(l, i)); });
   </script>
+  <script src="theme.js"></script>
 </body>
 </html>
