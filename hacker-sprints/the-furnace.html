@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="ru" class="theme-dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Furnace — архитектура простыми словами</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script>Chart.defaults.animation = false;</script>
+  <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
+  <style>
+    /* ===== The Furnace — уникальные секции ===== */
+
+    /* Категории компонентов: temporal / workflow / agent / boundary / infra */
+    .component-card[data-cat="temporal"] { --cat-color: #06b6d4; }
+    .component-card[data-cat="workflow"] { --cat-color: #6366f1; }
+    .component-card[data-cat="agent"] { --cat-color: #8b5cf6; }
+    .component-card[data-cat="boundary"] { --cat-color: #f59e0b; }
+    .component-card[data-cat="infra"] { --cat-color: #14b8a6; }
+    html.theme-light .component-card[data-cat="temporal"] { --cat-color: #0891b2; }
+    html.theme-light .component-card[data-cat="workflow"] { --cat-color: #4f46e5; }
+    html.theme-light .component-card[data-cat="agent"] { --cat-color: #7c3aed; }
+    html.theme-light .component-card[data-cat="boundary"] { --cat-color: #d97706; }
+    html.theme-light .component-card[data-cat="infra"] { --cat-color: #0d9488; }
+
+    /* ===== Три агента — spec / coder / review ===== */
+    .agents-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+    .agent-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 26px;
+      transition: all 0.25s;
+      position: relative;
+      overflow: hidden;
+      display: flex; flex-direction: column;
+      min-height: 260px;
+    }
+    .agent-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--agent-color);
+      opacity: 0.85;
+    }
+    .agent-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--border-strong);
+      box-shadow: 0 14px 36px rgba(0,0,0,0.18);
+    }
+    .agent-card[data-agent="spec"] { --agent-color: #06b6d4; }
+    .agent-card[data-agent="coder"] { --agent-color: #8b5cf6; }
+    .agent-card[data-agent="review"] { --agent-color: #f59e0b; }
+    html.theme-light .agent-card[data-agent="spec"] { --agent-color: #0891b2; }
+    html.theme-light .agent-card[data-agent="coder"] { --agent-color: #7c3aed; }
+    html.theme-light .agent-card[data-agent="review"] { --agent-color: #d97706; }
+
+    .agent-name {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 1.5rem; font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+      letter-spacing: -0.01em;
+    }
+    .agent-role { font-size: 0.875rem; color: var(--agent-color); font-style: italic; font-weight: 500; margin-bottom: 18px; }
+    .agent-perms-label {
+      font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--text-secondary); font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .agent-perms {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      margin-bottom: 16px;
+    }
+    .agent-perm {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      padding: 4px 9px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-secondary);
+    }
+    .agent-perm.allow { color: var(--agent-color); border-color: color-mix(in srgb, var(--agent-color) 35%, var(--border)); }
+    .agent-perm.deny { color: var(--text-secondary); opacity: 0.55; text-decoration: line-through; }
+    .agent-desc {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      line-height: 1.55;
+      margin-top: auto;
+    }
+    .agent-desc strong { color: var(--text); font-weight: 500; }
+
+    /* ===== Two-queue split — оркестратор vs per-repo ===== */
+    .queues-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+    .queue-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.25s;
+    }
+    .queue-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--border-strong);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.16);
+    }
+    .queue-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--queue-color);
+    }
+    .queue-card[data-q="orchestrator"] { --queue-color: #6366f1; }
+    .queue-card[data-q="per-repo"] { --queue-color: #14b8a6; }
+    html.theme-light .queue-card[data-q="orchestrator"] { --queue-color: #4f46e5; }
+    html.theme-light .queue-card[data-q="per-repo"] { --queue-color: #0d9488; }
+
+    .queue-name {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 1.125rem; font-weight: 700;
+      color: var(--queue-color);
+      margin-bottom: 4px;
+    }
+    .queue-tagline { font-size: 0.8125rem; color: var(--text-secondary); margin-bottom: 18px; }
+    .queue-section-title {
+      font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--text-secondary); font-weight: 600;
+      margin-bottom: 10px;
+    }
+    .queue-items { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+    .queue-item {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      color: var(--text);
+      padding: 8px 12px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      border-left: 3px solid var(--queue-color);
+    }
+    .queue-note {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      line-height: 1.55;
+    }
+    .queue-note strong { color: var(--text); font-weight: 500; }
+
+    /* ===== Cycle stages — три фазы внутри круга ===== */
+    .phases-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      position: relative;
+    }
+    .phase-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px 20px;
+      transition: all 0.25s;
+      position: relative;
+      overflow: hidden;
+      display: flex; flex-direction: column;
+      min-height: 220px;
+    }
+    .phase-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--phase-color);
+    }
+    .phase-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--border-strong);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.16);
+    }
+    .phase-card[data-idx="1"] { --phase-color: #06b6d4; }
+    .phase-card[data-idx="2"] { --phase-color: #8b5cf6; }
+    .phase-card[data-idx="3"] { --phase-color: #f59e0b; }
+
+    .phase-num {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 0.6875rem; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--phase-color);
+      padding: 3px 9px; border-radius: 6px;
+      background: color-mix(in srgb, var(--phase-color) 14%, transparent);
+      align-self: flex-start;
+      margin-bottom: 12px;
+    }
+    .phase-name {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 1.125rem; font-weight: 700;
+      color: var(--text);
+      margin-bottom: 10px;
+      letter-spacing: -0.01em;
+    }
+    .phase-desc {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      flex: 1;
+    }
+    .phase-desc strong { color: var(--text); font-weight: 500; }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 1024px) {
+      .agents-grid { grid-template-columns: 1fr; }
+      .queues-grid { grid-template-columns: 1fr; }
+      .phases-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .agents-grid, .queues-grid, .phases-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 375px) {
+      .agent-card, .queue-card, .phase-card { padding: 18px; }
+      body { overflow-x: hidden; }
+    }
+    @media print {
+      .agent-card, .queue-card, .phase-card {
+        break-inside: avoid; border: 1px solid #ddd; box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-to-content">К основному контенту</a>
+
+  <div class="viz-menu">
+    <button class="viz-menu-toggle" onclick="toggleMenu()" aria-label="Меню">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="3" y1="5" x2="17" y2="5"/><line x1="3" y1="10" x2="17" y2="10"/><line x1="3" y1="15" x2="17" y2="15"/>
+      </svg>
+    </button>
+    <div class="viz-menu-dropdown" id="vizMenuDropdown">
+      <button onclick="cycleTheme()"><span id="themeIcon">🌙</span><span id="themeLabel">Тёмная</span></button>
+      <button onclick="downloadImage()"><span>📥</span><span>Скачать PNG</span></button>
+      <button onclick="window.print()"><span>🖨️</span><span>Печать / PDF</span></button>
+    </div>
+  </div>
+
+  <main id="main-content" role="main">
+
+    <!-- ============== HERO ============== -->
+    <section class="hero" role="banner">
+      <div class="container hero-content">
+        <a href="index.html" class="hero-back animate">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          К каталогу
+        </a>
+        <h1 class="animate delay-1">The Furnace</h1>
+        <a href="https://github.com/podlodka-ai-club/the-furnace" class="hero-repo animate delay-1" target="_blank" rel="noopener">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+          github.com/podlodka-ai-club/the-furnace
+        </a>
+        <p class="hero-subtitle animate delay-2">
+          Конвейер из <strong style="color: var(--accent);">Linear</strong>-тикета в GitHub PR на
+          <strong style="color: var(--accent);">Temporal</strong> + <strong style="color: var(--accent);">Docker</strong>. Состояние —
+          целиком в Temporal-истории, никакой своей базы. Каждая попытка агентской фазы — отдельный одноразовый
+          <code>docker run --rm</code> контейнер. Три независимых Claude-агента работают по строгой
+          трёхтактной схеме: <code>spec</code> пишет падающие тесты, <code>coder</code> их озеленяет,
+          <code>review</code> судит — но не правит.
+        </p>
+
+        <div class="hero-stack animate delay-2">
+          <span class="stack-pill">TypeScript</span>
+          <span class="stack-pill">Node.js</span>
+          <span class="stack-pill">Temporal</span>
+          <span class="stack-pill">Docker</span>
+          <span class="stack-pill">Claude SDK</span>
+          <span class="stack-pill">Zod</span>
+          <span class="stack-pill">Linear</span>
+          <span class="stack-pill">GitHub</span>
+        </div>
+
+        <div class="hero-stats">
+          <div class="stat-card animate delay-3">
+            <div class="stat-value accent" data-count="3" data-suffix="">3</div>
+            <div class="stat-label">Агента в круге</div>
+            <div class="stat-sublabel"><code>spec</code> · <code>coder</code> · <code>review</code></div>
+          </div>
+          <div class="stat-card animate delay-3">
+            <div class="stat-value" data-count="3" data-suffix="">3</div>
+            <div class="stat-label">Максимум кругов</div>
+            <div class="stat-sublabel">после трёх — <code>workflow</code> падает</div>
+          </div>
+          <div class="stat-card animate delay-4">
+            <div class="stat-value" data-count="2" data-suffix="">2</div>
+            <div class="stat-label">Раздельные очереди</div>
+            <div class="stat-sublabel">orchestrator · per-repo</div>
+          </div>
+          <div class="stat-card animate delay-4">
+            <div class="stat-value" data-count="12" data-suffix="">12</div>
+            <div class="stat-label">Строительных блоков</div>
+            <div class="stat-sublabel">от <code>Temporal</code>-мотора до PR-метаданных</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== KEY IDEA ============== -->
+    <section style="padding-top: 0;">
+      <div class="container">
+        <div class="key-idea reveal" data-reveal>
+          <div class="section-eyebrow">Главная идея</div>
+          <h3><code>Temporal</code> + одноразовый <code>Docker</code> = state-free Furnace</h3>
+          <p>
+            <code>Temporal</code> берёт на себя всё, что обычно требует базы и cron-сервиса: <strong>расписание</strong>,
+            <strong>повторные попытки</strong>, <strong>хранение состояния</strong>, <strong>очереди задач</strong>.
+            Furnace поверх него — всего лишь набор <code>workflow</code>-сценариев и <code>activity</code>-функций. Агенты
+            живут не в основном процессе, а каждый раз — в свежем <code>Docker</code>-контейнере на одну попытку.
+            Грязный worktree, утечки памяти, побочные эффекты предыдущего раунда — всё это <strong>физически невозможно</strong>
+            унаследовать, потому что между попытками между ними стоит <code>docker run --rm</code>. Свежий мир на каждую
+            попытку — не свойство, которое поддерживается дисциплиной, а единственный способ, которым попытка вообще
+            может произойти.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== ARCHITECTURE FLOW ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Высокоуровневая схема</div>
+        <h2 class="section-title">От Linear-тикета до PR</h2>
+        <p class="section-subtitle">
+          Оркестратор постоянно крутится поверх <code>Temporal</code>, опрашивает Linear, запускает per-ticket
+          <code>workflow</code>. Тяжёлые фазы агентов уходят на отдельную per-repo очередь и исполняются в
+          одноразовых контейнерах.
+        </p>
+
+        <div class="arch-flow">
+          <div class="arch-diagram reveal" data-reveal>
+            <div class="arch-node active">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11H5a2 2 0 00-2 2v7a2 2 0 002 2h14a2 2 0 002-2v-7a2 2 0 00-2-2h-4M9 11V7a3 3 0 016 0v4M9 11h6"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">Linear (тикеты)</div>
+                <div class="arch-node-meta">labels <code>agent-ready</code> + <code>repo:&lt;slug&gt;</code></div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ опрос раз в минуту</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title"><code>linearPollerWorkflow</code></div>
+                <div class="arch-node-meta">cron <code>workflow</code> · стартует дочерние per-ticket</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ child <code>workflow</code> с ID <code>ticket-&lt;id&gt;</code></div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title"><code>perTicketWorkflow</code></div>
+                <div class="arch-node-meta">spec → (coder → review) ×3 · «закон проекта»</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ activity на per-repo очередь</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">Worker Container <code>×N</code></div>
+                <div class="arch-node-meta">эфемерный · <code>docker run --rm</code> · Claude SDK + git + tests</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ хранит историю + расписание</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.7 4 3 9 3s9-1.3 9-3V5M3 11v6c0 1.7 4 3 9 3s9-1.3 9-3v-6"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title"><code>Temporal</code> — мотор и память</div>
+                <div class="arch-node-meta">cron · retry · queues · history · Web UI</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="reveal" data-reveal>
+            <h3 style="margin-bottom: 16px;">Что важно понять</h3>
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 14px;">
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Своей базы нет.</strong> Состояние <code>workflow</code> живёт целиком в Temporal-истории. Перезапустил оркестратор — ничего не потерял.</span>
+              </li>
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Две очереди — два мира.</strong> <code>orchestrator-queue</code> и <code>repo-&lt;slug&gt;-worker</code> разнесены, чтобы долгоживущий оркестратор и одноразовые работяги не конкурировали.</span>
+              </li>
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Свой дашборд не нужен.</strong> Прогресс смотрят через встроенный Temporal Web UI — там видна история каждой <code>activity</code> и каждого аргумента.</span>
+              </li>
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Pause через failure.</strong> Когда нужен человек, агент не висит — он создаёт суб-тикет, валит <code>workflow</code> особым типом и оставляет cron-перезапуск разруливать.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== TWO-QUEUE SPLIT ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Двухконтурная схема очередей</div>
+        <h2 class="section-title">Оркестратор и работяги — по отдельности</h2>
+        <p class="section-subtitle">
+          Очередей две, и это главное архитектурное разделение. Разная природа задач не мешает друг другу:
+          оркестратор всегда онлайн, а фазы исполняются в эфемерных мирах, ничего не зная друг о друге.
+        </p>
+
+        <div class="queues-grid reveal" data-reveal>
+          <div class="queue-card" data-q="orchestrator">
+            <div class="queue-name"><code>orchestrator-queue</code></div>
+            <div class="queue-tagline">Долгоживущий, всегда онлайн</div>
+            <div class="queue-section-title">Что живёт</div>
+            <div class="queue-items">
+              <div class="queue-item"><code>workflow</code>-код (<code>linearPoller</code>, <code>perTicket</code>)</div>
+              <div class="queue-item">Лёгкие <code>activity</code>: опрос Linear</div>
+              <div class="queue-item">Перевод тикета по статусам</div>
+              <div class="queue-item">Запуск контейнера (но не исполнение)</div>
+              <div class="queue-item">Открытие PR в GitHub</div>
+            </div>
+            <div class="queue-note">
+              Worker процесс висит постоянно. Все <strong>детерминированные решения</strong> — здесь:
+              сколько кругов прошло, какой следующий шаг, нужен ли повтор.
+            </div>
+          </div>
+
+          <div class="queue-card" data-q="per-repo">
+            <div class="queue-name"><code>repo-&lt;slug&gt;-worker</code></div>
+            <div class="queue-tagline">Эфемерный, по контейнеру на задачу</div>
+            <div class="queue-section-title">Что живёт</div>
+            <div class="queue-items">
+              <div class="queue-item">Только тяжёлые фазовые <code>activity</code></div>
+              <div class="queue-item">Фаза <code>spec</code> — пишет тесты</div>
+              <div class="queue-item">Фаза <code>coder</code> — пишет код</div>
+              <div class="queue-item">Фаза <code>review</code> — выносит вердикт</div>
+              <div class="queue-item">Каждая <code>activity</code> запускает Claude</div>
+            </div>
+            <div class="queue-note">
+              Worker — это <strong>мини-Temporal-worker внутри контейнера</strong>. Забирает ровно одну
+              <code>activity</code>, выполняет её, после чего контейнер сам себя гасит через <code>--rm</code>.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== THREE AGENTS ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Три агента под одним driver-циклом</div>
+        <h2 class="section-title">Разделение прав как архитектура</h2>
+        <p class="section-subtitle">
+          Все трое устроены одинаково: системный промпт, набор разрешённых инструментов, набор «терминальных» MCP-инструментов
+          для возврата результата, общий driver-цикл. Различаются только <strong>правами</strong> на инструменты — и в этом
+          вся идея.
+        </p>
+
+        <div class="agents-grid reveal" data-reveal id="agentsGrid">
+          <!-- Agents injected -->
+        </div>
+
+        <div style="margin-top: 24px; padding: 20px 24px; background: var(--surface-elevated); border: 1px solid var(--border); border-radius: 12px; display: flex; align-items: center; gap: 14px; font-size: 0.9375rem;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+          <span style="color: var(--text-secondary);">
+            <strong style="color: var(--text);">Read-only ревьюер</strong> — это
+            <strong style="color: var(--text);">архитектурное</strong>, а не дисциплинарное решение.
+            Ревьюер, который может «починить сам», теряет независимость суждения. У <code>review</code>-агента
+            нет <code>Edit</code>, <code>Write</code> и нет права запускать тесты — только читать.
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== CYCLE PHASES ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Трёхтактный круг</div>
+        <h2 class="section-title">Фазы внутри одного круга <code>perTicketWorkflow</code></h2>
+        <p class="section-subtitle">
+          <code>spec → coder → review</code>. Если <code>review</code> сказал <code>approve</code> — тикет в <code>Done</code>.
+          Если <code>changes_requested</code> — следующий круг, причём <code>coder</code> получает выжимку предыдущего ревью.
+          Максимум три круга.
+        </p>
+
+        <div class="phases-grid reveal" data-reveal id="phasesGrid">
+          <!-- Phases injected -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== COMPONENTS ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Из чего собран</div>
+        <h2 class="section-title">Двенадцать строительных блоков</h2>
+        <p class="section-subtitle">
+          От <code>Temporal</code>-мотора до контракта PR-метаданных. Используйте фильтр для просмотра по категориям.
+        </p>
+
+        <div class="components-filter">
+          <button class="filter-btn active" data-filter="all">Все · 12</button>
+          <button class="filter-btn" data-filter="temporal">Temporal · 2</button>
+          <button class="filter-btn" data-filter="workflow">Workflow · 3</button>
+          <button class="filter-btn" data-filter="agent">Агенты · 3</button>
+          <button class="filter-btn" data-filter="boundary">Границы · 2</button>
+          <button class="filter-btn" data-filter="infra">Инфра · 2</button>
+        </div>
+
+        <div class="components-grid" id="componentsGrid">
+          <!-- Components injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== TIMELINE ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Жизненный цикл</div>
+        <h2 class="section-title">Что происходит с типичным тикетом</h2>
+        <p class="section-subtitle">
+          От момента, когда оператор повесил label <code>agent-ready</code>, до открытого PR с одобрением —
+          пятнадцать шагов через <code>Temporal</code> и три одноразовых контейнера.
+        </p>
+
+        <div class="timeline" id="timeline">
+          <!-- Timeline injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== KEY PROPERTIES ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">На чём всё держится</div>
+        <h2 class="section-title">Ключевые свойства архитектуры</h2>
+        <p class="section-subtitle">
+          Девять решений, которые делают Furnace компактным, идемпотентным и устойчивым к падениям —
+          через «turn failure modes into impossibilities by construction».
+        </p>
+
+        <div class="properties-grid" id="propertiesGrid">
+          <!-- Properties injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== FOOTER ============== -->
+    <footer class="footer">
+      <div class="container">
+        <p>
+          Архитектурный обзор <strong style="color: var(--text);">the-furnace</strong> ·
+          Сгенерировано из <code>arch/the-furnace-arch-review.md</code>
+        </p>
+      </div>
+    </footer>
+
+  </main>
+
+  <script>
+    // === Menu ===
+    function toggleMenu() {
+      var dropdown = document.getElementById('vizMenuDropdown');
+      if (dropdown) dropdown.classList.toggle('open');
+    }
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.viz-menu')) {
+        var dropdown = document.getElementById('vizMenuDropdown');
+        if (dropdown) dropdown.classList.remove('open');
+      }
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        var dropdown = document.getElementById('vizMenuDropdown');
+        if (dropdown) dropdown.classList.remove('open');
+      }
+    });
+
+    // === Theme ===
+    var savedTheme = localStorage.getItem('viz-theme');
+    var currentTheme = savedTheme || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    function applyTheme(t) {
+      document.documentElement.className = 'theme-' + t;
+      var icon = document.getElementById('themeIcon');
+      var label = document.getElementById('themeLabel');
+      if (icon) icon.textContent = t === 'dark' ? '🌙' : '☀️';
+      if (label) label.textContent = t === 'dark' ? 'Тёмная' : 'Светлая';
+      localStorage.setItem('viz-theme', t);
+      currentTheme = t;
+      if (typeof onThemeChange === 'function') onThemeChange();
+    }
+    function cycleTheme() { applyTheme(currentTheme === 'dark' ? 'light' : 'dark'); }
+    applyTheme(currentTheme);
+
+    // === Scroll Reveal ===
+    document.querySelectorAll('[data-reveal]').forEach(function(el) { el.classList.add('reveal'); });
+    var revealObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          revealObserver.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.reveal').forEach(function(el) { revealObserver.observe(el); });
+
+    // === Number Counter ===
+    function animateCounters() {
+      document.querySelectorAll('[data-count]').forEach(function(el) {
+        if (el.dataset.counted) return;
+        el.dataset.counted = '1';
+        var target = parseFloat(el.dataset.count),
+            prefix = el.dataset.prefix || '',
+            suffix = el.dataset.suffix || '';
+        var start = performance.now(), duration = 1100;
+        (function tick(now) {
+          var p = Math.min((now - start) / duration, 1),
+              eased = 1 - Math.pow(1 - p, 3);
+          el.textContent = prefix + Math.round(target * eased).toLocaleString() + suffix;
+          if (p < 1) requestAnimationFrame(tick);
+        })(start);
+      });
+    }
+    var counterEl = document.querySelector('[data-count]');
+    if (counterEl) {
+      var cObs = new IntersectionObserver(function(entries) {
+        entries.forEach(function(e) {
+          if (e.isIntersecting) { animateCounters(); cObs.disconnect(); }
+        });
+      }, { threshold: 0.3 });
+      cObs.observe(counterEl);
+    }
+
+    // === Download PNG ===
+    async function downloadImage() {
+      var menu = document.querySelector('.viz-menu');
+      menu.style.display = 'none';
+      try {
+        var url = await htmlToImage.toPng(document.body, {
+          quality: 1, pixelRatio: 2,
+          filter: function(n) { return !n.classList || !n.classList.contains('viz-menu'); }
+        });
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'the-furnace-architecture.png';
+        a.click();
+      } catch(e) { console.error('Download failed:', e); }
+      menu.style.display = '';
+    }
+
+    // === DATA: Three agents ===
+    var agents = [
+      { id: 'spec', name: 'spec', role: 'Описывает, что должно работать',
+        allow: ['Read', 'Grep', 'Bash (тесты)'],
+        deny: ['Edit', 'Write'],
+        desc: 'Read-only с правом запускать тесты, но не править код. Создаёт <strong>feature-ветку</strong> и пишет <strong>падающие тесты</strong>, которые описывают acceptance criteria. Если критерии неясны — создаёт суб-тикет <code>ac-clarification</code> и валит фазу.' },
+      { id: 'coder', name: 'coder', role: 'Единственный, кому разрешено писать',
+        allow: ['Read', 'Edit', 'Write', 'Bash'],
+        deny: [],
+        desc: 'Чекаутит ту же feature-ветку от <code>spec</code>. Итерирует код, пока тесты <strong>не позеленеют</strong>, коммитит и пушит. Если в этот круг ему передали выжимку предыдущего ревью с блокирующими замечаниями — <strong>обязан учесть</strong>.' },
+      { id: 'review', name: 'review', role: 'Самый ограниченный — только судит',
+        allow: ['Read', 'Grep'],
+        deny: ['Edit', 'Write', 'Bash'],
+        desc: 'Не может ни запустить тесты, ни поправить код. Идея жёсткая и моральная: <strong>ревьюер, который может «починить сам», теряет независимость суждения</strong>. Выносит вердикт <code>approve</code> или <code>changes_requested</code> через MCP-инструмент.' }
+    ];
+    var agentsGrid = document.getElementById('agentsGrid');
+    agents.forEach(function(a) {
+      var el = document.createElement('article');
+      el.className = 'agent-card';
+      el.dataset.agent = a.id;
+      var allowHtml = a.allow.map(function(p) { return '<span class="agent-perm allow"><code>' + p + '</code></span>'; }).join('');
+      var denyHtml = a.deny.map(function(p) { return '<span class="agent-perm deny"><code>' + p + '</code></span>'; }).join('');
+      el.innerHTML =
+        '<div class="agent-name">' + a.name + '</div>' +
+        '<div class="agent-role">' + a.role + '</div>' +
+        '<div class="agent-perms-label">Инструменты</div>' +
+        '<div class="agent-perms">' + allowHtml + denyHtml + '</div>' +
+        '<div class="agent-desc">' + a.desc + '</div>';
+      agentsGrid.appendChild(el);
+    });
+
+    // === DATA: Three phases (one round) ===
+    var phases = [
+      { idx: 1, name: 'spec', desc: 'Свежий контейнер · агент пишет <strong>падающие тесты</strong> на новой feature-ветке. Read-only + право запускать тесты. На выходе — <code>Zod</code>-структура: ветка, коммиты, план.' },
+      { idx: 2, name: 'coder', desc: 'Свежий контейнер · агент чекаутит ветку, итерирует код, пока <strong>тесты не позеленеют</strong>. После первого успешного круга — <code>workflow</code> открывает PR на GitHub (один раз за тикет).' },
+      { idx: 3, name: 'review', desc: 'Свежий контейнер · агент читает диф и постит ревью в PR как <code>COMMENT</code>. Вердикт <code>approve</code> → тикет в <code>Done</code>. Вердикт <code>changes_requested</code> → следующий круг.' }
+    ];
+    var phasesGrid = document.getElementById('phasesGrid');
+    phases.forEach(function(p) {
+      var el = document.createElement('div');
+      el.className = 'phase-card';
+      el.dataset.idx = p.idx;
+      el.innerHTML =
+        '<span class="phase-num">phase ' + String(p.idx).padStart(2, '0') + '</span>' +
+        '<div class="phase-name"><code>' + p.name + '</code></div>' +
+        '<div class="phase-desc">' + p.desc + '</div>';
+      phasesGrid.appendChild(el);
+    });
+
+    // === DATA: Components (12) ===
+    var components = [
+      { num: '01', cat: 'temporal', catLabel: 'Temporal', title: '<code>Temporal</code> — мотор и память', tagline: '«ни базы, ни cron-сервиса своих»',
+        desc: 'Внешний сервис (поднимается через <code>docker compose</code>), у которого Furnace берёт сразу четыре вещи: <strong>cron-расписание, очереди задач, движок повторных попыток и хранилище истории</strong>. Своей базы у Furnace нет принципиально — состояние <code>workflow</code> живёт целиком в Temporal-истории.' },
+      { num: '02', cat: 'temporal', catLabel: 'Temporal', title: 'Двухконтурная схема очередей', tagline: '«орк и работяги отдельно»',
+        desc: 'Очередей две: <code>orchestrator-queue</code> (где <code>workflow</code>-код и лёгкие <code>activity</code>) и <code>repo-&lt;slug&gt;-worker</code> (где только тяжёлые фазовые <code>activity</code>). Так разная природа задач не мешает: оркестратор <strong>всегда онлайн</strong>, а фазы — в <strong>эфемерных мирах</strong>.' },
+      { num: '03', cat: 'workflow', catLabel: 'Workflow', title: '<code>linearPollerWorkflow</code>', tagline: '«постоянный бригадир»',
+        desc: 'Маленький <code>workflow</code> на расписании раз в минуту. Спрашивает Linear «какие тикеты сейчас <code>agent-ready</code>?», и для каждого подходящего стартует дочерний <code>perTicketWorkflow</code>. Уже запущенные не трогает, успешные не перезапускает, <strong>падавшие — пробует снова</strong>.' },
+      { num: '04', cat: 'workflow', catLabel: 'Workflow', title: '<code>perTicketWorkflow</code>', tagline: '«закон проекта»',
+        desc: 'Сердце логики. Детерминированный путь: проверка репо → <code>In Progress</code> → <code>spec</code> → цикл (<code>coder</code> → открыть PR → <code>review</code>). <code>approve</code> → <code>Done</code>. <code>changes_requested</code> → следующий круг с выжимкой ревью в промпт <code>coder</code>. Максимум <strong>3 круга</strong>, каждая фаза ретраится до 3 раз.' },
+      { num: '05', cat: 'workflow', catLabel: 'Workflow', title: 'Workflow-уровневый retry', tagline: '«один источник истины для повторов»',
+        desc: '<code>activity</code> не ретраит сам себя — это делает <code>workflow</code>-код. Иначе после первой попытки worker уже умер вместе с контейнером. Один источник истины для повторов: <strong>каждая новая попытка получает новый контейнер</strong>.' },
+      { num: '06', cat: 'agent', catLabel: 'Агенты', title: 'Container-as-worker', tagline: '«одноразовый исполнитель»',
+        desc: 'Запуск агентской фазы — это всегда <code>docker run --rm</code> нового контейнера с devcontainer-образом. Внутри поднимается мини-Temporal-worker, забирает ровно <strong>одну</strong> <code>activity</code>, выполняет и сам себя гасит. Свежий мир — <strong>не свойство, а единственный способ</strong>, которым попытка вообще может произойти.' },
+      { num: '07', cat: 'agent', catLabel: 'Агенты', title: 'Три агента — <code>spec</code> / <code>coder</code> / <code>review</code>', tagline: '«разделение прав как архитектура»',
+        desc: 'Все трое — одинаковый driver-цикл вокруг Claude SDK. Различаются <strong>наборами инструментов</strong>. <code>spec</code> — read-only с тестами. <code>coder</code> — единственный с <code>Edit</code> / <code>Write</code>. <code>review</code> — самый ограниченный, только чтение.' },
+      { num: '08', cat: 'agent', catLabel: 'Агенты', title: 'Sub-tickets для «застрял»', tagline: '«пауза через failure»',
+        desc: 'У Furnace нет состояния «жду человека». Агент <strong>создаёт суб-тикет</strong> в Linear (<code>ac-clarification</code>, <code>dep-missing</code>, <code>design-question</code>) с deep-link на Temporal-историю и <strong>намеренно</strong> валит фазу. Поллер перезапустит, когда оператор разрулит. Пауза = failure + cron-перезапуск.' },
+      { num: '09', cat: 'boundary', catLabel: 'Границы', title: 'Zod-контракты на каждой границе', tagline: '«таможня между фазами»',
+        desc: 'Между фазами летают <strong>строго типизированные объекты</strong>: какие коммиты сделал <code>spec</code>, какой финальный SHA у <code>coder</code>, какой вердикт у <code>review</code>. Схемы прогоняются через <code>safeParse</code> дважды на каждый hop: внутри MCP-инструмента, на входе и на выходе <code>activity</code>. Оборона в глубину.' },
+      { num: '10', cat: 'boundary', catLabel: 'Границы', title: 'Linear + GitHub — тонкие клиенты', tagline: '«классифицированные ошибки»',
+        desc: '<code>linear/client.ts</code> через GraphQL, <code>github/client.ts</code> через <code>Octokit</code>. У обоих <strong>классификатор ошибок</strong>: GitHub-овские 422-е разбираются на «голова ветки пропала», «дубликат PR», «строка ушла из диффа». PR-вердикт всегда <code>COMMENT</code> — GitHub запрещает одобрять собственный PR.' },
+      { num: '11', cat: 'infra', catLabel: 'Инфра', title: '<code>devcontainer</code> build pipeline', tagline: '«фабрика образов в стороне»',
+        desc: 'Отдельный CLI-скрипт сборки образа для конкретного репо: клонирует на точный SHA, прогоняет <code>devcontainer build</code>, добавляет warmup (<code>npm ci</code>), пушит в registry и пишет манифест с <strong>pinned-digest</strong>. Не часть рантайма — готовит «среду обитания» агентам заранее.' },
+      { num: '12', cat: 'infra', catLabel: 'Инфра', title: 'PR-body metadata + Observability', tagline: '«контракт на будущее»',
+        desc: 'В тело каждого PR пишется блок <code>&lt;!-- furnace:metadata --&gt;</code> с фиксированным набором ключей: <code>Workflow-Id</code>, <code>Ticket-Id</code>, <code>Attempt-Count</code>, <code>Model</code>, <code>Final-Commit</code>. Отдельного дашборда нет — наблюдают через <strong>Temporal Web UI</strong>; логи каждого контейнера через <code>tee</code> в bind-mount переживают <code>--rm</code>.' }
+    ];
+
+    var grid = document.getElementById('componentsGrid');
+    components.forEach(function(c) {
+      var card = document.createElement('article');
+      card.className = 'component-card';
+      card.dataset.cat = c.cat;
+      card.innerHTML =
+        '<div class="component-header">' +
+          '<span class="component-num">' + c.num + '</span>' +
+          '<span class="component-cat">' + c.catLabel + '</span>' +
+        '</div>' +
+        '<h4>' + c.title + '</h4>' +
+        '<div class="component-tagline">' + c.tagline + '</div>' +
+        '<p class="component-desc">' + c.desc + '</p>';
+      grid.appendChild(card);
+    });
+
+    // Recalculate counts
+    var counts = { all: components.length, temporal: 0, workflow: 0, agent: 0, boundary: 0, infra: 0 };
+    components.forEach(function(c) { counts[c.cat]++; });
+    document.querySelectorAll('.filter-btn').forEach(function(btn) {
+      var f = btn.dataset.filter;
+      var label = btn.textContent.split(' · ')[0];
+      btn.textContent = label + ' · ' + counts[f];
+    });
+
+    document.querySelectorAll('.filter-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        var filter = btn.dataset.filter;
+        document.querySelectorAll('.component-card').forEach(function(card) {
+          if (filter === 'all' || card.dataset.cat === filter) {
+            card.classList.remove('hidden');
+          } else {
+            card.classList.add('hidden');
+          }
+        });
+      });
+    });
+
+    // === DATA: Timeline ===
+    var timelineSteps = [
+      { step: 'Шаг 01', title: 'Оператор создаёт тикет в Linear', desc: 'На свежий тикет вешаются лейблы <code>agent-ready</code> и <code>repo:&lt;slug&gt;</code>, статус — <code>Todo</code>. Это весь интерфейс взаимодействия с Furnace.' },
+      { step: 'Шаг 02', title: '<code>linearPollerWorkflow</code> просыпается', desc: 'Раз в минуту Temporal будит cron-<code>workflow</code>. Тот спрашивает Linear, видит свежий тикет, проверяет лейбл репозитория, резолвит slug в реестре.' },
+      { step: 'Шаг 03', title: 'Запуск дочернего <code>perTicketWorkflow</code>', desc: 'Поллер стартует ребёнка с детерминированным ID <code>ticket-&lt;id&gt;</code>. Если такой уже выполняется или завершён успешно — поллер пропускает. Идемпотентность по ID.' },
+      { step: 'Шаг 04', title: 'Перевод тикета в <code>In Progress</code>', desc: '<code>perTicketWorkflow</code> через <code>activity</code> на оркестратор-очереди переводит Linear-тикет в статус <code>In Progress</code>. Дальше — фаза <code>spec</code>.' },
+      { step: 'Шаг 05', title: 'Фаза <code>spec</code> — свежий контейнер', desc: 'Запускается <code>docker run --rm</code> нового контейнера с devcontainer-образом репо. Внутри поднимается мини-Temporal-worker на per-repo очереди, забирает фазовую <code>activity</code>.' },
+      { step: 'Шаг 06', title: '<code>spec</code>-агент пишет падающие тесты', desc: 'Read-only агент создаёт feature-ветку, пишет тесты по acceptance criteria, коммитит, пушит. Возвращает <code>Zod</code>-структуру. Контейнер сам себя гасит через <code>--rm</code>.' },
+      { step: 'Шаг 07', title: 'Если <code>spec</code> застрял — суб-тикет', desc: 'Не понимает критерии? Создаёт суб-тикет <code>ac-clarification</code> в Linear с deep-link на Temporal-историю и <strong>намеренно</strong> валит фазу. Поллер перезапустит позже.' },
+      { step: 'Шаг 08', title: 'Круг 0 — фаза <code>coder</code>', desc: 'Снова свежий контейнер, новая <code>activity</code>. <code>coder</code>-агент чекаутит ветку от <code>spec</code>, итеративно правит код, гоняет тесты, коммитит, пушит.' },
+      { step: 'Шаг 09', title: 'Открытие PR — один раз за тикет', desc: 'Сразу после первого успеха <code>coder</code> <code>workflow</code> через <code>activity</code> на оркестратор-очереди открывает Pull Request на GitHub. Один раз за весь жизненный цикл.' },
+      { step: 'Шаг 10', title: 'Фаза <code>review</code> — третий контейнер', desc: 'Read-only агент читает диф, выносит вердикт через MCP-инструмент <code>submit_review</code>. Findings вне затронутых файлов — в текст рассуждения, чтобы не уронить пост-ревью на «устаревших строках».' },
+      { step: 'Шаг 11', title: 'Пост ревью в PR — всегда', desc: '<code>workflow</code> всегда постит ревью в PR (даже на <code>approve</code>, для аудита). Тип — <code>COMMENT</code>, не <code>APPROVE</code>: тот же токен открыл PR, GitHub запрещает одобрять собственный.' },
+      { step: 'Шаг 12', title: '<code>approve</code> → <code>Done</code>', desc: 'Если вердикт <code>approve</code> — <code>workflow</code> переводит Linear-тикет в <code>Done</code> и завершается успешно. PR остаётся открытым для merge человеком (или future auto-merge).' },
+      { step: 'Шаг 13', title: '<code>changes_requested</code> → следующий круг', desc: '<code>coder</code> запускается снова — в новом контейнере, но с <strong>выжимкой предыдущего ревью</strong> в промпте. Переписывает код. Затем снова <code>review</code>. До трёх кругов.' },
+      { step: 'Шаг 14', title: 'Случайные падения → workflow-retry', desc: 'Сетевой сбой, краш SDK, OOM в контейнере — <code>workflow</code>-код ловит и ретраит фазу до трёх раз. Каждая попытка — <strong>новый контейнер</strong>. Activity-уровневый retry не используется.' },
+      { step: 'Шаг 15', title: 'Cancel-сигнал через Temporal CLI', desc: 'Оператор может в любой момент послать <code>cancel</code> через Web UI или CLI. <code>workflow</code> доделает текущее ревью (чтобы вердикт всё-таки попал в PR) и переведёт тикет в <code>Canceled</code>.' }
+    ];
+
+    var timeline = document.getElementById('timeline');
+    timelineSteps.forEach(function(t) {
+      var el = document.createElement('div');
+      el.className = 'timeline-item reveal';
+      el.dataset.reveal = '';
+      el.innerHTML =
+        '<div class="timeline-step">' + t.step + '</div>' +
+        '<div class="timeline-title">' + t.title + '</div>' +
+        '<div class="timeline-desc">' + t.desc + '</div>';
+      timeline.appendChild(el);
+      revealObserver.observe(el);
+    });
+
+    // === DATA: Properties ===
+    var properties = [
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.7 4 3 9 3s9-1.3 9-3V5M3 11v6c0 1.7 4 3 9 3s9-1.3 9-3v-6"/></svg>',
+        title: 'Состояние — это история <code>Temporal</code>', desc: 'Своей базы нет. Перезапустил оркестратор — ничего не потерял. История каждого <code>workflow</code> со всеми <code>activity</code>, аргументами и результатами живёт в самом Temporal.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>',
+        title: 'Свежий контейнер на каждую попытку', desc: 'Любая утечка состояния между раундами <strong>невозможна по построению</strong>: между ними физически новый Docker-контейнер с чистым диском. Грязный worktree унаследовать нельзя.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>',
+        title: 'Workflow-уровневый retry вместо activity', desc: '<code>activity</code> не ретраит сам себя — это делает <code>workflow</code>-код, иначе после первой попытки worker уже умер. Один источник истины для повторов: <code>workflow</code> ловит, <code>workflow</code> решает.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>',
+        title: 'Идемпотентность по ID тикета', desc: 'Один Linear-тикет ↔ один <code>workflow</code> с детерминированным именем <code>ticket-&lt;id&gt;</code>. <strong>Параллельных запусков</strong> по одному тикету не бывает — Temporal сам отбракует дубль.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+        title: 'Пауза через failure + cron-перезапуск', desc: 'Когда нужен человек, агент не висит — он создаёт суб-тикет в Linear и валит <code>workflow</code> особым типом. Поллер сам подберёт <strong>только после</strong> того, как оператор разрулит суб-тикет.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>',
+        title: 'Read-only ревьюер — архитектурно', desc: 'Тот, кто судит, <strong>не может править</strong> — это зафиксированный набор инструментов, а не дисциплина промпта. Архитектура гарантирует независимость суждения по построению.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>',
+        title: 'Zod-схемы как «таможня» между фазами', desc: 'Каждый артефакт проверяется на входе и на выходе через <code>safeParse</code>. Если агент придумает поле или забудет обязательное — система видит это <strong>сразу</strong>, а не разваливается через три hop-а.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>',
+        title: 'Две раздельные очереди', desc: 'Долгоживущий оркестратор и одноразовые работяги <strong>не конкурируют</strong> за ресурсы и не блокируют друг друга. <code>orchestrator-queue</code> всегда онлайн; <code>repo-&lt;slug&gt;-worker</code> — эфемерна.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
+        title: 'PR-metadata как контракт на будущее', desc: 'Зафиксированный формат блока в теле PR (<code>Workflow-Id</code>, <code>Attempt-Count</code>, <code>Final-Commit</code>) — extension point для будущих компонентов (мульти-ревьюверы, auto-merge, Slack-нотификации). <strong>Менять без координации нельзя</strong>.' }
+    ];
+
+    var propsGrid = document.getElementById('propertiesGrid');
+    properties.forEach(function(p) {
+      var el = document.createElement('div');
+      el.className = 'property reveal';
+      el.dataset.reveal = '';
+      el.innerHTML =
+        '<div class="property-icon">' + p.icon + '</div>' +
+        '<div><h4>' + p.title + '</h4><p>' + p.desc + '</p></div>';
+      propsGrid.appendChild(el);
+      revealObserver.observe(el);
+    });
+
+    function onThemeChange() {}
+  </script>
+</body>
+</html>

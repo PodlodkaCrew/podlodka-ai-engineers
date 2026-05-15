@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="ru" class="theme-dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gear Grinders — архитектура простыми словами</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script>Chart.defaults.animation = false;</script>
+  <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
+  <style>
+    /* ===== Gear Grinders — уникальные секции (scoring matrix + final-verification gates) ===== */
+
+    /* Категории компонентов: state / infra / pipeline / agent */
+    .component-card[data-cat="state"] { --cat-color: #14b8a6; }
+    .component-card[data-cat="infra"] { --cat-color: #3b82f6; }
+    .component-card[data-cat="pipeline"] { --cat-color: #06b6d4; }
+    .component-card[data-cat="agent"] { --cat-color: #8b5cf6; }
+    html.theme-light .component-card[data-cat="state"] { --cat-color: #0d9488; }
+    html.theme-light .component-card[data-cat="infra"] { --cat-color: #2563eb; }
+    html.theme-light .component-card[data-cat="pipeline"] { --cat-color: #0891b2; }
+    html.theme-light .component-card[data-cat="agent"] { --cat-color: #7c3aed; }
+
+    /* Scoring matrix */
+    .scoring-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .scoring-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      transition: all 0.25s;
+      display: flex; flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+    .scoring-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--score-color);
+      opacity: 0.85;
+    }
+    .scoring-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--border-strong);
+      box-shadow: 0 16px 40px rgba(0,0,0,0.15);
+    }
+    .scoring-card[data-kind="bonus-big"] { --score-color: var(--positive); }
+    .scoring-card[data-kind="bonus-mid"] { --score-color: var(--accent); }
+    .scoring-card[data-kind="penalty"] { --score-color: var(--negative); }
+    .scoring-card[data-kind="disq"] { --score-color: var(--warning); }
+    .scoring-points {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 2.5rem; font-weight: 800;
+      color: var(--score-color);
+      line-height: 1; letter-spacing: -0.04em;
+      margin-bottom: 14px;
+    }
+    .scoring-label {
+      font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.12em;
+      color: var(--text-secondary); font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .scoring-when {
+      font-weight: 600; font-size: 1rem;
+      color: var(--text); margin-bottom: 12px;
+      line-height: 1.4;
+    }
+    .scoring-desc {
+      margin-top: auto;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      line-height: 1.55;
+    }
+    .scoring-desc strong { color: var(--text); font-weight: 600; }
+
+    /* Final-verification gates */
+    .gates-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .gate-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      transition: all 0.25s;
+      position: relative;
+      overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    .gate-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--gate-color);
+    }
+    .gate-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--border-strong);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+    }
+    .gate-card[data-gate="1"] { --gate-color: var(--accent); }
+    .gate-card[data-gate="2"] { --gate-color: var(--accent-secondary); }
+    .gate-card[data-gate="3"] { --gate-color: var(--warning); }
+    .gate-card[data-gate="4"] { --gate-color: var(--positive); }
+
+    .gate-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+    .gate-num {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 0.75rem; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--gate-color);
+      padding: 4px 10px; border-radius: 6px;
+      background: color-mix(in srgb, var(--gate-color) 15%, transparent);
+    }
+    .gate-stage {
+      font-size: 0.75rem; padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--surface-elevated);
+      color: var(--text-secondary);
+      letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600;
+      border: 1px solid var(--border);
+    }
+    .gate-title {
+      font-weight: 700; font-size: 1.0625rem;
+      color: var(--text); margin-bottom: 12px;
+      line-height: 1.4;
+    }
+    .gate-desc {
+      color: var(--text-secondary); font-size: 0.9375rem;
+      line-height: 1.6; margin-bottom: 18px;
+    }
+    .gate-desc strong { color: var(--text); font-weight: 600; }
+    .gate-block {
+      margin-top: auto; padding: 12px 14px;
+      background: color-mix(in srgb, var(--gate-color) 8%, transparent);
+      border: 1px solid color-mix(in srgb, var(--gate-color) 25%, transparent);
+      border-radius: 10px;
+      font-size: 0.875rem;
+      color: var(--text);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .gate-block svg { flex-shrink: 0; color: var(--gate-color); }
+    .gate-block strong { color: var(--gate-color); font-weight: 600; }
+
+    /* Responsive — уникальные сетки */
+    @media (max-width: 1024px) {
+      .gates-grid { grid-template-columns: 1fr; }
+      .scoring-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 768px) {
+      .scoring-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 375px) {
+      .gate-card, .scoring-card { padding: 22px; }
+    }
+    @media print {
+      .gate-card, .scoring-card { break-inside: avoid; border: 1px solid #ddd; box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-to-content">К основному контенту</a>
+
+  <div class="viz-menu">
+    <button class="viz-menu-toggle" onclick="toggleMenu()" aria-label="Меню">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="3" y1="5" x2="17" y2="5"/><line x1="3" y1="10" x2="17" y2="10"/><line x1="3" y1="15" x2="17" y2="15"/>
+      </svg>
+    </button>
+    <div class="viz-menu-dropdown" id="vizMenuDropdown">
+      <button onclick="cycleTheme()"><span id="themeIcon">🌙</span><span id="themeLabel">Тёмная</span></button>
+      <button onclick="downloadImage()"><span>📥</span><span>Скачать PNG</span></button>
+      <button onclick="window.print()"><span>🖨️</span><span>Печать / PDF</span></button>
+    </div>
+  </div>
+
+  <main id="main-content" role="main">
+
+    <!-- ============== HERO ============== -->
+    <section class="hero" role="banner">
+      <div class="container hero-content">
+        <a href="index.html" class="hero-back animate">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          К каталогу
+        </a>
+        <h1 class="animate delay-1">Gear Grinders</h1>
+        <a href="https://github.com/podlodka-ai-club/gear-grinders" class="hero-repo animate delay-1" target="_blank" rel="noopener">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+          github.com/podlodka-ai-club/gear-grinders
+        </a>
+        <p class="hero-subtitle animate delay-2">
+          Локальный Python-конвейер: одна команда — и backlog-задача из <strong style="color: var(--accent);">GitHub</strong> или <strong style="color: var(--accent);">GitLab</strong>
+          превращается в готовый Pull Request. Большая state machine с durable-журналом, N кандидатов в изолированных
+          git-worktree, sandbox по умолчанию, deterministic-выбор победителя и final-verification gate перед публикацией.
+        </p>
+
+        <div class="hero-stack animate delay-2">
+          <span class="stack-pill">Python</span>
+          <span class="stack-pill">git worktree</span>
+          <span class="stack-pill">Codex</span>
+          <span class="stack-pill">Claude</span>
+        </div>
+
+        <div class="hero-stats">
+          <div class="stat-card animate delay-3">
+            <div class="stat-value accent" data-count="15" data-suffix="">15</div>
+            <div class="stat-label">Состояний state machine</div>
+            <div class="stat-sublabel">от «issue увидели» до «PR создан»</div>
+          </div>
+          <div class="stat-card animate delay-3">
+            <div class="stat-value" data-count="11" data-suffix="">11</div>
+            <div class="stat-label">Компонентов архитектуры</div>
+            <div class="stat-sublabel">от params.yaml до knowledge engine</div>
+          </div>
+          <div class="stat-card animate delay-4">
+            <div class="stat-value" data-count="4" data-suffix="">4</div>
+            <div class="stat-label">Гейта final-verification</div>
+            <div class="stat-sublabel">статические · digest · reviewers · артефакты</div>
+          </div>
+          <div class="stat-card animate delay-4">
+            <div class="stat-value" data-count="2" data-suffix="">2</div>
+            <div class="stat-label">Платформы трекеров</div>
+            <div class="stat-sublabel">GitHub + GitLab через тонкие адаптеры</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== KEY IDEA ============== -->
+    <section style="padding-top: 0;">
+      <div class="container">
+        <div class="key-idea reveal" data-reveal>
+          <div class="section-eyebrow">Главная идея</div>
+          <h3>Большая state machine с durable-журналом — и ничего лишнего</h3>
+          <p>
+            Один центральный класс <span class="mono" style="color: var(--accent);">OrchestratorPipeline</span> знает, в какой фазе сейчас задача,
+            и <strong>каждый его шаг сначала пишет результат на диск, потом меняет состояние</strong>. Поэтому любой шаг можно повторить:
+            он либо увидит «уже сделано» и пропустит, либо доделает. Никакого облака, никаких очередей, никаких оркестраторов —
+            всё крутится на машине разработчика как обычная Python-утилита, а состояние run'а лежит в <span class="mono" style="color: var(--accent);">.gg/</span> в репо.
+            Процесс можно убить в любой момент и продолжить с того же шага.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== ARCHITECTURE FLOW ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Высокоуровневая схема</div>
+        <h2 class="section-title">Как устроен конвейер</h2>
+        <p class="section-subtitle">
+          От YAML-конфига и issue с трекера — через мозг pipeline и параллельных кандидатов в worktree —
+          к gates'у публикации.
+        </p>
+
+        <div class="arch-flow">
+          <div class="arch-diagram reveal" data-reveal>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">.gg/params.yaml + constitution.md</div>
+                <div class="arch-node-meta">закон проекта — единственный конфиг</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ читает</div>
+            <div class="arch-node active">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">OrchestratorPipeline</div>
+                <div class="arch-node-meta">мозг — state machine на 15 состояний</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ запускает N кандидатов</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">CandidateExecutor + worktree</div>
+                <div class="arch-node-meta">каждый кандидат в своей физической копии</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ через клетку</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">SandboxRuntime (srt-py)</div>
+                <div class="arch-node-meta">ограничения на файлы и сеть для агента</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ subprocess</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">codex / claude — backend</div>
+                <div class="arch-node-meta">subprocess + промпт + output.md</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ verify → score → gate</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">Verification → Evaluator → FinalGate</div>
+                <div class="arch-node-meta">deterministic выбор + 4 проверки → publish</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="reveal" data-reveal>
+            <h3 style="margin-bottom: 16px;">Что важно понять</h3>
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 14px;">
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Durable как первичный артефакт.</strong> Каждый шаг сначала пишет на диск, потом меняет state. Падение — это нормально: <span class="mono">gg resume</span> подхватит run на том же месте.</span>
+              </li>
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Параллельные кандидаты без блокировок.</strong> N решений рождаются одновременно в разных git-worktree — со своими портами и кэшами пакет-менеджеров.</span>
+              </li>
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Sandbox by default.</strong> Direct-exec backend'а — opt-in. Если <span class="mono">srt-py</span> не установлен, run уходит в <span class="mono">Blocked</span> — а не делает работу без защиты.</span>
+              </li>
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Никакой LLM-as-a-judge.</strong> Победитель выбирается по жёсткой таблице баллов. Decision можно объяснить и воспроизвести.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== DETERMINISTIC SCORING ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Deterministic scoring</div>
+        <h2 class="section-title">Жёсткая таблица баллов</h2>
+        <p class="section-subtitle">
+          Когда кандидаты отработали, их код прогоняется через тесты, линтер, typecheck, security scanner.
+          Дальше <span class="mono" style="color: var(--accent);">CandidateEvaluator</span> выбирает победителя по таблице — никакой LLM в этом не участвует.
+          Идея — чтобы выбор был воспроизводимым и его можно было объяснить одной таблицей.
+        </p>
+
+        <div class="scoring-grid" id="scoringGrid">
+          <!-- Scoring cards injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== FINAL-VERIFICATION GATE ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Final-verification gate</div>
+        <h2 class="section-title">Приёмочный контроль перед публикацией</h2>
+        <p class="section-subtitle">
+          Прежде чем сделать <span class="mono" style="color: var(--accent);">git push</span> и открыть PR, run проходит четыре отдельные проверки.
+          Если хотя бы один блокер — публикация не происходит, run падает в <span class="mono" style="color: var(--accent);">TerminalFailure</span> с понятной причиной.
+        </p>
+
+        <div class="gates-grid reveal" data-reveal id="gatesGrid">
+          <!-- Gates injected -->
+        </div>
+
+        <div style="grid-column: 1 / -1; margin-top: 20px; padding: 18px 22px; background: var(--surface-elevated); border: 1px solid var(--border); border-radius: 12px; display: flex; align-items: center; gap: 14px; font-size: 0.9375rem;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--positive)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span style="color: var(--text-secondary);"><strong style="color: var(--positive);">Stable fingerprint:</strong> каждое замечание имеет стабильный идентификатор. Оператор может пометить его как <span class="mono" style="color: var(--text);">«знаем, разрешаем»</span> — тогда следующие run'ы не будут спотыкаться об то же место.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== COMPONENTS ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Из чего собран</div>
+        <h2 class="section-title">Одиннадцать строительных блоков</h2>
+        <p class="section-subtitle">
+          От YAML-конституции до knowledge engine с repair-lessons.md — каждый компонент решает
+          одну конкретную задачу. Используйте фильтр для просмотра по категориям.
+        </p>
+
+        <div class="components-filter">
+          <button class="filter-btn active" data-filter="all">Все · 11</button>
+          <button class="filter-btn" data-filter="state">Состояние · 3</button>
+          <button class="filter-btn" data-filter="pipeline">Конвейер · 4</button>
+          <button class="filter-btn" data-filter="infra">Инфраструктура · 3</button>
+          <button class="filter-btn" data-filter="agent">Агент · 1</button>
+        </div>
+
+        <div class="components-grid" id="componentsGrid">
+          <!-- Components injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== TIMELINE ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Жизненный цикл</div>
+        <h2 class="section-title">Что происходит с типичным issue</h2>
+        <p class="section-subtitle">
+          От момента, когда оператор запустил <span class="mono" style="color: var(--accent);">gg issue 42 --candidates 3</span>,
+          до открытия PR — пятнадцать конкретных шагов с durable-журналом на каждом.
+        </p>
+
+        <div class="timeline" id="timeline">
+          <!-- Timeline injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== KEY PROPERTIES ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">На чём всё держится</div>
+        <h2 class="section-title">Ключевые свойства архитектуры</h2>
+        <p class="section-subtitle">
+          Двенадцать решений, которые делают конвейер устойчивым к падениям, воспроизводимым и предсказуемым.
+        </p>
+
+        <div class="properties-grid" id="propertiesGrid">
+          <!-- Properties injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== FOOTER ============== -->
+    <footer class="footer">
+      <div class="container">
+        <p>
+          Архитектурный обзор <strong style="color: var(--text);">gear-grinders</strong> ·
+          Сгенерировано из <span class="mono">arch/gear-grinders-arch-review.md</span>
+        </p>
+      </div>
+    </footer>
+
+  </main>
+
+  <script>
+    // === Menu ===
+    function toggleMenu() {
+      var dropdown = document.getElementById('vizMenuDropdown');
+      if (dropdown) dropdown.classList.toggle('open');
+    }
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.viz-menu')) {
+        var dropdown = document.getElementById('vizMenuDropdown');
+        if (dropdown) dropdown.classList.remove('open');
+      }
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        var dropdown = document.getElementById('vizMenuDropdown');
+        if (dropdown) dropdown.classList.remove('open');
+      }
+    });
+
+    // === Theme ===
+    var savedTheme = localStorage.getItem('viz-theme');
+    var currentTheme = savedTheme || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    function applyTheme(t) {
+      document.documentElement.className = 'theme-' + t;
+      var icon = document.getElementById('themeIcon');
+      var label = document.getElementById('themeLabel');
+      if (icon) icon.textContent = t === 'dark' ? '🌙' : '☀️';
+      if (label) label.textContent = t === 'dark' ? 'Тёмная' : 'Светлая';
+      localStorage.setItem('viz-theme', t);
+      currentTheme = t;
+      if (typeof onThemeChange === 'function') onThemeChange();
+    }
+    function cycleTheme() { applyTheme(currentTheme === 'dark' ? 'light' : 'dark'); }
+    applyTheme(currentTheme);
+
+    // === Scroll Reveal ===
+    document.querySelectorAll('[data-reveal]').forEach(function(el) { el.classList.add('reveal'); });
+    var revealObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          revealObserver.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.reveal').forEach(function(el) { revealObserver.observe(el); });
+
+    // === Number Counter ===
+    function animateCounters() {
+      document.querySelectorAll('[data-count]').forEach(function(el) {
+        if (el.dataset.counted) return;
+        el.dataset.counted = '1';
+        var target = parseFloat(el.dataset.count),
+            prefix = el.dataset.prefix || '',
+            suffix = el.dataset.suffix || '';
+        var start = performance.now(), duration = 1100;
+        (function tick(now) {
+          var p = Math.min((now - start) / duration, 1),
+              eased = 1 - Math.pow(1 - p, 3);
+          el.textContent = prefix + Math.round(target * eased).toLocaleString() + suffix;
+          if (p < 1) requestAnimationFrame(tick);
+        })(start);
+      });
+    }
+    var counterEl = document.querySelector('[data-count]');
+    if (counterEl) {
+      var cObs = new IntersectionObserver(function(entries) {
+        entries.forEach(function(e) {
+          if (e.isIntersecting) { animateCounters(); cObs.disconnect(); }
+        });
+      }, { threshold: 0.3 });
+      cObs.observe(counterEl);
+    }
+
+    // === Download PNG ===
+    async function downloadImage() {
+      var menu = document.querySelector('.viz-menu');
+      menu.style.display = 'none';
+      try {
+        var url = await htmlToImage.toPng(document.body, {
+          quality: 1, pixelRatio: 2,
+          filter: function(n) { return !n.classList || !n.classList.contains('viz-menu'); }
+        });
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'gear-grinders-architecture.png';
+        a.click();
+      } catch(e) { console.error('Download failed:', e); }
+      menu.style.display = '';
+    }
+
+    // === DATA: Scoring rules ===
+    var scoringRules = [
+      {
+        kind: 'bonus-big',
+        points: '+100',
+        label: 'Bonus · base',
+        when: 'Кандидат успешно завершил все фазы',
+        desc: 'Setup → backend → patch → verify прошли без ошибок. <strong>Самый весомый сигнал</strong> — это основа победителя.'
+      },
+      {
+        kind: 'bonus-mid',
+        points: '+50',
+        label: 'Bonus · verify',
+        when: 'Верификация прошла полностью',
+        desc: 'Тесты, линтер, typecheck, security scanner — всё чисто или с <strong>known_failure</strong>. Известные падения базы не считаются ухудшением.'
+      },
+      {
+        kind: 'penalty',
+        points: '−100',
+        label: 'Penalty · policy',
+        when: 'Нарушена политика репозитория',
+        desc: 'Тронул security-чувствительные пути из конфига, или вышел за границы изменений по брифу. <strong>Кандидат проигрывает</strong>, но не дисквалифицируется.'
+      },
+      {
+        kind: 'disq',
+        points: 'DISQ',
+        label: 'Disqualification',
+        when: 'Worktree мутировал во время verify',
+        desc: 'Если verify-команды <strong>сами правят</strong> код кандидата — это значит, что измерение было нечестным. Кандидат снимается с дистанции.'
+      }
+    ];
+
+    var scoringGrid = document.getElementById('scoringGrid');
+    scoringRules.forEach(function(r) {
+      var el = document.createElement('article');
+      el.className = 'scoring-card';
+      el.dataset.kind = r.kind;
+      el.innerHTML =
+        '<div class="scoring-label">' + r.label + '</div>' +
+        '<div class="scoring-points">' + r.points + '</div>' +
+        '<div class="scoring-when">' + r.when + '</div>' +
+        '<div class="scoring-desc">' + r.desc + '</div>';
+      scoringGrid.appendChild(el);
+    });
+
+    // === DATA: Final-verification gates ===
+    var gates = [
+      {
+        n: 1,
+        stage: 'Static checks',
+        title: 'Анализ изменённых файлов на agent-pattern',
+        desc: 'Проверка кода <strong>самого агента</strong> — нет ли в нём неограниченных циклов, бесконечных retry, ссылок на «инструменты», которых нет в реестре, других известных вредных паттернов.',
+        outcome: 'Хотя бы один blocker → fail'
+      },
+      {
+        n: 2,
+        stage: 'Manifest digest',
+        title: 'Цифровой отпечаток orchestrator-файлов',
+        desc: 'Сравнение текущих ключевых файлов pipeline с тем, что было записано при <span class="mono" style="color: var(--accent);">gg init</span>. Защита от того, что кто-то локально подправил <strong>prompts</strong> или <strong>protocol</strong>.',
+        outcome: 'Digest не совпал → fail'
+      },
+      {
+        n: 3,
+        stage: 'Reviewer obligations',
+        title: 'Trigger-based ревьюеры по путям файлов',
+        desc: 'По путям изменений автоматически подбирается список обязательных размерностей оценки: <strong>auth/*</strong> → security review, <strong>migrations/*</strong> → operability, <strong>*.tsx</strong> → code-quality.',
+        outcome: 'Хотя бы один reviewer не pass → fail'
+      },
+      {
+        n: 4,
+        stage: 'Artifacts',
+        title: 'Наличие всех обязательных артефактов',
+        desc: 'Каждая фаза run\'а должна была положить свой артефакт на диск — бриф, verification, evaluation, integration-patch, final-verification.json. <strong>Полнота журнала</strong> для аудита.',
+        outcome: 'Чего-то нет → fail'
+      }
+    ];
+
+    var gatesGrid = document.getElementById('gatesGrid');
+    gates.forEach(function(g) {
+      var el = document.createElement('div');
+      el.className = 'gate-card';
+      el.dataset.gate = g.n;
+      el.innerHTML =
+        '<div class="gate-header">' +
+          '<span class="gate-num">Gate ' + g.n + '</span>' +
+          '<span class="gate-stage">' + g.stage + '</span>' +
+        '</div>' +
+        '<div class="gate-title">' + g.title + '</div>' +
+        '<div class="gate-desc">' + g.desc + '</div>' +
+        '<div class="gate-block">' +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>' +
+          '<span><strong>' + g.outcome + '</strong></span>' +
+        '</div>';
+      gatesGrid.appendChild(el);
+    });
+
+    // === DATA: Components ===
+    var components = [
+      { num: '01', cat: 'state', catLabel: 'Состояние', title: 'params.yaml + constitution.md', tagline: '«закон проекта»',
+        desc: 'Единственный конфиг. В нём всё: какие лейблы issue считать «работаемыми», какой backend на какую фазу, сколько <strong>кандидатов</strong> рожать, что считать security-чувствительными путями, лимиты по диску и таймаутам. Рядом — markdown с правилами проекта, который дописывается сам в секцию «Learned Patterns».' },
+      { num: '02', cat: 'pipeline', catLabel: 'Конвейер', title: 'OrchestratorPipeline', tagline: '«мозг конвейера»',
+        desc: 'Один класс на ~3500 строк. Проводит run через <strong>15 состояний</strong> от «issue увидели» до «PR создан, метка проставлена». Переходы между состояниями жёстко прописаны таблицей — любая попытка перепрыгнуть состояние ломается с явной ошибкой.' },
+      { num: '03', cat: 'state', catLabel: 'Состояние', title: 'RunStore', tagline: '«журнал, который переживает падения»',
+        desc: 'Папка <strong>.gg/runs/&lt;run-id&gt;/</strong> — это всё, что есть про конкретный запуск: state, переходы, артефакты фаз, JSONL-логи, агрегированная стоимость. Каждый артефакт валидируется по <strong>pydantic-схеме</strong> на запись и чтение. Перед перезаписью state.json хранится .bak.' },
+      { num: '04', cat: 'pipeline', catLabel: 'Конвейер', title: 'CandidateExecutor + worktree', tagline: '«рабочий с инструментами»',
+        desc: 'Каждый кандидат живёт в своей физической копии репозитория через <strong>git worktree add</strong> в <strong>.gg-worktrees/</strong>. Можно гонять параллельно — не дерутся за node_modules и lock-файлы. У каждого свой TCP-порт и свой кэш пакет-менеджеров.' },
+      { num: '05', cat: 'infra', catLabel: 'Инфраструктура', title: 'SandboxRuntime (srt-py)', tagline: '«клетка для агента»',
+        desc: 'Не верит backend-агенту. Оборачивает <span class="mono" style="color: var(--accent);">codex</span> или <span class="mono" style="color: var(--accent);">claude</span> через <strong>srt-py</strong>: ограничивает куда писать, что нельзя читать (<strong>.env</strong>, <strong>~/.ssh</strong>), какие домены сети разрешены. Если sandbox нужен, но не установлен — run уходит в <strong>Blocked</strong>.' },
+      { num: '06', cat: 'pipeline', catLabel: 'Конвейер', title: 'VerificationRunner + Evaluator', tagline: '«экзаменатор»',
+        desc: 'Прогоняет код кандидатов через тесты, линтер, typecheck, security scanner. Парсит вывод популярных инструментов (<strong>pytest, ruff, mypy, bandit</strong>) в структурированные findings. Ловит <strong>known_failure</strong>. Evaluator считает баллы по жёсткой таблице — никакого LLM.' },
+      { num: '07', cat: 'pipeline', catLabel: 'Конвейер', title: 'Final-verification gate', tagline: '«приёмочный контроль перед публикацией»',
+        desc: 'Четыре проверки перед <strong>git push</strong>: статические checks по самим изменениям, manifest-digest orchestrator-файлов, обязательные reviewer-размерности по путям, наличие всех артефактов. Каждое замечание имеет <strong>стабильный fingerprint</strong>.' },
+      { num: '08', cat: 'infra', catLabel: 'Инфраструктура', title: 'Platform adapters', tagline: '«мосты в мир»',
+        desc: 'Тонкие обёртки над <span class="mono" style="color: var(--accent);">gh</span> и <span class="mono" style="color: var(--accent);">glab</span> CLI с одним интерфейсом: получить issue, создать PR, поставить метку, оставить комментарий с маркером (по нему комментарий не дублируется). Отдельный GitHub Projects v2 клиент двигает карточки по доске.' },
+      { num: '09', cat: 'agent', catLabel: 'Агент', title: 'Backend-агенты codex / claude', tagline: '«руки»',
+        desc: 'Сам код пишут внешние CLI. <span class="mono" style="color: var(--accent);">gg</span> не разговаривает с ними по API — запускает как <strong>subprocess</strong>, передаёт промпт, читает результат из stdout или <strong>-o output.md</strong>. У каждой фазы свой backend и профиль (модель + reasoning effort).' },
+      { num: '10', cat: 'state', catLabel: 'Состояние', title: 'Knowledge engine + memory', tagline: '«память между задачами»',
+        desc: 'Append-only журнал в <strong>.gg/knowledge/sessions/events.jsonl</strong>. На основе него «компилятор» пересоздаёт реестр модулей, фактов, рисков и — <strong>repair-lessons.md</strong>: «когда задача про X и упало Y — попробуй Z». Этот файл подмешивается в промпт следующих задач.' },
+      { num: '11', cat: 'infra', catLabel: 'Инфраструктура', title: 'CLI (Click commands)', tagline: '«пульт оператора»',
+        desc: '<span class="mono" style="color: var(--accent);">gg init</span>, <span class="mono" style="color: var(--accent);">gg issue &lt;N&gt;</span>, <span class="mono" style="color: var(--accent);">gg run --watch</span> (daemon). Отдельный пакет recovery: <strong>resume, retry, provide, cancel, clean</strong>. Плюс read-only <strong>status / report / doctor</strong> и подкоманды для knowledge, findings, review.' }
+    ];
+
+    var grid = document.getElementById('componentsGrid');
+    components.forEach(function(c) {
+      var card = document.createElement('article');
+      card.className = 'component-card';
+      card.dataset.cat = c.cat;
+      card.innerHTML =
+        '<div class="component-header">' +
+          '<span class="component-num">' + c.num + '</span>' +
+          '<span class="component-cat">' + c.catLabel + '</span>' +
+        '</div>' +
+        '<h4>' + c.title + '</h4>' +
+        '<div class="component-tagline">' + c.tagline + '</div>' +
+        '<p class="component-desc">' + c.desc + '</p>';
+      grid.appendChild(card);
+    });
+
+    // Recalculate counts
+    var counts = { all: components.length, state: 0, infra: 0, pipeline: 0, agent: 0 };
+    components.forEach(function(c) { counts[c.cat]++; });
+    document.querySelectorAll('.filter-btn').forEach(function(btn) {
+      var f = btn.dataset.filter;
+      var label = btn.textContent.split(' · ')[0];
+      btn.textContent = label + ' · ' + counts[f];
+    });
+
+    document.querySelectorAll('.filter-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        var filter = btn.dataset.filter;
+        document.querySelectorAll('.component-card').forEach(function(card) {
+          if (filter === 'all' || card.dataset.cat === filter) {
+            card.classList.remove('hidden');
+          } else {
+            card.classList.add('hidden');
+          }
+        });
+      });
+    });
+
+    // === DATA: Timeline ===
+    var timelineSteps = [
+      { step: 'Шаг 01', title: 'Запуск команды', desc: 'Оператор запускает <code>gg issue 42 --candidates 3 --max-parallel-candidates 2</code> в корне репо.' },
+      { step: 'Шаг 02', title: 'fcntl-lock на issue', desc: 'Pipeline берёт файловую блокировку — чтобы параллельный <code>gg</code> не схватил то же самое. Затем читает issue через <code>gh issue view</code>.' },
+      { step: 'Шаг 03', title: 'Заводится папка run', desc: 'Создаётся <code>.gg/runs/issue-42-&lt;стэмп&gt;/</code> — durable-журнал, где запишется всё происходящее. State.json + .bak с самого старта.' },
+      { step: 'Шаг 04', title: 'Claim в трекере', desc: 'Issue получает лейбл <code>gg:in-progress</code>, карточка на доске едет в «In Progress», в комментариях появляется <strong>идемпотентная</strong> отметка о claim\'е.' },
+      { step: 'Шаг 05', title: 'Фаза анализа', desc: 'Backend-агент в <strong>read-only sandbox</strong> смотрит на issue и репо, возвращает структурированный бриф: что делать, какие файлы, какие риски.' },
+      { step: 'Шаг 06', title: 'Опционально — Blocked', desc: 'Если агенту чего-то не хватает — run уходит в <code>Blocked</code>. Оператор отвечает через <code>gg provide</code>, цикл продолжается.' },
+      { step: 'Шаг 07', title: 'Baseline-verification', desc: 'Pipeline считает место на диске, гонит тесты на <strong>чистом базовом коммите</strong>, запоминает <code>known_failure</code>\'ы — чтобы не считать их регрессией.' },
+      { step: 'Шаг 08', title: '3 кандидата параллельно', desc: 'Запускаются в своих worktree, со своими стратегиями: <strong>conservative, test-first, architecture-aware</strong>. Каждый: setup → backend через sandbox → patch → verify.' },
+      { step: 'Шаг 09', title: 'Evaluator выбирает победителя', desc: 'Жёсткая таблица: +100 успех, +50 verify прошёл, -100 нарушена политика, дисквал за мутацию worktree. Никакого LLM.' },
+      { step: 'Шаг 10', title: 'Repair-цикл (если все упали)', desc: 'Pipeline пишет уроки в <code>repair-lessons.md</code>, поднимает attempt и запускает repair-кандидатов с явным <strong>фидбэком о причине провала</strong>.' },
+      { step: 'Шаг 11', title: 'Integration worktree', desc: 'Победитель собран. Pipeline создаёт <strong>отдельный</strong> worktree от свежего <code>origin/main</code>, применяет туда патч, повторяет verify — на случай, если main ушёл вперёд.' },
+      { step: 'Шаг 12', title: 'Final-verification gate', desc: 'Четыре проверки: static checks по agent-pattern, manifest-digest, обязательные reviewer-размерности, наличие артефактов. Любой блокер → fail.' },
+      { step: 'Шаг 13', title: 'Публикация — step by step', desc: 'Каждый внешний эффект (<code>git commit</code>, <code>git push</code>, <code>gh pr create</code>, постинг комментария, смена метки) <strong>записывает свой step</strong> в state.json — resume не сделает то же самое дважды.' },
+      { step: 'Шаг 14', title: 'Карточка → In Review', desc: 'Метка <code>gg:in-review</code> вместо <code>gg:in-progress</code>, движение по доске в «In Review», итоговый комментарий со ссылками на PR.' },
+      { step: 'Шаг 15', title: 'Накопление знаний', desc: 'В <code>session-handoff</code>, <code>decisions</code>, <code>patterns</code> и <code>constitution.md</code> дописываются записи об успешном run\'е. Worktree-папки чистятся, run уходит в <strong>Completed</strong>.' }
+    ];
+
+    var timeline = document.getElementById('timeline');
+    timelineSteps.forEach(function(t) {
+      var el = document.createElement('div');
+      el.className = 'timeline-item reveal';
+      el.dataset.reveal = '';
+      el.innerHTML =
+        '<div class="timeline-step">' + t.step + '</div>' +
+        '<div class="timeline-title">' + t.title + '</div>' +
+        '<div class="timeline-desc">' + t.desc + '</div>';
+      timeline.appendChild(el);
+      revealObserver.observe(el);
+    });
+
+    // === DATA: Properties ===
+    var properties = [
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+        title: 'Durable state как первичный артефакт', desc: 'Каждый шаг записывает результат на диск, а потом меняет состояние. Любой run можно прервать и продолжить — pipeline увидит, что уже сделано.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>',
+        title: 'Жёсткий whitelist переходов state machine', desc: 'Нельзя перейти из произвольного состояния в произвольное; нелегальный переход — исключение, а не молчаливая порча данных.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9"/><polyline points="3 4 3 12 11 12"/></svg>',
+        title: 'Step-based resume публикации', desc: 'Внутри финальной фазы хранится отдельный «шаг публикации», чтобы не делать git push или gh pr create дважды.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>',
+        title: 'Pydantic-валидация на границах хранилища', desc: 'Артефакт проверяется и на запись, и на чтение по одной и той же схеме — нельзя положить «почти правильный» JSON.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>',
+        title: 'Параллельные кандидаты в изолированных worktree', desc: 'Каждый со своим кэшем пакет-менеджеров, портом и веткой. Параллелизм — без блокировок и без общего mutable state.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>',
+        title: 'Sandbox-aware execution по умолчанию', desc: 'Direct-exec backend\'а — это сознательный opt-in. Дефолтная конфигурация требует srt-py и блокирует run, если его нет.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>',
+        title: 'Deterministic выбор победителя', desc: 'Скоринг по жёсткой таблице, никакой «LLM-as-a-judge» в основном пути. Decision можно объяснить и воспроизвести.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>',
+        title: 'Идемпотентные внешние эффекты', desc: 'Комментарии в трекере — с HTML-маркерами, чтобы не дублироваться. Патч — в отдельный integration worktree от свежего origin/main, чтобы устаревший base ловился до push\'а.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 10v6M4.22 4.22l4.24 4.24m7.08 7.08l4.24 4.24M1 12h6m10 0h6M4.22 19.78l4.24-4.24m7.08-7.08l4.24-4.24"/></svg>',
+        title: 'Trigger-based reviewer obligations', desc: 'Какие проверки обязательны для конкретного run\'а — выводится автоматически из путей изменённых файлов, а не из настроек.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>',
+        title: 'Cross-process rate-limit + circuit breaker', desc: 'Параллельные gg-процессы видят общий счётчик квот и общий breaker через SQLite-WAL. Один rate-limit не повторится из всех процессов одновременно.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>',
+        title: 'Память между run\'ами через append-only event log', desc: 'Repair-уроки накапливаются и инжектируются в промпты следующих задач — без отдельного внешнего сервиса. Журнал событий — источник правды для всей памяти.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+        title: 'Surface integrity через manifest-digest', desc: 'Если кто-то локально подменил критичные orchestrator-файлы, final-verification это увидит по несовпадению digest\'а и заблокирует публикацию.' }
+    ];
+
+    var propsGrid = document.getElementById('propertiesGrid');
+    properties.forEach(function(p) {
+      var el = document.createElement('div');
+      el.className = 'property reveal';
+      el.dataset.reveal = '';
+      el.innerHTML =
+        '<div class="property-icon">' + p.icon + '</div>' +
+        '<div><h4>' + p.title + '</h4><p>' + p.desc + '</p></div>';
+      propsGrid.appendChild(el);
+      revealObserver.observe(el);
+    });
+
+    function onThemeChange() {}
+  </script>
+</body>
+</html>

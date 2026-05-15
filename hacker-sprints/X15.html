@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="ru" class="theme-dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>X15 — архитектура простыми словами</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script>Chart.defaults.animation = false;</script>
+  <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
+  <style>
+    /* ===== X15 (Archon) — уникальные секции ===== */
+
+    /* Категории компонентов: engine / provider / orchestrator / surface */
+    .component-card[data-cat="engine"] { --cat-color: #14b8a6; }
+    .component-card[data-cat="provider"] { --cat-color: #8b5cf6; }
+    .component-card[data-cat="orchestrator"] { --cat-color: #3b82f6; }
+    .component-card[data-cat="surface"] { --cat-color: #06b6d4; }
+    html.theme-light .component-card[data-cat="engine"] { --cat-color: #0d9488; }
+    html.theme-light .component-card[data-cat="provider"] { --cat-color: #7c3aed; }
+    html.theme-light .component-card[data-cat="orchestrator"] { --cat-color: #2563eb; }
+    html.theme-light .component-card[data-cat="surface"] { --cat-color: #0891b2; }
+
+    /* DAG node-types grid */
+    .nodes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+    }
+    .node-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px;
+      transition: all 0.25s;
+      position: relative;
+      overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    .node-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--node-color);
+      opacity: 0.75;
+    }
+    .node-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--border-strong);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+    }
+    .node-card[data-node="agent"]    { --node-color: #8b5cf6; }
+    .node-card[data-node="command"]  { --node-color: #14b8a6; }
+    .node-card[data-node="bash"]     { --node-color: #f59e0b; }
+    .node-card[data-node="script"]   { --node-color: #06b6d4; }
+    .node-card[data-node="loop"]     { --node-color: #3b82f6; }
+    .node-card[data-node="approval"] { --node-color: #ec4899; }
+    .node-card[data-node="abort"]    { --node-color: #ef4444; }
+    html.theme-light .node-card[data-node="agent"]    { --node-color: #7c3aed; }
+    html.theme-light .node-card[data-node="command"]  { --node-color: #0d9488; }
+    html.theme-light .node-card[data-node="bash"]     { --node-color: #d97706; }
+    html.theme-light .node-card[data-node="script"]   { --node-color: #0891b2; }
+    html.theme-light .node-card[data-node="loop"]     { --node-color: #2563eb; }
+    html.theme-light .node-card[data-node="approval"] { --node-color: #db2777; }
+    html.theme-light .node-card[data-node="abort"]    { --node-color: #dc2626; }
+
+    .node-icon {
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--node-color) 14%, transparent);
+      color: var(--node-color);
+      margin-bottom: 14px;
+    }
+    .node-name {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: var(--node-color);
+      letter-spacing: -0.01em;
+      margin-bottom: 6px;
+    }
+    .node-title {
+      font-size: 1rem; font-weight: 600;
+      color: var(--text);
+      margin-bottom: 10px;
+      line-height: 1.3;
+    }
+    .node-desc {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      line-height: 1.55;
+      flex: 1;
+    }
+
+    /* Adapters strip */
+    .adapters-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 14px;
+    }
+    .adapter-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex; flex-direction: column;
+      gap: 8px;
+      transition: all 0.25s;
+      position: relative;
+      overflow: hidden;
+    }
+    .adapter-card::before {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+      background: var(--adapter-color);
+    }
+    .adapter-card:hover {
+      border-color: var(--border-strong);
+      transform: translateX(3px);
+    }
+    .adapter-card[data-id="slack"]    { --adapter-color: #611f69; }
+    .adapter-card[data-id="telegram"] { --adapter-color: #229ed9; }
+    .adapter-card[data-id="github"]   { --adapter-color: #6e7681; }
+    .adapter-card[data-id="discord"]  { --adapter-color: #5865f2; }
+    .adapter-card[data-id="gitea"]    { --adapter-color: #609926; }
+    .adapter-card[data-id="gitlab"]   { --adapter-color: #fc6d26; }
+    .adapter-card[data-id="web"]      { --adapter-color: #06b6d4; }
+
+    .adapter-name {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .adapter-kind {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+    .adapter-note {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin-top: 4px;
+    }
+
+    /* Config pipeline ladder */
+    .config-ladder {
+      display: flex; flex-direction: column;
+      gap: 12px;
+    }
+    .config-step {
+      display: flex; align-items: stretch; gap: 16px;
+      padding: 18px 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .config-step:hover {
+      border-color: var(--border-strong);
+      transform: translateX(4px);
+    }
+    .config-step-num {
+      flex-shrink: 0;
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--accent-glow);
+      color: var(--accent);
+      border-radius: 8px;
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 0.9375rem;
+    }
+    .config-step-body { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    .config-step-source {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+      color: var(--accent);
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .config-step-text {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      line-height: 1.55;
+    }
+    .config-arrow {
+      color: var(--text-secondary);
+      opacity: 0.5;
+      font-size: 1.25rem;
+      display: flex; align-items: center;
+      padding: 0 4px;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .nodes-grid { grid-template-columns: repeat(2, 1fr); }
+      .adapters-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .nodes-grid { grid-template-columns: 1fr; }
+      .adapters-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 375px) {
+      .node-card, .adapter-card, .config-step { padding: 16px; }
+    }
+    @media print {
+      .node-card, .adapter-card, .config-step { break-inside: avoid; border: 1px solid #ddd; box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-to-content">К основному контенту</a>
+
+  <div class="viz-menu">
+    <button class="viz-menu-toggle" onclick="toggleMenu()" aria-label="Меню">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="3" y1="5" x2="17" y2="5"/><line x1="3" y1="10" x2="17" y2="10"/><line x1="3" y1="15" x2="17" y2="15"/>
+      </svg>
+    </button>
+    <div class="viz-menu-dropdown" id="vizMenuDropdown">
+      <button onclick="cycleTheme()"><span id="themeIcon">🌙</span><span id="themeLabel">Тёмная</span></button>
+      <button onclick="downloadImage()"><span>📥</span><span>Скачать PNG</span></button>
+      <button onclick="window.print()"><span>🖨️</span><span>Печать / PDF</span></button>
+    </div>
+  </div>
+
+  <main id="main-content" role="main">
+
+    <!-- ============== HERO ============== -->
+    <section class="hero" role="banner">
+      <div class="container hero-content">
+        <a href="index.html" class="hero-back animate">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          К каталогу
+        </a>
+        <h1 class="animate delay-1">X15</h1>
+        <a href="https://github.com/podlodka-ai-club/X15" class="hero-repo animate delay-1" target="_blank" rel="noopener">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+          github.com/podlodka-ai-club/X15
+        </a>
+        <p class="hero-subtitle animate delay-2">
+          Диспетчер AI-кодинг-агентов над <strong style="color: var(--accent);">GitHub</strong>: оператор кладёт
+          в репозиторий YAML-описания workflow'ов и расставляет на issue лейблы — <strong style="color: var(--accent);">Archon</strong>
+          сам подхватывает задачу, заводит изолированный <code>git worktree</code>, гоняет <code>Claude</code> или <code>Codex</code>
+          по нужному графу узлов, открывает PR и, при удачном раскладе, мержит. Внутри — два слоя:
+          <code>DAG</code>-executor + backlog-надзиратель над GitHub.
+        </p>
+
+        <div class="hero-stack animate delay-2">
+          <span class="stack-pill">TypeScript</span>
+          <span class="stack-pill">Bun</span>
+          <span class="stack-pill">Hono</span>
+          <span class="stack-pill">SQLite</span>
+          <span class="stack-pill">React</span>
+          <span class="stack-pill">Claude</span>
+          <span class="stack-pill">Codex</span>
+          <span class="stack-pill">Pi</span>
+        </div>
+
+        <div class="hero-stats">
+          <div class="stat-card animate delay-3">
+            <div class="stat-value accent" data-count="10" data-suffix="">10</div>
+            <div class="stat-label">Компонентов архитектуры</div>
+            <div class="stat-sublabel">от DAG-executor'а до Web UI</div>
+          </div>
+          <div class="stat-card animate delay-3">
+            <div class="stat-value" data-count="7" data-suffix="">7</div>
+            <div class="stat-label">Типов узлов в workflow</div>
+            <div class="stat-sublabel">agent · command · bash · script · loop · approval · abort</div>
+          </div>
+          <div class="stat-card animate delay-4">
+            <div class="stat-value" data-count="6" data-suffix="">6</div>
+            <div class="stat-label">Платформ-адаптеров</div>
+            <div class="stat-sublabel">Slack · Telegram · GitHub · Discord · Gitea · GitLab</div>
+          </div>
+          <div class="stat-card animate delay-4">
+            <div class="stat-value" data-count="4" data-suffix="">4</div>
+            <div class="stat-label">Слоя конфигурации</div>
+            <div class="stat-sublabel">defaults → global → repo → env</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== KEY IDEA ============== -->
+    <section style="padding-top: 0;">
+      <div class="container">
+        <div class="key-idea reveal" data-reveal>
+          <div class="section-eyebrow">Главная идея</div>
+          <h3>Workflow — это не скрипт, а <code>DAG</code></h3>
+          <p>
+            Каждый узел — атомарная штука: «вызови агента с таким промптом», «запусти shell»,
+            «спроси человека и подожди». Один универсальный executor умеет крутить такой граф,
+            обрабатывать ошибки, паузы и параллельность. А над ним — отдельный <strong>backlog-надзиратель</strong>,
+            который превращает <strong>GitHub в источник задач</strong> для DAG'а: лейблы там — это и есть
+            state machine. Слева — «откуда задачи» (issue, чат, веб). Справа — общая фабрика из
+            executor'а, изоляции, провайдеров и БД. Адаптеры платформ — сменные «носики» сверху.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== ARCHITECTURE FLOW ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Высокоуровневая схема</div>
+        <h2 class="section-title">Два слоя над общей фабрикой</h2>
+        <p class="section-subtitle">
+          Сверху — два независимых источника задач (backlog и DAG-программы), снизу — изоляция,
+          провайдеры и БД событий. Контракты между слоями — узкие.
+        </p>
+
+        <div class="arch-flow">
+          <div class="arch-diagram reveal" data-reveal>
+            <div class="arch-node active">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">GitHub Issues + Labels · .archon/*.yaml</div>
+                <div class="arch-node-meta">control plane наверху — лейблы как state machine</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ читает / грузит</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">Backlog Orchestrator</div>
+                <div class="arch-node-meta">reconcile loop — превращает GitHub в очередь задач</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ ArchonPort.startWorkflow</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M7 6h10M6 8l5 8M18 8l-5 8"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">DAG-executor (топологические слои)</div>
+                <div class="arch-node-meta">Kahn's algorithm · Promise.allSettled · retry · resume</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ запрашивает</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">Isolation (git worktree)</div>
+                <div class="arch-node-meta">отдельная папка + отдельная ветка на каждый run</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ subprocess через IAgentProvider</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">Provider: Claude · Codex · Pi</div>
+                <div class="arch-node-meta">единый разъём; events стримятся в SQLite/Postgres + SSE</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="reveal" data-reveal>
+            <h3 style="margin-bottom: 16px;">Что важно понять</h3>
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 14px;">
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Control plane — это GitHub.</strong> Лейблы на issue (<code>archon:ready</code>, <code>archon:in-progress</code>, <code>archon:pr-open</code>, <code>archon:done</code>) хранят канонический статус. БД — только bookkeeping и счётчики попыток.</span>
+              </li>
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Один executor для всех.</strong> Workflow на 3 узла и pipeline с десятком ревьюеров параллельно читаются одним и тем же кодом. Бизнес-логика исполнения собрана в одном месте.</span>
+              </li>
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Узкий contract-layer.</strong> Workflow-engine не знает про SDK <code>Claude</code>/<code>Codex</code>/<code>Pi</code> — только <code>IAgentProvider</code>. Добавить нового провайдера = одна папка и одна строка в реестре.</span>
+              </li>
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Resume по journal'у.</strong> События узлов — append-only лента в БД. При resume executor просто пропускает узлы, у которых уже есть <code>node_completed</code>.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== DAG NODE TYPES ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Workflow YAML</div>
+        <h2 class="section-title">Семь типов узлов в графе</h2>
+        <p class="section-subtitle">
+          У каждого узла есть <code>depends_on</code>, опционально <code>when:</code>, <code>trigger_rule</code>,
+          <code>retry</code>, <code>hooks</code>, <code>mcp</code>. Один и тот же executor крутит любой набор узлов
+          ниже как направленный граф.
+        </p>
+
+        <div class="nodes-grid" id="nodesGrid">
+          <!-- Nodes injected -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== PLATFORM ADAPTERS ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Адаптеры платформ</div>
+        <h2 class="section-title">Шесть «носиков» снаружи + Web UI</h2>
+        <p class="section-subtitle">
+          Все они общаются с одним и тем же ядром через единый интерфейс: принять сообщение, привязать
+          к разговору, отдать результат стримом или батчем, проверить, что отправитель в whitelist'е.
+          Workflow-движок не знает, откуда пришёл «start workflow».
+        </p>
+
+        <div class="adapters-grid" id="adaptersGrid">
+          <!-- Adapters injected -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== COMPONENTS ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Из чего собран</div>
+        <h2 class="section-title">Десять строительных блоков</h2>
+        <p class="section-subtitle">
+          От «программы агента» в YAML до Web UI — каждый компонент решает одну конкретную задачу.
+          Используйте фильтр для просмотра по категориям.
+        </p>
+
+        <div class="components-filter">
+          <button class="filter-btn active" data-filter="all">Все · 10</button>
+          <button class="filter-btn" data-filter="engine">Движок · 3</button>
+          <button class="filter-btn" data-filter="provider">Провайдеры · 2</button>
+          <button class="filter-btn" data-filter="orchestrator">Оркестрация · 2</button>
+          <button class="filter-btn" data-filter="surface">Поверхности · 3</button>
+        </div>
+
+        <div class="components-grid" id="componentsGrid">
+          <!-- Components injected -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== CONFIG PIPELINE ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Configuration pipeline</div>
+        <h2 class="section-title">Четыре слоя настроек, последнее слово — за env</h2>
+        <p class="section-subtitle">
+          Перед всем этим — «защитный поклон»: первый импорт во всех entry-point'ах чистит
+          <code>.env</code>-переменные, которые <code>Bun</code> автоматически подгрузил из <code>cwd</code>,
+          иначе токены целевого репо протекли бы в harness-процесс.
+        </p>
+
+        <div class="config-ladder reveal" data-reveal id="configLadder">
+          <!-- Config steps injected -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== TIMELINE ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Жизненный цикл</div>
+        <h2 class="section-title">Что происходит с типичной задачей из бэклога</h2>
+        <p class="section-subtitle">
+          От момента, когда оператор поставил на issue лейблы <code>archon:ready</code> и
+          <code>archon-workflow:fix-issue-simple</code>, до закрытия PR — пятнадцать конкретных шагов.
+        </p>
+
+        <div class="timeline" id="timeline">
+          <!-- Timeline injected -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== KEY PROPERTIES ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">На чём всё держится</div>
+        <h2 class="section-title">Ключевые свойства архитектуры</h2>
+        <p class="section-subtitle">
+          Одиннадцать решений, которые делают систему предсказуемой после падений, безопасной для
+          credentials и легко расширяемой новыми провайдерами и адаптерами.
+        </p>
+
+        <div class="properties-grid" id="propertiesGrid">
+          <!-- Properties injected -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== FOOTER ============== -->
+    <footer class="footer">
+      <div class="container">
+        <p>
+          Архитектурный обзор <strong style="color: var(--text);">X15</strong> ·
+          Сгенерировано из <span class="mono">arch/X15-arch-review.md</span>
+        </p>
+      </div>
+    </footer>
+
+  </main>
+
+  <script>
+    // === Menu ===
+    function toggleMenu() {
+      var dropdown = document.getElementById('vizMenuDropdown');
+      if (dropdown) dropdown.classList.toggle('open');
+    }
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.viz-menu')) {
+        var dropdown = document.getElementById('vizMenuDropdown');
+        if (dropdown) dropdown.classList.remove('open');
+      }
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        var dropdown = document.getElementById('vizMenuDropdown');
+        if (dropdown) dropdown.classList.remove('open');
+      }
+    });
+
+    // === Theme ===
+    var savedTheme = localStorage.getItem('viz-theme');
+    var currentTheme = savedTheme || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    function applyTheme(t) {
+      document.documentElement.className = 'theme-' + t;
+      var icon = document.getElementById('themeIcon');
+      var label = document.getElementById('themeLabel');
+      if (icon) icon.textContent = t === 'dark' ? '🌙' : '☀️';
+      if (label) label.textContent = t === 'dark' ? 'Тёмная' : 'Светлая';
+      localStorage.setItem('viz-theme', t);
+      currentTheme = t;
+      if (typeof onThemeChange === 'function') onThemeChange();
+    }
+    function cycleTheme() { applyTheme(currentTheme === 'dark' ? 'light' : 'dark'); }
+    applyTheme(currentTheme);
+
+    // === Scroll Reveal ===
+    document.querySelectorAll('[data-reveal]').forEach(function(el) { el.classList.add('reveal'); });
+    var revealObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          revealObserver.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.reveal').forEach(function(el) { revealObserver.observe(el); });
+
+    // === Number Counter ===
+    function animateCounters() {
+      document.querySelectorAll('[data-count]').forEach(function(el) {
+        if (el.dataset.counted) return;
+        el.dataset.counted = '1';
+        var target = parseFloat(el.dataset.count),
+            prefix = el.dataset.prefix || '',
+            suffix = el.dataset.suffix || '';
+        var start = performance.now(), duration = 1100;
+        (function tick(now) {
+          var p = Math.min((now - start) / duration, 1),
+              eased = 1 - Math.pow(1 - p, 3);
+          el.textContent = prefix + Math.round(target * eased).toLocaleString() + suffix;
+          if (p < 1) requestAnimationFrame(tick);
+        })(start);
+      });
+    }
+    var counterEl = document.querySelector('[data-count]');
+    if (counterEl) {
+      var cObs = new IntersectionObserver(function(entries) {
+        entries.forEach(function(e) {
+          if (e.isIntersecting) { animateCounters(); cObs.disconnect(); }
+        });
+      }, { threshold: 0.3 });
+      cObs.observe(counterEl);
+    }
+
+    // === Download PNG ===
+    async function downloadImage() {
+      var menu = document.querySelector('.viz-menu');
+      menu.style.display = 'none';
+      try {
+        var url = await htmlToImage.toPng(document.body, {
+          quality: 1, pixelRatio: 2,
+          filter: function(n) { return !n.classList || !n.classList.contains('viz-menu'); }
+        });
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'X15-architecture.png';
+        a.click();
+      } catch(e) { console.error('Download failed:', e); }
+      menu.style.display = '';
+    }
+
+    // === DATA: DAG node types ===
+    var nodes = [
+      {
+        id: 'agent', name: 'agent',
+        title: 'Inline-промпт агенту',
+        desc: 'Дёрнуть провайдера готовым inline-промптом из YAML. Самый частый узел в любом workflow\'е.',
+        icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'
+      },
+      {
+        id: 'command', name: 'command',
+        title: 'Markdown-команда из библиотеки',
+        desc: 'Подключить переиспользуемый промпт по имени — «создай PR», «прогони code-review агента» и т. п.',
+        icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>'
+      },
+      {
+        id: 'bash', name: 'bash',
+        title: 'Произвольный shell',
+        desc: 'Запустить <code>bash</code>-команду. Простейший способ интегрировать любой существующий tooling.',
+        icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>'
+      },
+      {
+        id: 'script', name: 'script',
+        title: 'TS/Python скрипт',
+        desc: 'Запустить TypeScript через <code>bun</code> или Python через <code>uv</code> — изолированно, со своими зависимостями.',
+        icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>'
+      },
+      {
+        id: 'loop', name: 'loop',
+        title: 'Цикл «пока не DONE»',
+        desc: 'Крутить промпт повторно, пока агент не скажет, что закончил. Под капотом — counter + condition.',
+        icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>'
+      },
+      {
+        id: 'approval', name: 'approval',
+        title: 'Approval-пауза',
+        desc: 'Заморозить run в БД как <code>paused</code>, отправить пользователю кнопку «approve/reject», ждать.',
+        icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'
+      },
+      {
+        id: 'abort', name: 'abort',
+        title: 'Полный обрыв',
+        desc: 'Совсем оборвать выполнение — нужен, когда условие <code>when:</code> делает дальнейший прогон бессмысленным.',
+        icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
+      }
+    ];
+    var nodesGrid = document.getElementById('nodesGrid');
+    nodes.forEach(function(n) {
+      var el = document.createElement('article');
+      el.className = 'node-card';
+      el.dataset.node = n.id;
+      el.innerHTML =
+        '<div class="node-icon">' + n.icon + '</div>' +
+        '<div class="node-name">' + n.name + '</div>' +
+        '<div class="node-title">' + n.title + '</div>' +
+        '<div class="node-desc">' + n.desc + '</div>';
+      nodesGrid.appendChild(el);
+    });
+
+    // === DATA: Adapters ===
+    var adapters = [
+      { id: 'github',   name: 'GitHub',   kind: 'Webhooks + gh CLI', note: 'Основной control plane: issue, PR, лейблы. Сюда же ходит backlog-orchestrator.' },
+      { id: 'slack',    name: 'Slack',    kind: 'Bot · сообщения',   note: 'Команда <code>/workflow</code>, привязка к thread\'у, стрим результата в канал.' },
+      { id: 'telegram', name: 'Telegram', kind: 'Bot API',           note: 'Personal-канал оператора + whitelist по chat_id. Стрим или батч.' },
+      { id: 'discord',  name: 'Discord',  kind: 'Bot · slash-cmd',   note: 'Slash-команды, ответы в thread, allowlist по user/role.' },
+      { id: 'gitea',    name: 'Gitea',    kind: 'Self-hosted git',   note: 'Альтернатива GitHub для self-hosted сценариев. Те же лейблы и issue.' },
+      { id: 'gitlab',   name: 'GitLab',   kind: 'Self-hosted git',   note: 'Аналогично — issue + merge requests как control plane.' },
+      { id: 'web',      name: 'Web UI',   kind: 'REST + SSE',        note: '<code>React</code> + <code>Vite</code> + <code>shadcn/ui</code> + <code>Zustand</code>. Типы фронта генерятся из OpenAPI.' }
+    ];
+    var adaptersGrid = document.getElementById('adaptersGrid');
+    adapters.forEach(function(a) {
+      var el = document.createElement('article');
+      el.className = 'adapter-card';
+      el.dataset.id = a.id;
+      el.innerHTML =
+        '<div class="adapter-name">' + a.name + '</div>' +
+        '<div class="adapter-kind">' + a.kind + '</div>' +
+        '<div class="adapter-note">' + a.note + '</div>';
+      adaptersGrid.appendChild(el);
+    });
+
+    // === DATA: Components ===
+    var components = [
+      { num: '01', cat: 'engine', catLabel: 'Движок', title: 'Workflow YAML', tagline: '«программа агента»',
+        desc: 'Файл «вот провайдер, вот модель, вот узлы и их зависимости». Семь типов узлов, <code>depends_on</code>, <code>when:</code>, <code>trigger_rule</code>, <code>retry</code>, <code>hooks</code>, <code>mcp</code>. Описывает <strong>что должно произойти</strong>, не как.' },
+      { num: '02', cat: 'engine', catLabel: 'Движок', title: 'DAG-executor', tagline: '«процессор» этих программ',
+        desc: 'Берёт workflow, строит топологические слои через <code>Kahn\'s algorithm</code>, идёт слой за слоем. Внутри слоя — <code>Promise.allSettled</code>. Решает, что считать ретраем, что — фатальной ошибкой, когда форкать сессию. <strong>idle-timeout</strong> — детектор зависаний.' },
+      { num: '03', cat: 'engine', catLabel: 'Движок', title: 'Workflow store', tagline: 'журнал исполнения',
+        desc: 'Узкий интерфейс поверх БД: создать run, обновить статус, записать событие узла, найти resume-кандидата. События — <strong>append-only лента</strong>. При resume executor пропускает узлы, у которых уже есть <code>node_completed</code>.' },
+      { num: '04', cat: 'provider', catLabel: 'Провайдеры', title: 'Provider layer', tagline: 'единый «разъём» к агентам',
+        desc: 'Интерфейс <code>IAgentProvider</code>: отправь промпт, верни async-generator чанков. Реестр built-in (<code>Claude</code>, <code>Codex</code>) и community (<code>Pi</code> над 20+ бэкендов). Capabilities matrix — кто умеет hooks, MCP, skills, cost-budget.' },
+      { num: '05', cat: 'provider', catLabel: 'Провайдеры', title: 'Isolation provider', tagline: '«отдельная папка под задачу»',
+        desc: 'Перед run\'ом — резолвер с шестью уровнями приоритета: reuse по <code>workflowId</code>, по issue, по PR-ветке, иначе новый <code>git worktree</code>. Защита от symlink-escape\'а и absolute-path-инъекций.' },
+      { num: '06', cat: 'orchestrator', catLabel: 'Оркестрация', title: 'Backlog orchestrator', tagline: '«надзиратель» над GitHub',
+        desc: 'Раз в минуту делает <code>reconcileOnce</code>: получает issue и PR через <code>gh</code> CLI, синхронизирует state, для свободных issue с лейблом <code>archon:ready</code> запускает workflow. <strong>Лейблы — state machine</strong>.' },
+      { num: '07', cat: 'orchestrator', catLabel: 'Оркестрация', title: 'Configuration pipeline', tagline: 'четыре слоя настроек',
+        desc: 'Defaults → <code>~/.archon/config.yaml</code> → <code>&lt;repo&gt;/.archon/config.yaml</code> → env. Allow-list при выдаче конфига в Web UI — пути к бинарникам и credentials не утекают.' },
+      { num: '08', cat: 'surface', catLabel: 'Поверхности', title: 'Bundled defaults', tagline: 'встроенная библиотека',
+        desc: 'В бинарнике зашиты пара десятков workflow\'ов и три десятка markdown-команд («исследуй issue», «adversarial generator-critic loop»). Repo-локальные и user-global файлы перекрывают bundled по имени.' },
+      { num: '09', cat: 'surface', catLabel: 'Поверхности', title: 'Server & API', tagline: 'управление',
+        desc: '<code>Hono</code>-сервер с OpenAPI-аннотациями: ~40 endpoint\'ов (workflows CRUD, runs start/cancel/resume/approve, codebases, конфиг). SSE-стрим отдельной трубой пушит live-события из DAG-executor\'а.' },
+      { num: '10', cat: 'surface', catLabel: 'Поверхности', title: 'Web UI · React', tagline: 'наблюдение',
+        desc: '<code>React</code> + <code>Vite</code> + <code>shadcn/ui</code> + <code>Zustand</code>. Типы для фронта генерируются из OpenAPI-схемы — фронт <strong>не имеет права</strong> напрямую импортировать пакеты движка.' }
+    ];
+
+    var grid = document.getElementById('componentsGrid');
+    components.forEach(function(c) {
+      var card = document.createElement('article');
+      card.className = 'component-card';
+      card.dataset.cat = c.cat;
+      card.innerHTML =
+        '<div class="component-header">' +
+          '<span class="component-num">' + c.num + '</span>' +
+          '<span class="component-cat">' + c.catLabel + '</span>' +
+        '</div>' +
+        '<h4>' + c.title + '</h4>' +
+        '<div class="component-tagline">' + c.tagline + '</div>' +
+        '<p class="component-desc">' + c.desc + '</p>';
+      grid.appendChild(card);
+    });
+
+    // Recalculate filter counts
+    var counts = { all: components.length, engine: 0, provider: 0, orchestrator: 0, surface: 0 };
+    components.forEach(function(c) { counts[c.cat]++; });
+    document.querySelectorAll('.filter-btn').forEach(function(btn) {
+      var f = btn.dataset.filter;
+      var label = btn.textContent.split(' · ')[0];
+      btn.textContent = label + ' · ' + counts[f];
+    });
+    document.querySelectorAll('.filter-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        var filter = btn.dataset.filter;
+        document.querySelectorAll('.component-card').forEach(function(card) {
+          if (filter === 'all' || card.dataset.cat === filter) {
+            card.classList.remove('hidden');
+          } else {
+            card.classList.add('hidden');
+          }
+        });
+      });
+    });
+
+    // === DATA: Config pipeline ladder ===
+    var configSteps = [
+      { num: '1', source: 'hardcoded defaults', text: 'Базовый каркас, зашитый в код. Гарантирует, что Archon стартанёт даже без единого YAML на диске.' },
+      { num: '2', source: '~/.archon/config.yaml', text: 'Глобальные настройки пользователя — общие для всех репо. Сюда же подгружается <code>~/.archon/.env</code>.' },
+      { num: '3', source: '&lt;repo&gt;/.archon/config.yaml', text: 'Repo-локальные настройки — позволяют каждому проекту иметь свой набор workflow\'ов и параметров. Плюс <code>&lt;repo&gt;/.archon/.env</code>.' },
+      { num: '4', source: 'environment variables', text: 'Последнее слово — за env. Удобно для CI и для разовых переопределений без правки файлов.' }
+    ];
+    var configLadder = document.getElementById('configLadder');
+    configSteps.forEach(function(c, idx) {
+      var step = document.createElement('div');
+      step.className = 'config-step';
+      step.innerHTML =
+        '<div class="config-step-num">' + c.num + '</div>' +
+        '<div class="config-step-body">' +
+          '<div class="config-step-source">' + c.source + '</div>' +
+          '<div class="config-step-text">' + c.text + '</div>' +
+        '</div>';
+      configLadder.appendChild(step);
+      if (idx < configSteps.length - 1) {
+        var arrow = document.createElement('div');
+        arrow.style.cssText = 'display: flex; justify-content: center; color: var(--text-secondary); opacity: 0.45; font-size: 1.125rem;';
+        arrow.textContent = '↓ перекрывает';
+        configLadder.appendChild(arrow);
+      }
+    });
+
+    // === DATA: Timeline ===
+    var timelineSteps = [
+      { step: 'Шаг 01', title: 'Подготовка репо', desc: 'Оператор запускает <code>archon backlog setup</code> — создаются стандартные <code>archon:*</code>-лейблы. В <code>.archon/config.yaml</code> прописан маппинг «лейбл → имя workflow\'а».' },
+      { step: 'Шаг 02', title: 'Постановка задачи', desc: 'На issue вешаются <code>archon:ready</code> и один <code>archon-workflow:fix-issue-simple</code>. Issue ставится в очередь, в БД для него ещё ничего нет.' },
+      { step: 'Шаг 03', title: 'Reconcile loop', desc: 'Backlog-orchestrator в очередном цикле <code>reconcileOnce</code> спрашивает у GitHub список issue и PR через <code>gh</code> CLI.' },
+      { step: 'Шаг 04', title: 'Eligibility-фильтр', desc: 'Issue прогоняется по пяти проверкам: открыт, единственный routing-лейбл, нет блокеров, нет <code>area:*</code>-конфликта. Issue проходит.' },
+      { step: 'Шаг 05', title: 'Старт workflow\'а', desc: 'Backlog зовёт <code>ArchonPort.startWorkflow</code>. Создаётся <code>workflow_run</code> в БД, на issue ставится <code>archon:in-progress</code>, постится один-разовый комментарий «started».' },
+      { step: 'Шаг 06', title: 'Изоляция', desc: 'Isolation-резолвер не находит существующей папки — создаёт новый <code>git worktree</code> под ветку <code>archon/issue-N</code>, fetch\'ит свежий <code>main</code> как базу.' },
+      { step: 'Шаг 07', title: 'Топологические слои', desc: 'DAG-executor строит слои workflow\'а и начинает первый. Первый узел — markdown-команда «исследуй issue»: подставляет <code>$ARGUMENTS</code>, <code>$WORKFLOW_ID</code>, шлёт промпт провайдеру.' },
+      { step: 'Шаг 08', title: 'Стрим провайдера', desc: 'Provider (<code>Claude</code> или <code>Codex</code>, как указано в YAML) стримит чанки. Executor пишет события <code>node_started</code> → <code>tool_called</code> → <code>node_completed</code> в БД и эмитит их в SSE-bus.' },
+      { step: 'Шаг 09', title: 'Параллельный слой', desc: 'Следующий слой может быть параллельным: три ревьюер-агента с <code>trigger_rule: none_failed_min_one_success</code>. Каждому — свежая сессия, шарить session-id нельзя.' },
+      { step: 'Шаг 10', title: 'Классификация ошибки', desc: 'Узел сломался по <code>timeout</code>? <code>transient</code> — ретрай с <code>forkSession: true</code>. По <code>unauthorized</code>? <code>fatal</code> — run падает.' },
+      { step: 'Шаг 11', title: 'Approval-пауза', desc: 'Если в workflow есть approval-узел и до него дошло — пишется <code>paused</code> в БД, отправляется уведомление «approve/reject», executor спокойно выходит. Run застывает.' },
+      { step: 'Шаг 12', title: 'PR открыт', desc: 'Workflow закрывает PR. В следующем reconcile-цикле backlog находит его, проверяет <code>closes #N</code>, ставит <code>archon:pr-open</code>. CI прошёл — <code>archon:ready-for-review</code>.' },
+      { step: 'Шаг 13', title: 'Auto-merge или fix', desc: 'Стоит <code>archon:auto-merge</code> и все ворота открыты — мержим. CI упал или request-changes — fix-workflow с тем же worktree (reuse), лейбл <code>archon:needs-fix</code>. Бюджет — два fix\'а.' },
+      { step: 'Шаг 14', title: 'Cleanup', desc: 'После merge\'а — <code>archon:done</code>, worktree попадает в очередь на cleanup по retention\'у. Идущие run\'ы по этому worktree доработают, новые — нет.' },
+      { step: 'Шаг 15', title: 'Cancel из веба', desc: 'Если оператор нажмёт «Cancel» в Web UI — троттлированный cancel-check внутри executor\'а в течение ~10 секунд увидит <code>cancelled</code> и аккуратно прервёт текущий слой.' }
+    ];
+    var timeline = document.getElementById('timeline');
+    timelineSteps.forEach(function(t) {
+      var el = document.createElement('div');
+      el.className = 'timeline-item reveal';
+      el.dataset.reveal = '';
+      el.innerHTML =
+        '<div class="timeline-step">' + t.step + '</div>' +
+        '<div class="timeline-title">' + t.title + '</div>' +
+        '<div class="timeline-desc">' + t.desc + '</div>';
+      timeline.appendChild(el);
+      revealObserver.observe(el);
+    });
+
+    // === DATA: Properties ===
+    var properties = [
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M7 6h10M6 8l5 8M18 8l-5 8"/></svg>',
+        title: 'DAG, а не скрипт', desc: 'Каждый узел изолирован, параллельность бесплатная, ретрай и resume работают по принципу «продолжай с того, который ещё не помечен completed».' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
+        title: 'Узкий contract-layer', desc: 'Workflow-engine не знает про SDK Claude/Codex/Pi, видит только IAgentProvider. Добавить нового провайдера = одна папка и одна строка в реестре.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>',
+        title: 'Лейблы как state machine', desc: 'Backlog-надзиратель хранит canonical state в самом GitHub. БД нужна только для bookkeeping и счётчиков попыток.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>',
+        title: 'Идемпотентность комментариев', desc: 'Каждая стадия backlog\'а имеет стабильный ключ (started, pr-opened, fix-2), повторный reconcile не запостит дубль.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
+        title: 'Older-wins path-lock', desc: 'Две почти-одновременные dispatch-операции на одну папку: старшая выигрывает, младшая помечается cancelled. Никаких deadlock\'ов и зависших pending-строк.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+        title: 'Fail-closed when:-evaluator', desc: 'Если условие не парсится — узел skipped, а не «угадывание». Bug в условии — это видимая ошибка, не тихое срабатывание.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+        title: 'Capability warnings вместо silent ignore', desc: 'Если узел просит фичу, которой у провайдера нет (mcp, skills, sandbox) — оператор видит warning. Не молча проглатывается.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+        title: 'Idle-timeout — детектор зависаний', desc: 'Тридцать минут полного молчания агента считаются признаком dead subprocess, его убивают. Не лимит работы, а защита от висяков.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>',
+        title: 'Fork-session при retry', desc: 'Повторная попытка копирует историю сессии перед добавлением нового хода. Ретрай не теряет контекст и не мутирует исходник.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+        title: 'Стрипа .env целевого репо', desc: 'Boot-import не даёт Bun-у автозагрузить чужие токены в harness-процесс. Защита от утечки credentials через cwd-сканер.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
+        title: 'Безопасные дефолты worktree', desc: 'Никаких absolute-path и <code>..</code>-сегментов в repo-локальном override\'е пути, защита от symlink-escape\'а.' }
+    ];
+    var propsGrid = document.getElementById('propertiesGrid');
+    properties.forEach(function(p) {
+      var el = document.createElement('div');
+      el.className = 'property reveal';
+      el.dataset.reveal = '';
+      el.innerHTML =
+        '<div class="property-icon">' + p.icon + '</div>' +
+        '<div><h4>' + p.title + '</h4><p>' + p.desc + '</p></div>';
+      propsGrid.appendChild(el);
+      revealObserver.observe(el);
+    });
+
+    function onThemeChange() {}
+  </script>
+</body>
+</html>

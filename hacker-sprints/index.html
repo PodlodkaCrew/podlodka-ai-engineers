@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="ru" class="theme-dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hacker Sprint #1: Фабрика фичей — итоги</title>
+  <meta name="description" content="Итоги Hacker Sprint #1 от Podlodka AI Engineers Club: 14 команд, 2 недели, оркестраторы кодинг-агентов. Победитель, шортлист и основные уроки.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
+  <style>
+    /* ===== Index page overrides ===== */
+    .hero { padding: 96px 0 56px; }
+    h1 { font-size: clamp(36px, 7vw, 72px); }
+
+    /* Hero eyebrow — спринт-метка */
+    .sprint-tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 13px; font-weight: 600;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 24px;
+    }
+    .sprint-tag::before {
+      content: ''; width: 8px; height: 8px;
+      background: var(--accent);
+      animation: pulse 2.4s infinite;
+    }
+
+    /* ===== Winner showcase ===== */
+    .winner-section { padding: 64px 0; }
+    .winner-card {
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      padding: 40px 44px;
+      background: transparent;
+      position: relative;
+    }
+    .winner-medal {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 12px; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: #111;
+      background: var(--accent);
+      padding: 4px 10px;
+      margin-bottom: 20px;
+    }
+    .winner-card h2 {
+      font-size: clamp(28px, 4vw, 42px);
+      font-weight: 700;
+      margin-bottom: 12px;
+      letter-spacing: -0.03em;
+      border: none;
+      padding: 0;
+    }
+    .winner-team {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+    }
+    .winner-summary {
+      font-size: 17px;
+      color: var(--text);
+      line-height: 1.6;
+      margin-bottom: 28px;
+      max-width: 800px;
+    }
+    .winner-criteria {
+      list-style: none; padding: 0; margin: 0;
+      display: grid; gap: 10px;
+    }
+    .winner-criteria li {
+      position: relative;
+      padding-left: 22px;
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+    .winner-criteria li::before {
+      content: '▸'; position: absolute;
+      left: 0; top: 0;
+      color: var(--accent); font-weight: 700;
+    }
+    .winner-cta {
+      display: flex; gap: 12px; flex-wrap: wrap;
+      margin-top: 32px;
+      padding-top: 28px;
+      border-top: 1px solid var(--border);
+    }
+    .winner-cta a {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 14px;
+      color: var(--text);
+      text-decoration: none;
+      padding: 6px 14px;
+      border: 1px solid var(--border-strong);
+      transition: all 0.2s;
+    }
+    .winner-cta a:hover { color: var(--accent); border-color: var(--accent); }
+    .winner-cta a.primary {
+      background: var(--accent); color: #111; border-color: var(--accent);
+    }
+    .winner-cta a.primary:hover { background: transparent; color: var(--accent); }
+
+    /* ===== Shortlist table ===== */
+    .shortlist-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0;
+      border-top: 1px solid var(--border);
+    }
+    .shortlist-row {
+      display: grid;
+      grid-template-columns: 200px 1fr auto;
+      gap: 32px;
+      align-items: start;
+      padding: 28px 0;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.2s;
+      text-decoration: none;
+      color: inherit;
+    }
+    .shortlist-row:hover { background: var(--surface-hover); padding-left: 16px; padding-right: 16px; }
+    .shortlist-name {
+      font-size: 22px; font-weight: 700;
+      color: var(--text); letter-spacing: -0.02em;
+    }
+    .shortlist-tagline {
+      font-size: 13px; color: var(--accent);
+      margin-top: 4px;
+    }
+    .shortlist-points {
+      list-style: none; padding: 0; margin: 0;
+      display: grid; gap: 8px;
+    }
+    .shortlist-points li {
+      position: relative;
+      padding-left: 18px;
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+    }
+    .shortlist-points li::before {
+      content: '·'; position: absolute;
+      left: 4px; top: -2px;
+      color: var(--accent); font-weight: 700;
+      font-size: 18px;
+    }
+    .shortlist-arrow {
+      font-size: 24px; color: var(--text-faint);
+      transition: color 0.2s, transform 0.2s;
+      align-self: center;
+    }
+    .shortlist-row:hover .shortlist-arrow {
+      color: var(--accent); transform: translateX(4px);
+    }
+
+    /* ===== Lessons grid ===== */
+    .lessons-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 0;
+      border-top: 1px solid var(--border);
+      border-left: 1px solid var(--border);
+    }
+    .lesson-card {
+      padding: 28px;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: transparent;
+      transition: background 0.2s;
+      position: relative;
+    }
+    .lesson-card:hover { background: var(--surface-hover); }
+    .lesson-num {
+      display: inline-block;
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+    .lesson-title {
+      font-size: 18px; font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      margin-bottom: 14px;
+      line-height: 1.3;
+    }
+    .lesson-desc {
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+    .lesson-list {
+      list-style: none; padding: 0;
+      margin: 0 0 16px;
+      display: grid; gap: 6px;
+    }
+    .lesson-list li {
+      position: relative; padding-left: 16px;
+      font-size: 13px; color: var(--text-secondary);
+      line-height: 1.55;
+    }
+    .lesson-list li::before {
+      content: '–'; position: absolute; left: 0; color: var(--accent);
+    }
+    .lesson-refs {
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+      font-size: 12px; color: var(--text-faint);
+    }
+    .lesson-refs strong {
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-secondary);
+      font-weight: 600;
+      display: block;
+      margin-bottom: 6px;
+      font-size: 11px;
+    }
+    .lesson-refs a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .lesson-refs a:hover { color: var(--accent); }
+
+    /* ===== Jury ===== */
+    .jury-list {
+      list-style: none; padding: 0; margin: 16px 0 0;
+      display: flex; flex-wrap: wrap; gap: 12px;
+    }
+    .jury-list li {
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+    .jury-list li strong { color: var(--text); font-weight: 600; }
+
+    /* ===== Stats row ===== */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0;
+      margin-top: 32px;
+      border-top: 1px solid var(--border);
+      border-left: 1px solid var(--border);
+    }
+    .stats-row .stat-card {
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 24px;
+    }
+
+    /* ===== CTA Banner ===== */
+    .cta-banner {
+      padding: 64px 0;
+      text-align: center;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .cta-banner h2 {
+      font-size: clamp(24px, 3vw, 32px);
+      font-weight: 700;
+      margin-bottom: 16px;
+      border: none; padding: 0;
+    }
+    .cta-banner p {
+      font-size: 16px; color: var(--text-secondary);
+      max-width: 560px; margin: 0 auto 24px;
+      line-height: 1.6;
+    }
+    .cta-banner a {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 15px; font-weight: 600;
+      color: #111;
+      background: var(--accent);
+      padding: 10px 20px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .cta-banner a:hover {
+      background: transparent; color: var(--accent);
+      outline: 1px solid var(--accent);
+    }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 1024px) {
+      .stats-row { grid-template-columns: repeat(3, 1fr); }
+      .shortlist-row { grid-template-columns: 200px 1fr; }
+      .shortlist-arrow { display: none; }
+    }
+    @media (max-width: 768px) {
+      .winner-card { padding: 28px 24px; }
+      .lessons-grid { grid-template-columns: 1fr; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .shortlist-row { grid-template-columns: 1fr; gap: 12px; padding: 20px 0; }
+    }
+    @media (max-width: 375px) {
+      .stats-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-to-content">К основному контенту</a>
+
+  <div class="viz-menu">
+    <button class="viz-menu-toggle" onclick="toggleMenu()" aria-label="Меню">
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="3" y1="5" x2="17" y2="5"/><line x1="3" y1="10" x2="17" y2="10"/><line x1="3" y1="15" x2="17" y2="15"/>
+      </svg>
+    </button>
+    <div class="viz-menu-dropdown" id="vizMenuDropdown">
+      <button onclick="cycleTheme()"><span id="themeIcon">🌙</span><span id="themeLabel">Тёмная</span></button>
+      <button onclick="downloadImage()"><span>📥</span><span>Скачать PNG</span></button>
+      <button onclick="window.print()"><span>🖨️</span><span>Печать / PDF</span></button>
+    </div>
+  </div>
+
+  <main id="main-content" role="main">
+
+    <!-- ============== HERO ============== -->
+    <section class="hero" role="banner">
+      <div class="container hero-content">
+        <div class="sprint-tag animate delay-1">Hacker Sprint #1 · Завершён</div>
+        <h1 class="animate delay-2">Фабрика фичей</h1>
+        <p class="hero-subtitle animate delay-3">
+          Лучший способ в чём-то разобраться — попробовать собрать проект своими руками.
+          В этом спринте 15 команд за две недели писали <strong>оркестраторы агентов</strong> —
+          системы, которые автоматически берут задачи из бэклога, прогоняют их через
+          воркфлоу и доводят до PR.
+        </p>
+
+        <div class="stats-row animate delay-4">
+          <div class="stat-card">
+            <div class="stat-value accent">14</div>
+            <div class="stat-label">Проектов до финиша</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">15</div>
+            <div class="stat-label">Команд</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">50</div>
+            <div class="stat-label">Участников</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">2</div>
+            <div class="stat-label">Недели</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">8</div>
+            <div class="stat-label">Уроков</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== WINNER ============== -->
+    <section class="winner-section">
+      <div class="container">
+        <span class="section-eyebrow">Победитель</span>
+        <h2 class="section-title">Кто выиграл спринт</h2>
+
+        <div class="winner-card">
+          <div class="winner-medal">🏅 1 место</div>
+          <h2>The Foundry</h2>
+          <div class="winner-team">Команда: Alexander Zhurbin, Mikhail Derbichev, Михаил Иконников</div>
+          <p class="winner-summary">
+            Этот проект победил, потому что команда удержала <strong>хороший баланс</strong>
+            между тем, чтобы реализовать дополнительные фичи сверх базового минимума,
+            и тем, чтобы довести каждую из них до продакшн состояния. Оркестратор
+            выглядит так, что его можно с минимальными усилиями забрать под любой проект.
+          </p>
+          <ul class="winner-criteria">
+            <li>Очень понятный и чистый UI — оркестрацией задач легко управлять, благодаря хорошо проработанному observability на каждом шаге.</li>
+            <li>Хорошо сделан двухуровневый quality gate: сначала детерминистическая проверка линтерами, и только потом запускается LLM-ревьюер.</li>
+            <li>Реализована обработка фидбэка на PR — в той же ветке прогоняется цикл review→fix→push.</li>
+            <li>Работает с разными агентами: Claude, Codex, OpenCode.</li>
+            <li>Реализована долгосрочная память, которая шарится между сессиями и задачами.</li>
+            <li>Перед каждой попыткой реализации делается binary diff чекпойнт — можно восстановиться, если что-то пошло не так.</li>
+          </ul>
+          <div class="winner-cta">
+            <a href="the-foundry.html" class="primary">Архитектурный обзор →</a>
+            <a href="https://www.loom.com/share/de2d7abbb7104649842b2ec1f53dfde4" target="_blank" rel="noopener">Демо на Loom ↗</a>
+            <a href="https://github.com/podlodka-ai-club/the-foundry/blob/main/task-25-execution.md" target="_blank" rel="noopener">Пример execution лога ↗</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== SHORTLIST ============== -->
+    <section>
+      <div class="container">
+        <span class="section-eyebrow">Шортлист</span>
+        <h2 class="section-title">Близко к победе</h2>
+        <p class="section-subtitle">
+          Помимо The Foundry, ещё несколько проектов были очень близки к победе и
+          заметно выделялись среди остальных — вот что отметило жюри.
+        </p>
+
+        <div class="shortlist-grid" id="shortlistGrid"></div>
+      </div>
+    </section>
+
+    <!-- ============== LESSONS ============== -->
+    <section>
+      <div class="container">
+        <span class="section-eyebrow">Основные уроки</span>
+        <h2 class="section-title">Что мы поняли за две недели</h2>
+        <p class="section-subtitle">
+          Восемь принципов, которые повторялись у самых сильных решений — и которые
+          стоит применять, если вы строите свой оркестратор.
+        </p>
+
+        <div class="lessons-grid" id="lessonsGrid"></div>
+      </div>
+    </section>
+
+    <!-- ============== JURY ============== -->
+    <section>
+      <div class="container">
+        <span class="section-eyebrow">Жюри</span>
+        <h2 class="section-title">Кто выбирал победителя</h2>
+        <p class="section-subtitle">
+          Победителя выбирали Егор Толстой и кураторы спринта — эксперты, которые
+          уже рассказывали в Клубе про свои оркестраторы.
+        </p>
+        <ul class="jury-list">
+          <li><strong>Егор Толстой</strong></li>
+          <li><strong>Гена Евстратов</strong></li>
+          <li><strong>Степан Гончаров</strong></li>
+          <li><strong>Михаил Мужаровский</strong></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============== CTA ============== -->
+    <section class="cta-banner">
+      <div class="container">
+        <h2>Все 14 проектов в каталоге</h2>
+        <p>Каждая реализация — со своим взглядом на оркестрацию, сэндбоксинг и воркфлоу. Архитектурный обзор по каждому проекту.</p>
+        <a href="projects.html">Посмотреть каталог →</a>
+      </div>
+    </section>
+
+    <!-- ============== FOOTER ============== -->
+    <footer class="footer">
+      <div class="container">
+        <p>
+          Hacker Sprint #1 · <a href="https://t.me/podlodka_ai_engineers" target="_blank" rel="noopener">Podlodka AI Engineers Club</a> ·
+          <a href="projects.html">Каталог проектов</a>
+        </p>
+      </div>
+    </footer>
+
+  </main>
+
+  <script>
+    // === Menu ===
+    function toggleMenu() {
+      var dropdown = document.getElementById('vizMenuDropdown');
+      if (dropdown) dropdown.classList.toggle('open');
+    }
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.viz-menu')) {
+        var dropdown = document.getElementById('vizMenuDropdown');
+        if (dropdown) dropdown.classList.remove('open');
+      }
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        var dropdown = document.getElementById('vizMenuDropdown');
+        if (dropdown) dropdown.classList.remove('open');
+      }
+    });
+
+    // === Theme ===
+    var savedTheme = localStorage.getItem('viz-theme');
+    var currentTheme = savedTheme || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    function applyTheme(t) {
+      document.documentElement.className = 'theme-' + t;
+      var icon = document.getElementById('themeIcon');
+      var label = document.getElementById('themeLabel');
+      if (icon) icon.textContent = t === 'dark' ? '🌙' : '☀️';
+      if (label) label.textContent = t === 'dark' ? 'Тёмная' : 'Светлая';
+      localStorage.setItem('viz-theme', t);
+      currentTheme = t;
+    }
+    function cycleTheme() { applyTheme(currentTheme === 'dark' ? 'light' : 'dark'); }
+    applyTheme(currentTheme);
+
+    // === Download PNG ===
+    async function downloadImage() {
+      var menu = document.querySelector('.viz-menu');
+      menu.style.display = 'none';
+      try {
+        var url = await htmlToImage.toPng(document.body, {
+          quality: 1, pixelRatio: 2,
+          filter: function(n) { return !n.classList || !n.classList.contains('viz-menu'); }
+        });
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'hacker-sprint-1.png';
+        a.click();
+      } catch(e) { console.error('Download failed:', e); }
+      menu.style.display = '';
+    }
+
+    // === DATA: Shortlist ===
+    var shortlist = [
+      { name: 'X15', tagline: 'диспетчер · Archon', file: 'X15.html',
+        points: [
+          'Пайплайн редактируется как данные, а не зашит код — легко адаптировать под разные проекты.',
+          'Есть мобильный режим с работой через Telegram.',
+          'Заточен под полную автономность и работу без участия человека.',
+          'Авторезолв merge конфликтов — это круто!'
+        ] },
+      { name: 'Iron Press', tagline: 'железный пресс', file: 'iron-press.html',
+        points: [
+          'Полноценная студия для редактирования графа выполнения пайплайна и связанных промптов.',
+          'Узлами пайплайна могут быть как агенты, так и детерминированные действия.',
+          'Есть возможность настраивать разные воркфлоу под разные типы задач.',
+          'Хорошо проработан узел по уточнению требований к исходной задаче.'
+        ] },
+      { name: 'Heavy Lifting', tagline: 'тяжёлый подъём', file: 'heavy-lifting.html',
+        points: [
+          'Очень классная визуализация всего пайплайна через работу завода!',
+          'Интересный подход с накоплением ошибок и последующим проведением ретроспективы мета-агентом.',
+          'Хорошо проработан груминг задач.',
+          'Есть возможность кастомизировать промпты под разные типы задач.'
+        ] },
+      { name: 'The Furnace', tagline: 'плавильная печь', file: 'the-furnace.html',
+        points: [
+          'Поэкспериментировали с Temporal, и хорошо прочувствовали его достоинства и ограничения.',
+          'Интересно сделана эскалация к человеку через создание новых подзадач.',
+          'Круто продуманы изоляция агентов и восстановление стейта.',
+          'Агенту на вход даётся жёсткий контракт через спеку, которую он уже не может менять.'
+        ] },
+      { name: 'Gear Grinders', tagline: 'шлифовка шестерён', file: 'gear-grinders.html',
+        points: [
+          'Единственная команда, которые сделали подход к параллельным имплементациям одной и той же задачи — оркестратор для богатых!',
+          'Защита от проедания токенов через отлавливание бесконечных циклов отдельным агентом.',
+          'Хороший подход к сендбоксингу.',
+          'Интересные эксперименты с разделением задач между умными и дешёвыми моделями, в том числе эскалация между ними.'
+        ] }
+    ];
+
+    function buildShortlistRow(p) {
+      var row = document.createElement('a');
+      row.className = 'shortlist-row';
+      row.href = p.file;
+      var pointsHtml = p.points.map(function(pt) { return '<li>' + pt + '</li>'; }).join('');
+      row.innerHTML =
+        '<div>' +
+          '<div class="shortlist-name">' + p.name + '</div>' +
+          '<div class="shortlist-tagline">' + p.tagline + '</div>' +
+        '</div>' +
+        '<ul class="shortlist-points">' + pointsHtml + '</ul>' +
+        '<span class="shortlist-arrow">→</span>';
+      return row;
+    }
+
+    var shortlistGrid = document.getElementById('shortlistGrid');
+    shortlist.forEach(function(p) { shortlistGrid.appendChild(buildShortlistRow(p)); });
+
+    // === DATA: Lessons ===
+    var lessons = [
+      {
+        title: 'Не запускайте агента, пока задача не стала понятной',
+        desc: 'Если issue размытое, без acceptance criteria, оркестратор должен остановиться и запросить уточнения. Это дешевле, чем получить уверенный, но неправильный PR.',
+        actions: [
+          'добавить stage assess / clarify / needs_input',
+          'декомпозировать большие задачи до запуска',
+          'блокировать задачи вне scope'
+        ],
+        refs: ['The Foundry', 'Iron Press', 'Gear Grinders', 'Blast Furnace', 'Drop Forge']
+      },
+      {
+        title: 'Делайте workflow явным и сохраняйте состояние',
+        desc: 'Оркестратор становится ненадёжным, если состояние живёт только в памяти процесса или в голове агента. Resume — ответственность оркестратора, а не надежда на старую LLM-сессию.',
+        actions: [
+          'описать workflow как state machine или durable workflow',
+          'сохранять state после каждого этапа',
+          'делать stages идемпотентными',
+          'уметь продолжить run после crash или rate limit'
+        ],
+        refs: ['The Foundry', 'Gear Grinders', 'Blast Furnace', 'The Furnace', 'Steam Hammer']
+      },
+      {
+        title: 'Изолируйте работу агента',
+        desc: 'Изоляция нужна не только для безопасности, но и для диагностики. Отдельная branch/worktree/container на задачу упрощает retry, review, diff inspection и cleanup.',
+        actions: [
+          'отдельный worktree или checkout на задачу',
+          'запускать раны в sandbox/container',
+          'не давать агенту лишние secrets',
+          'оставлять failed workspace для разбора'
+        ],
+        refs: ['The Foundry', 'Gear Grinders', 'The Furnace', 'Steam Hammer']
+      },
+      {
+        title: 'Не верьте словам агента: проверяйте результат независимо',
+        desc: 'Агент может сказать, что задача выполнена, но diff, tests или PR этого не подтверждают. Детерминированная верификация должна быть отдельным quality gate.',
+        actions: [
+          'tests/linters/build до PR или перед merge',
+          'output проверок — как artifact',
+          'failure report в следующий repair attempt',
+          'для UI/API — screenshot, curl output, trace'
+        ],
+        refs: ['The Foundry', 'Gear Grinders', 'Steam Hammer', 'Blast Furnace', 'The Smelters']
+      },
+      {
+        title: 'Делайте bounded repair-loop',
+        desc: 'Цикл plan → implement → verify → repair → review должен иметь границы: maximum attempts, timeout, budget и условия эскалации. Иначе агент часами исправляет одну проблему.',
+        actions: [
+          'ограничить число attempts и review rounds',
+          'передавать в retry конкретный отчёт прошлой проверки',
+          'эскалировать слабую модель к сильной, потом к человеку',
+          'продолжать существующий PR при review feedback'
+        ],
+        refs: ['The Foundry', 'Gear Grinders', 'The Furnace', 'Steam Hammer', 'Blast Furnace']
+      },
+      {
+        title: 'Делайте observability с первого дня',
+        desc: 'Если человек не понимает, что делает оркестратор, он не будет ему доверять. Нужны status, logs, events, current stage, branch, PR, verification result, cost и next action.',
+        actions: [
+          'append-only event log или durable artifacts',
+          'short status в issue/PR/task tracker',
+          'raw logs отдельно от human summary',
+          'считать tokens/cost/attempts/duration'
+        ],
+        refs: ['The Foundry', 'Steam Hammer', 'Blast Furnace', 'Iron Press', 'Heavy Lifting', 'The Smelters']
+      },
+      {
+        title: 'Контекст и память важнее большого промпта',
+        desc: 'Многие проблемы — из-за нехватки контекста или, наоборот, из-за слишком большого context payload. Memory должна быть выборочной, а не полной выгрузкой всего.',
+        actions: [
+          'context stage до plan/implement',
+          'хранить repo/project memory: failures, touched files, commands',
+          'доставать только релевантные lessons',
+          'prompts и instructions — в отдельных файлах'
+        ],
+        refs: ['The Foundry', 'Steam Hammer', 'Gear Grinders', 'Iron Press', 'Heavy Lifting']
+      },
+      {
+        title: 'Планируйте operator experience, а не только agent execution',
+        desc: 'Оркестратор — это не только агент, который пишет код. Это система, которой человек должен доверять, останавливать, перезапускать, уточнять задачи и понимать стоимость.',
+        actions: [
+          'короткий статус и next action',
+          'drill-down в logs, artifacts, branch, PR',
+          'поддержать stop/cancel/resume',
+          'удобный канал для уточнений',
+          'показывать proof of work: tests, screenshots, diff'
+        ],
+        refs: ['The Foundry', 'Steam Hammer', 'Night Shift', 'Blast Furnace', 'Iron Press']
+      }
+    ];
+
+    var slugMap = {
+      'The Foundry': 'the-foundry.html',
+      'Iron Press': 'iron-press.html',
+      'Gear Grinders': 'gear-grinders.html',
+      'Blast Furnace': 'blast-furnace.html',
+      'Drop Forge': 'drop-forge.html',
+      'The Furnace': 'the-furnace.html',
+      'Steam Hammer': 'steam-hammer.html',
+      'The Smelters': 'the-smelters.html',
+      'Heavy Lifting': 'heavy-lifting.html',
+      'Night Shift': 'night-shift.html',
+      'X15': 'X15.html',
+      'Boiler Room': 'boiler-room.html',
+      'Spark Gap': 'spark-gap.html',
+      'The Anvils': 'the-anvils.html'
+    };
+
+    function buildLessonCard(lesson, idx) {
+      var card = document.createElement('div');
+      card.className = 'lesson-card';
+      var actionsHtml = lesson.actions.map(function(a) { return '<li>' + a + '</li>'; }).join('');
+      var refsHtml = lesson.refs.map(function(name) {
+        var href = slugMap[name];
+        return href ? '<a href="' + href + '">' + name + '</a>' : name;
+      }).join(' · ');
+      var num = String(idx + 1).padStart(2, '0');
+      card.innerHTML =
+        '<div class="lesson-num">' + num + ' / 08</div>' +
+        '<h3 class="lesson-title">' + lesson.title + '</h3>' +
+        '<p class="lesson-desc">' + lesson.desc + '</p>' +
+        '<ul class="lesson-list">' + actionsHtml + '</ul>' +
+        '<div class="lesson-refs">' +
+          '<strong>Куда подсмотреть</strong>' +
+          refsHtml +
+        '</div>';
+      return card;
+    }
+
+    var lessonsGrid = document.getElementById('lessonsGrid');
+    lessons.forEach(function(l, i) { lessonsGrid.appendChild(buildLessonCard(l, i)); });
+  </script>
+</body>
+</html>

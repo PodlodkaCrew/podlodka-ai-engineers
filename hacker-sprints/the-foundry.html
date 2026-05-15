@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="ru" class="theme-dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Foundry — архитектура простыми словами</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script>Chart.defaults.animation = false;</script>
+  <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
+  <style>
+    /* ===== The Foundry — уникальные секции ===== */
+
+    /* Категории компонентов: state / pipeline / agent / interface / boundary */
+    .component-card[data-cat="state"] { --cat-color: #14b8a6; }
+    .component-card[data-cat="pipeline"] { --cat-color: #06b6d4; }
+    .component-card[data-cat="agent"] { --cat-color: #8b5cf6; }
+    .component-card[data-cat="interface"] { --cat-color: #3b82f6; }
+    .component-card[data-cat="boundary"] { --cat-color: #f59e0b; }
+    html.theme-light .component-card[data-cat="state"] { --cat-color: #0d9488; }
+    html.theme-light .component-card[data-cat="pipeline"] { --cat-color: #0891b2; }
+    html.theme-light .component-card[data-cat="agent"] { --cat-color: #7c3aed; }
+    html.theme-light .component-card[data-cat="interface"] { --cat-color: #2563eb; }
+    html.theme-light .component-card[data-cat="boundary"] { --cat-color: #d97706; }
+
+    /* ===== Pipeline stages — шесть стадий dev_task ===== */
+    .pipeline-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
+      position: relative;
+    }
+    .pipeline-stage {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px 18px;
+      transition: all 0.25s;
+      position: relative;
+      overflow: hidden;
+      display: flex; flex-direction: column;
+      min-height: 240px;
+    }
+    .pipeline-stage::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--stage-color);
+    }
+    .pipeline-stage:hover {
+      transform: translateY(-3px);
+      border-color: var(--border-strong);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+    }
+    .pipeline-stage[data-idx="1"] { --stage-color: #14b8a6; }
+    .pipeline-stage[data-idx="2"] { --stage-color: #0ea5e9; }
+    .pipeline-stage[data-idx="3"] { --stage-color: #6366f1; }
+    .pipeline-stage[data-idx="4"] { --stage-color: #8b5cf6; }
+    .pipeline-stage[data-idx="5"] { --stage-color: #f59e0b; }
+    .pipeline-stage[data-idx="6"] { --stage-color: #10b981; }
+
+    .pipeline-num {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 0.6875rem; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--stage-color);
+      padding: 3px 9px; border-radius: 6px;
+      background: color-mix(in srgb, var(--stage-color) 14%, transparent);
+      align-self: flex-start;
+      margin-bottom: 12px;
+    }
+    .pipeline-name {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 1.0625rem; font-weight: 700;
+      color: var(--text);
+      margin-bottom: 10px;
+      letter-spacing: -0.01em;
+    }
+    .pipeline-desc {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      flex: 1;
+    }
+    .pipeline-desc strong { color: var(--text); font-weight: 500; }
+
+    /* ===== Backends — четыре CLI под одним протоколом ===== */
+    .backends-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+    .backend-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      transition: all 0.25s;
+      position: relative;
+      overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    .backend-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--backend-color);
+      opacity: 0.8;
+    }
+    .backend-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--border-strong);
+      box-shadow: 0 14px 36px rgba(0,0,0,0.16);
+    }
+    .backend-card[data-backend="claude"] { --backend-color: #d97757; }
+    .backend-card[data-backend="codex"] { --backend-color: #10b981; }
+    .backend-card[data-backend="opencode"] { --backend-color: #3b82f6; }
+    .backend-card[data-backend="stub"] { --backend-color: #64748b; }
+    html.theme-light .backend-card[data-backend="claude"] { --backend-color: #c2410c; }
+    html.theme-light .backend-card[data-backend="codex"] { --backend-color: #059669; }
+    html.theme-light .backend-card[data-backend="opencode"] { --backend-color: #2563eb; }
+    html.theme-light .backend-card[data-backend="stub"] { --backend-color: #475569; }
+
+    .backend-name {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 1.375rem; font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .backend-vendor { font-size: 0.8125rem; color: var(--text-secondary); margin-bottom: 18px; }
+    .backend-role-label {
+      font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--text-secondary); font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .backend-role {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      padding: 9px 12px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--backend-color);
+      margin-bottom: 14px;
+    }
+    .backend-note {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin-top: auto;
+    }
+    .backend-note strong { color: var(--text); font-weight: 500; }
+
+    /* ===== Polling cadences — три цикла ===== */
+    .cadence-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .cadence-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.25s;
+    }
+    .cadence-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--border-strong);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.14);
+    }
+    .cadence-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--cadence-color);
+    }
+    .cadence-card[data-c="github"] { --cadence-color: #14b8a6; }
+    .cadence-card[data-c="sse"] { --cadence-color: #8b5cf6; }
+    .cadence-card[data-c="ui"] { --cadence-color: #f59e0b; }
+
+    .cadence-value {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 2.25rem; font-weight: 800;
+      color: var(--cadence-color);
+      letter-spacing: -0.03em;
+      margin-bottom: 4px;
+      line-height: 1;
+    }
+    .cadence-unit { font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 14px; font-weight: 500; }
+    .cadence-title { font-size: 1.0625rem; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+    .cadence-desc { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.55; }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 1024px) {
+      .pipeline-grid { grid-template-columns: repeat(3, 1fr); }
+      .backends-grid { grid-template-columns: repeat(2, 1fr); }
+      .cadence-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .pipeline-grid { grid-template-columns: repeat(2, 1fr); }
+      .backends-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 375px) {
+      .pipeline-stage, .backend-card, .cadence-card { padding: 18px; }
+      body { overflow-x: hidden; }
+    }
+    @media print {
+      .pipeline-stage, .backend-card, .cadence-card {
+        break-inside: avoid; border: 1px solid #ddd; box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-to-content">К основному контенту</a>
+
+  <div class="viz-menu">
+    <button class="viz-menu-toggle" onclick="toggleMenu()" aria-label="Меню">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="3" y1="5" x2="17" y2="5"/><line x1="3" y1="10" x2="17" y2="10"/><line x1="3" y1="15" x2="17" y2="15"/>
+      </svg>
+    </button>
+    <div class="viz-menu-dropdown" id="vizMenuDropdown">
+      <button onclick="cycleTheme()"><span id="themeIcon">🌙</span><span id="themeLabel">Тёмная</span></button>
+      <button onclick="downloadImage()"><span>📥</span><span>Скачать PNG</span></button>
+      <button onclick="window.print()"><span>🖨️</span><span>Печать / PDF</span></button>
+    </div>
+  </div>
+
+  <main id="main-content" role="main">
+
+    <!-- ============== HERO ============== -->
+    <section class="hero" role="banner">
+      <div class="container hero-content">
+        <a href="index.html" class="hero-back animate">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          К каталогу
+        </a>
+        <h1 class="animate delay-1">The Foundry</h1>
+        <a href="https://github.com/podlodka-ai-club/the-foundry" class="hero-repo animate delay-1" target="_blank" rel="noopener">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+          github.com/podlodka-ai-club/the-foundry
+        </a>
+        <p class="hero-subtitle animate delay-2">
+          Линейный конвейер от <strong style="color: var(--accent);">GitHub issue</strong> до Pull Request, собранный вокруг
+          одной <strong style="color: var(--accent);">SQLite</strong>-базы. Три процесса — worker, FastAPI, React-UI — общаются
+          только через файл; никаких брокеров, очередей в RAM или Redis. Состояние FSM, очередь, лог событий
+          и долговременная память — всё лежит в одной базе и переживает рестарты «бесплатно».
+        </p>
+
+        <div class="hero-stack animate delay-2">
+          <span class="stack-pill">Python</span>
+          <span class="stack-pill">FastAPI</span>
+          <span class="stack-pill">SQLite</span>
+          <span class="stack-pill">React</span>
+          <span class="stack-pill">SSE</span>
+          <span class="stack-pill">git worktree</span>
+        </div>
+
+        <div class="hero-stats">
+          <div class="stat-card animate delay-3">
+            <div class="stat-value accent" data-count="6" data-suffix="">6</div>
+            <div class="stat-label">Стадий <code>dev_task</code></div>
+            <div class="stat-sublabel">fetch · context · plan · implement · verify · pr</div>
+          </div>
+          <div class="stat-card animate delay-3">
+            <div class="stat-value" data-count="4" data-suffix="">4</div>
+            <div class="stat-label">Backend'а агента</div>
+            <div class="stat-sublabel">claude · codex · opencode · stub</div>
+          </div>
+          <div class="stat-card animate delay-4">
+            <div class="stat-value" data-count="3" data-suffix="">3</div>
+            <div class="stat-label">Процесса вокруг <code>SQLite</code></div>
+            <div class="stat-sublabel">worker · FastAPI · React-UI</div>
+          </div>
+          <div class="stat-card animate delay-4">
+            <div class="stat-value" data-count="12" data-suffix="">12</div>
+            <div class="stat-label">Строительных блоков</div>
+            <div class="stat-sublabel">от worker'а до security layer'а</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== KEY IDEA ============== -->
+    <section style="padding-top: 0;">
+      <div class="container">
+        <div class="key-idea reveal" data-reveal>
+          <div class="section-eyebrow">Главная идея</div>
+          <h3>Единственная точка правды — <code>SQLite</code>-файл</h3>
+          <p>
+            Foundry демонстративно отказывается от любой общей памяти и очередей в RAM. В одной базе живёт
+            <strong>очередь задач</strong>, <strong>FSM-состояние</strong>, <strong>append-only лог событий</strong>
+            для лайв-наблюдения и <strong>долговременная память</strong> по репозиториям. Worker пишет,
+            API и UI читают — никаких RPC, никакого Redis, никаких подписок. Это даёт «бесплатно» персистентность,
+            идемпотентность стадий через <code>stage_results</code> и переживание рестартов: задача со статусом
+            <code>RUNNING</code> после крэша подхватится на следующем тике и продолжит ровно с той стадии, где упала.
+            Второй ключевой ход — оркестратор <strong>сам</strong> решает все переходы; стадии — это просто функции,
+            возвращающие dict, без собственной state-машины.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== ARCHITECTURE FLOW ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Высокоуровневая схема</div>
+        <h2 class="section-title">Три процесса вокруг одной базы</h2>
+        <p class="section-subtitle">
+          Worker гоняет конвейер и пишет в <code>SQLite</code>. FastAPI и React-UI только читают. Отдельный
+          <code>pr-feedback</code> listener следит за уже открытыми PR. Никаких внешних брокеров.
+        </p>
+
+        <div class="arch-flow">
+          <div class="arch-diagram reveal" data-reveal>
+            <div class="arch-node active">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">GitHub Issues</div>
+                <div class="arch-node-meta">источник задач · label <code>agent-task</code></div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ <code>gh issue list</code> раз в 30 сек</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">worker (listener)</div>
+                <div class="arch-node-meta">синхронный однопоточный · одна задача за раз</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ запускает <code>dev_task</code></div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">CLI-агент в worktree</div>
+                <div class="arch-node-meta">stdio NDJSON · claude / codex / opencode / stub</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ пишет события + state</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.7 4 3 9 3s9-1.3 9-3V5M3 11v6c0 1.7 4 3 9 3s9-1.3 9-3v-6"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title"><code>SQLite</code> — единая шина</div>
+                <div class="arch-node-meta">tasks · task_events · stage_results · agent_sessions · repo_memory</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ читают параллельно</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">FastAPI ↔ React-UI</div>
+                <div class="arch-node-meta">REST + SSE с replay по <code>Last-Event-ID</code></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="reveal" data-reveal>
+            <h3 style="margin-bottom: 16px;">Что важно понять</h3>
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 14px;">
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Никаких очередей в RAM.</strong> Очередь задач — это просто таблица <code>tasks</code> в <code>SQLite</code>. Worker SELECT'ит её каждый тик.</span>
+              </li>
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Идемпотентность через <code>stage_results</code>.</strong> Каждая стадия перед стартом проверяет, не выполнялась ли уже. Упал на verify — после рестарта plan и implement пропустятся.</span>
+              </li>
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Per-stage <code>AgentSettings</code>.</strong> Можно поставить haiku на план/verify, sonnet — только на implement. Дешёвая модель работает на дешёвых шагах.</span>
+              </li>
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>SSE с «бесплатным» resume.</strong> <code>EventSource</code> сам шлёт <code>Last-Event-ID</code> на reconnect — replay работает «из коробки», без custom-протокола.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== SIX-STAGE PIPELINE ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">dev_task — линейная партитура</div>
+        <h2 class="section-title">Шесть стадий конвейера</h2>
+        <p class="section-subtitle">
+          Каждая задача проходит фиксированную цепочку: <code>fetch → context → plan → implement → verify → pr</code>.
+          Между <code>implement</code> и <code>verify</code> крутится локальный quality-gate цикл (по умолчанию две попытки).
+        </p>
+
+        <div class="pipeline-grid reveal" data-reveal id="pipelineGrid">
+          <!-- Pipeline stages injected -->
+        </div>
+
+        <div style="margin-top: 24px; padding: 20px 24px; background: var(--surface-elevated); border: 1px solid var(--border); border-radius: 12px; display: flex; align-items: center; gap: 14px; font-size: 0.9375rem;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span style="color: var(--text-secondary);">
+            <strong style="color: var(--text);">Quality-gate цикл:</strong>
+            если verifier сказал <code style="color: var(--warning);">FAIL retryable</code> — worktree откатывается через <code>git reset --hard</code>,
+            бинарный патч прошлой попытки сохраняется в <code>data/checkpoints/</code>, в промпт implement'а дописывается
+            «previous feedback», запускается попытка №2. Непонятный вердикт или маркер <code>NEED_VERIFICATION</code> от агента → задача уходит в <code>BLOCKED</code>.
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== AGENT BACKENDS ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Agent runtime</div>
+        <h2 class="section-title">Четыре CLI под одним протоколом</h2>
+        <p class="section-subtitle">
+          Foundry не использует ни SDK провайдеров, ни HTTP-клиенты. Все агенты — это локальные CLI,
+          запускаемые subprocess'ом. Различия — в адаптерах, которые нормализуют события к единому виду:
+          <code>agent_tool</code>, <code>agent_text</code>, <code>agent_thinking</code>, <code>agent_result</code>.
+        </p>
+
+        <div class="backends-grid reveal" data-reveal id="backendsGrid">
+          <!-- Backends injected -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== POLLING CADENCES ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Polling-only архитектура</div>
+        <h2 class="section-title">Три разнотемповых цикла</h2>
+        <p class="section-subtitle">
+          Никаких webhook'ов, никаких подписок на GitHub events. Простота за счёт latency —
+          для single-tenant сценария это оптимальный компромисс.
+        </p>
+
+        <div class="cadence-grid reveal" data-reveal id="cadenceGrid">
+          <!-- Cadences injected -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== COMPONENTS ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Из чего собран</div>
+        <h2 class="section-title">Двенадцать строительных блоков</h2>
+        <p class="section-subtitle">
+          От фонового worker'а до тонкого security wrapper'а вокруг shell-команд — каждый компонент
+          решает одну конкретную задачу. Используйте фильтр для просмотра по категориям.
+        </p>
+
+        <div class="components-filter">
+          <button class="filter-btn active" data-filter="all">Все · 12</button>
+          <button class="filter-btn" data-filter="pipeline">Конвейер · 3</button>
+          <button class="filter-btn" data-filter="agent">Агент · 2</button>
+          <button class="filter-btn" data-filter="state">Состояние · 2</button>
+          <button class="filter-btn" data-filter="interface">Интерфейс · 3</button>
+          <button class="filter-btn" data-filter="boundary">Границы · 2</button>
+        </div>
+
+        <div class="components-grid" id="componentsGrid">
+          <!-- Components injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== TIMELINE ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Жизненный цикл</div>
+        <h2 class="section-title">Что происходит с типичной задачей</h2>
+        <p class="section-subtitle">
+          От момента, когда оператор поставил label <code>agent-task</code> на issue, до открытого PR — пятнадцать
+          шагов через шесть стадий <code>dev_task</code>.
+        </p>
+
+        <div class="timeline" id="timeline">
+          <!-- Timeline injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== KEY PROPERTIES ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">На чём всё держится</div>
+        <h2 class="section-title">Ключевые свойства архитектуры</h2>
+        <p class="section-subtitle">
+          Девять решений, которые делают Foundry простым, идемпотентным и предсказуемым после падений.
+        </p>
+
+        <div class="properties-grid" id="propertiesGrid">
+          <!-- Properties injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== FOOTER ============== -->
+    <footer class="footer">
+      <div class="container">
+        <p>
+          Архитектурный обзор <strong style="color: var(--text);">the-foundry</strong> ·
+          Сгенерировано из <code>arch/the-foundry-arch-review.md</code>
+        </p>
+      </div>
+    </footer>
+
+  </main>
+
+  <script>
+    // === Menu ===
+    function toggleMenu() {
+      var dropdown = document.getElementById('vizMenuDropdown');
+      if (dropdown) dropdown.classList.toggle('open');
+    }
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.viz-menu')) {
+        var dropdown = document.getElementById('vizMenuDropdown');
+        if (dropdown) dropdown.classList.remove('open');
+      }
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        var dropdown = document.getElementById('vizMenuDropdown');
+        if (dropdown) dropdown.classList.remove('open');
+      }
+    });
+
+    // === Theme ===
+    var savedTheme = localStorage.getItem('viz-theme');
+    var currentTheme = savedTheme || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    function applyTheme(t) {
+      document.documentElement.className = 'theme-' + t;
+      var icon = document.getElementById('themeIcon');
+      var label = document.getElementById('themeLabel');
+      if (icon) icon.textContent = t === 'dark' ? '🌙' : '☀️';
+      if (label) label.textContent = t === 'dark' ? 'Тёмная' : 'Светлая';
+      localStorage.setItem('viz-theme', t);
+      currentTheme = t;
+      if (typeof onThemeChange === 'function') onThemeChange();
+    }
+    function cycleTheme() { applyTheme(currentTheme === 'dark' ? 'light' : 'dark'); }
+    applyTheme(currentTheme);
+
+    // === Scroll Reveal ===
+    document.querySelectorAll('[data-reveal]').forEach(function(el) { el.classList.add('reveal'); });
+    var revealObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          revealObserver.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.reveal').forEach(function(el) { revealObserver.observe(el); });
+
+    // === Number Counter ===
+    function animateCounters() {
+      document.querySelectorAll('[data-count]').forEach(function(el) {
+        if (el.dataset.counted) return;
+        el.dataset.counted = '1';
+        var target = parseFloat(el.dataset.count),
+            prefix = el.dataset.prefix || '',
+            suffix = el.dataset.suffix || '';
+        var start = performance.now(), duration = 1100;
+        (function tick(now) {
+          var p = Math.min((now - start) / duration, 1),
+              eased = 1 - Math.pow(1 - p, 3);
+          el.textContent = prefix + Math.round(target * eased).toLocaleString() + suffix;
+          if (p < 1) requestAnimationFrame(tick);
+        })(start);
+      });
+    }
+    var counterEl = document.querySelector('[data-count]');
+    if (counterEl) {
+      var cObs = new IntersectionObserver(function(entries) {
+        entries.forEach(function(e) {
+          if (e.isIntersecting) { animateCounters(); cObs.disconnect(); }
+        });
+      }, { threshold: 0.3 });
+      cObs.observe(counterEl);
+    }
+
+    // === Download PNG ===
+    async function downloadImage() {
+      var menu = document.querySelector('.viz-menu');
+      menu.style.display = 'none';
+      try {
+        var url = await htmlToImage.toPng(document.body, {
+          quality: 1, pixelRatio: 2,
+          filter: function(n) { return !n.classList || !n.classList.contains('viz-menu'); }
+        });
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'the-foundry-architecture.png';
+        a.click();
+      } catch(e) { console.error('Download failed:', e); }
+      menu.style.display = '';
+    }
+
+    // === DATA: Pipeline stages ===
+    var stages = [
+      { idx: 1, name: 'fetch', desc: 'Тянет issue из GitHub через <code>gh CLI</code>. Upsert новых задач в таблицу <code>tasks</code>, переочередь <code>PENDING</code> / <code>RUNNING</code>.' },
+      { idx: 2, name: 'context', desc: 'Детерминированно (без LLM) собирает шапку: <strong>языки</strong>, манифесты, «релевантные файлы» по keyword-скорингу и <code>repo_memory</code> с прошлых задач.' },
+      { idx: 3, name: 'plan', desc: 'Запускает CLI-агента с <code>AgentSettings</code> для PLAN. На выходе — план реализации. Маркер <code>NEED_VERIFICATION</code> → задача в <code>BLOCKED</code>.' },
+      { idx: 4, name: 'implement', desc: 'Агент (обычно более мощная модель) правит код в своём worktree. Стримит NDJSON-события в <code>task_events</code> по ходу выполнения.' },
+      { idx: 5, name: 'verify', desc: 'Двухуровневый: сначала <code>pytest</code> / <code>ruff</code> / <code>npm test</code> — если красное, short-circuit без LLM. Только если зелёное — diff передаётся LLM-ревьюеру.' },
+      { idx: 6, name: 'pr', desc: 'Коммитит, пушит ветку <code>foundry/task-N</code>, открывает Pull Request через <code>gh pr create</code>. В теле PR — <code>Closes #N</code> и отчёт верификатора.' }
+    ];
+    var pipelineGrid = document.getElementById('pipelineGrid');
+    stages.forEach(function(s) {
+      var el = document.createElement('div');
+      el.className = 'pipeline-stage';
+      el.dataset.idx = s.idx;
+      el.innerHTML =
+        '<span class="pipeline-num">stage ' + String(s.idx).padStart(2, '0') + '</span>' +
+        '<div class="pipeline-name"><code>' + s.name + '</code></div>' +
+        '<div class="pipeline-desc">' + s.desc + '</div>';
+      pipelineGrid.appendChild(el);
+    });
+
+    // === DATA: Agent backends ===
+    var backends = [
+      { id: 'claude', name: 'claude', vendor: 'Anthropic Claude Code CLI', role: 'Основной backend',
+        note: 'Запускается subprocess\'ом в worktree, стримит NDJSON. Адаптер нормализует события к общему виду: <strong>agent_tool</strong>, <strong>agent_text</strong>, <strong>agent_thinking</strong>, <strong>agent_result</strong>.' },
+      { id: 'codex', name: 'codex', vendor: 'OpenAI Codex CLI', role: 'Альтернативный backend',
+        note: 'Другой формат событий — но та же стримящаяся stdio-обёртка. Adapter превращает codex-специфичные сообщения в общий протокол. UI отрисовывает одинаково.' },
+      { id: 'opencode', name: 'opencode', vendor: 'OpenRouter / OSS models', role: 'OpenRouter backend',
+        note: 'Третий вариант для запуска через OpenRouter или другие совместимые провайдеры. Тот же контракт subprocess + NDJSON.' },
+      { id: 'stub', name: 'stub', vendor: 'In-process offline-stub', role: 'Тесты и CI',
+        note: 'Оффлайн-fixture, не требующая внешних API. Возвращает заранее записанные события — полезно для интеграционных тестов и проверок workflow без расходов на LLM.' }
+    ];
+    var backendsGrid = document.getElementById('backendsGrid');
+    backends.forEach(function(b) {
+      var el = document.createElement('article');
+      el.className = 'backend-card';
+      el.dataset.backend = b.id;
+      el.innerHTML =
+        '<div class="backend-name">' + b.name + '</div>' +
+        '<div class="backend-vendor">' + b.vendor + '</div>' +
+        '<div class="backend-role-label">Роль</div>' +
+        '<div class="backend-role">' + b.role + '</div>' +
+        '<div class="backend-note">' + b.note + '</div>';
+      backendsGrid.appendChild(el);
+    });
+
+    // === DATA: Polling cadences ===
+    var cadences = [
+      { c: 'github', value: '30', unit: 'секунд', title: 'GitHub poll', desc: 'Worker раз в полминуты дёргает <code>gh issue list</code>, апсертит новые задачи в <code>tasks</code>. Никаких webhook\'ов.' },
+      { c: 'sse', value: '0.5', unit: 'секунды', title: 'SSE poll', desc: 'Async-генератор раз в полсекунды лезет в <code>SQLite</code> за новыми строками <code>task_events</code> после известного <code>seq</code>. Replay через <code>Last-Event-ID</code>.' },
+      { c: 'ui', value: '3', unit: 'секунды', title: 'UI REST poll', desc: 'TanStack Query в React-UI обновляет список задач каждые три секунды. SSE-стрим мерджится поверх этих REST-снимков с дедупом по <code>seq</code>.' }
+    ];
+    var cadenceGrid = document.getElementById('cadenceGrid');
+    cadences.forEach(function(c) {
+      var el = document.createElement('div');
+      el.className = 'cadence-card';
+      el.dataset.c = c.c;
+      el.innerHTML =
+        '<div class="cadence-value">' + c.value + '</div>' +
+        '<div class="cadence-unit">' + c.unit + '</div>' +
+        '<div class="cadence-title">' + c.title + '</div>' +
+        '<div class="cadence-desc">' + c.desc + '</div>';
+      cadenceGrid.appendChild(el);
+    });
+
+    // === DATA: Components ===
+    var components = [
+      { num: '01', cat: 'pipeline', catLabel: 'Конвейер', title: 'worker (listener)', tagline: '«сердце проекта»',
+        desc: 'Главный фоновый процесс. В вечном цикле раз в полминуты дёргает <code>gh issue list</code>, сортирует issue по приоритету и для каждого вызывает <code>dev_task</code>. <strong>Синхронный однопоточный</strong> — за раз одна задача до её конца. Никакой конкуренции за worktree, никаких гонок за строки <code>SQLite</code>.' },
+      { num: '02', cat: 'pipeline', catLabel: 'Конвейер', title: 'dev_task — линейная партитура', tagline: '«6 стадий + quality-gate»',
+        desc: 'Workflow, который прогоняет одну задачу по шести стадиям. Между <code>implement</code> и <code>verify</code> крутится локальный quality-gate цикл (по умолчанию две попытки). <strong>Каждая стадия перед стартом проверяет <code>stage_results</code></strong> — если запись есть, стадия пропускается. Это безопасный рестарт с любой точки.' },
+      { num: '03', cat: 'pipeline', catLabel: 'Конвейер', title: 'Стадии — функции под контрактом', tagline: '«дай task — верну dict»',
+        desc: 'Каждая стадия живёт в своём файле и реализует один контракт. <code>context</code> детерминирован, без LLM. <code>verify</code> двухуровневый: сначала <code>pytest</code> / <code>ruff</code> / <code>npm test</code>, и только если зелёное — diff передаётся LLM-ревьюеру. <code>pr</code> коммитит, пушит, открывает PR через <code>gh pr create</code>.' },
+      { num: '04', cat: 'agent', catLabel: 'Агент', title: 'Agent runtime — 4 CLI', tagline: '«один протокол на всех»',
+        desc: 'Foundry не использует SDK провайдеров. Все агенты — локальные CLI (<code>claude</code>, <code>codex</code>, <code>opencode</code>, <code>stub</code>) под одним transport-слоем. На каждую стадию — отдельный <code>AgentSettings</code>: можно <code>haiku</code> на план, <code>sonnet</code> — только на implement.' },
+      { num: '05', cat: 'agent', catLabel: 'Агент', title: 'Workspace через git worktree', tagline: '«изоляция попыток»',
+        desc: 'Под каждую задачу — отдельный <code>git worktree</code> от свежего <code>main</code>. Между попытками implement worktree откатывается через <code>git reset --hard HEAD</code>. Перед откатом бинарный патч прошлой попытки сохраняется в <code>data/checkpoints/</code> — на разбор человеком.' },
+      { num: '06', cat: 'state', catLabel: 'Состояние', title: '<code>SQLite</code> — единая шина', tagline: '«одна точка правды»',
+        desc: 'Очередь, FSM-состояние, лог событий, долговременная память — всё в одной базе. Нет ни Redis, ни брокера, ни RPC между процессами. Worker пишет, API и UI читают. <strong>Бесплатно</strong> даёт персистентность и переживание рестартов.' },
+      { num: '07', cat: 'state', catLabel: 'Состояние', title: '<code>task_events</code> — append-only лог', tagline: '«side-channel в UI»',
+        desc: 'Параллельно со <code>stage_results</code> workflow пишет каждое событие — старт/конец стадии, токены, cost, tool-вызов агента, его «think». Монотонный <code>seq</code>. Agent-runtime стримит события <strong>внутрь</strong> этого лога <strong>по ходу выполнения</strong>, не дожидаясь конца стадии.' },
+      { num: '08', cat: 'interface', catLabel: 'Интерфейс', title: 'FastAPI — тонкий HTTP-слой', tagline: '«read-side над <code>SQLite</code>»',
+        desc: 'API ничего не оркестрирует. Несколько REST-эндпоинтов отдают список задач, детали, счётчики по репо, repo memory. Один — SSE-стрим по конкретной задаче. Пара write-ручек: <code>reset</code> / <code>resume</code> и ручной <code>fetch trigger</code>. Авторизации нет — known gap для localhost-сценария.' },
+      { num: '09', cat: 'interface', catLabel: 'Интерфейс', title: 'SSE с «бесплатным» resume', tagline: '«<code>Last-Event-ID</code> from the box»',
+        desc: 'Async-генератор раз в полсекунды читает <code>task_events</code> после известного <code>seq</code>. Каждое событие отдаётся с заголовком <code>id: &lt;seq&gt;</code>. Браузерный <code>EventSource</code> сам шлёт <code>Last-Event-ID</code> на reconnect — replay работает из коробки, без custom-протокола.' },
+      { num: '10', cat: 'interface', catLabel: 'Интерфейс', title: 'React-UI — stepper + таймлайн', tagline: '«live progress»',
+        desc: 'TanStack Query + native <code>EventSource</code>. Таблица задач с фильтром по статусу. Раскрытая задача — stepper из шести стадий, рядом live event log с автоскроллом. Клиентская проекция повторяет серверную (тот же fold событий в стадии) — мгновенный отклик между REST-снимками.' },
+      { num: '11', cat: 'boundary', catLabel: 'Границы', title: '<code>pr-feedback</code> — второй контур', tagline: '«follow-up по review»',
+        desc: 'Отдельный listener со своим расписанием. Раз в N секунд просматривает открытые PR <code>foundry/task-*</code>, читает request-changes, упавшие CI, комментарии. Считает <code>sha256</code> блока фидбека, по <code>repo_memory</code> проверяет уникальность, запускает усечённый <code>implement + verify</code>, пушит в <strong>ту же</strong> ветку.' },
+      { num: '12', cat: 'boundary', catLabel: 'Границы', title: 'Security layer — minimum viable boundary', tagline: '«отлов очевидных escape\'ов»',
+        desc: 'Все shell-команды через wrapper: запрет <code>rm -rf</code>, <code>git push --force</code>, <code>git checkout main</code> в worktree и <code>git reset --hard</code> вне него. Env для subprocess\'а жёстко whitelist\'ится: <code>PATH</code>, <code>HOME</code>, <code>SSH_AUTH_SOCK</code>, нужный API-ключ — больше ничего. PR-стадия рубит коммиты >40 файлов или попадание <code>__pycache__/</code>.' }
+    ];
+
+    var grid = document.getElementById('componentsGrid');
+    components.forEach(function(c) {
+      var card = document.createElement('article');
+      card.className = 'component-card';
+      card.dataset.cat = c.cat;
+      card.innerHTML =
+        '<div class="component-header">' +
+          '<span class="component-num">' + c.num + '</span>' +
+          '<span class="component-cat">' + c.catLabel + '</span>' +
+        '</div>' +
+        '<h4>' + c.title + '</h4>' +
+        '<div class="component-tagline">' + c.tagline + '</div>' +
+        '<p class="component-desc">' + c.desc + '</p>';
+      grid.appendChild(card);
+    });
+
+    // Recalculate counts
+    var counts = { all: components.length, pipeline: 0, agent: 0, state: 0, interface: 0, boundary: 0 };
+    components.forEach(function(c) { counts[c.cat]++; });
+    document.querySelectorAll('.filter-btn').forEach(function(btn) {
+      var f = btn.dataset.filter;
+      var label = btn.textContent.split(' · ')[0];
+      btn.textContent = label + ' · ' + counts[f];
+    });
+
+    document.querySelectorAll('.filter-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        var filter = btn.dataset.filter;
+        document.querySelectorAll('.component-card').forEach(function(card) {
+          if (filter === 'all' || card.dataset.cat === filter) {
+            card.classList.remove('hidden');
+          } else {
+            card.classList.add('hidden');
+          }
+        });
+      });
+    });
+
+    // === DATA: Timeline ===
+    var timelineSteps = [
+      { step: 'Шаг 01', title: 'Оператор кладёт label на issue', desc: 'В <code>SOURCE_REPO</code> ставится label <code>agent-task</code> на open issue. Оператор запускает <code>foundry run</code> или Docker compose со всеми тремя процессами.' },
+      { step: 'Шаг 02', title: 'Worker делает тик', desc: '<code>gh issue list</code> → upsert новых issue в таблицу <code>tasks</code>. Очередь сортируется, выбирается следующая задача в <code>PENDING</code>.' },
+      { step: 'Шаг 03', title: 'Запуск <code>dev_task</code>', desc: 'Если у задачи уже есть PR — пропуск. Иначе <code>attempts += 1</code>, статус <code>RUNNING</code>, начинается workflow.' },
+      { step: 'Шаг 04', title: 'Стадия <code>fetch</code>', desc: 'Worker подготавливает <code>git worktree</code> от свежего <code>main</code> базового клона. Имя ветки и каталог — <code>task-&lt;id&gt;</code>.' },
+      { step: 'Шаг 05', title: 'Стадия <code>context</code>', desc: 'Детерминированно собирает шапку: языки, манифесты, релевантные файлы по keyword-скорингу, <code>repo_memory</code>. Без LLM. Это markdown-блок для промпта.' },
+      { step: 'Шаг 06', title: 'Стадия <code>plan</code>', desc: 'Запускается CLI-агент с <code>AgentSettings</code> для PLAN. NDJSON стримится в <code>task_events</code> по ходу. На выходе — план реализации.' },
+      { step: 'Шаг 07', title: 'Quality-gate цикл — попытка №1', desc: 'Стадия <code>implement</code>: агент со своими <code>AgentSettings</code> (обычно более мощная модель) правит код в worktree.' },
+      { step: 'Шаг 08', title: 'Стадия <code>verify</code> — первый уровень', desc: 'Запускаются детерминированные команды: <code>pytest</code>, <code>ruff</code>, <code>npm test</code>, <code>cargo test</code>. Если хоть одна красная — short-circuit без LLM-ревьюера.' },
+      { step: 'Шаг 09', title: 'Стадия <code>verify</code> — второй уровень', desc: 'Если все команды зелёные — diff передаётся LLM-агенту на acceptance-проверку. Вердикт: <code>PASS</code>, <code>FAIL retryable</code>, или непонятный.' },
+      { step: 'Шаг 10', title: 'Откат и попытка №2 (опционально)', desc: 'Если <code>FAIL retryable</code> — <code>git reset --hard</code>, патч в <code>data/checkpoints/</code>, в промпт implement\'а дописывается «previous feedback», запускается ещё попытка.' },
+      { step: 'Шаг 11', title: 'Стадия <code>pr</code>', desc: 'На <code>PASS</code>: коммит, push ветки <code>foundry/task-N</code>, <code>gh pr create</code>. В теле PR — <code>Closes #N</code> и отчёт верификатора. Исходный issue закрывается.' },
+      { step: 'Шаг 12', title: 'Запись в <code>repo_memory</code>', desc: 'Какие файлы трогали, какие verify-команды реально работали — пишется как <code>(repo, key) → json</code>. Простой плоский key-value без vector store. Пригодится следующей задаче.' },
+      { step: 'Шаг 13', title: 'Уборка и переход дальше', desc: 'Worktree подчищается, задача переходит в <code>DONE</code>. Worker идёт к следующей задаче в очереди или засыпает до следующего тика.' },
+      { step: 'Шаг 14', title: 'UI рисует прогресс в real-time', desc: 'Через SSE-стрим с <code>Last-Event-ID</code> resume. Stepper подсвечивает текущую стадию, event log показывает каждый tool-вызов агента, его «think», cost и токены.' },
+      { step: 'Шаг 15', title: '<code>pr-feedback</code> следит за PR\'ом', desc: 'Параллельно второй listener смотрит на открытые PR <code>foundry/task-*</code>. Появились request changes или упал CI — запускает follow-up <code>implement + verify + push</code> в ту же ветку.' }
+    ];
+
+    var timeline = document.getElementById('timeline');
+    timelineSteps.forEach(function(t) {
+      var el = document.createElement('div');
+      el.className = 'timeline-item reveal';
+      el.dataset.reveal = '';
+      el.innerHTML =
+        '<div class="timeline-step">' + t.step + '</div>' +
+        '<div class="timeline-title">' + t.title + '</div>' +
+        '<div class="timeline-desc">' + t.desc + '</div>';
+      timeline.appendChild(el);
+      revealObserver.observe(el);
+    });
+
+    // === DATA: Properties ===
+    var properties = [
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.7 4 3 9 3s9-1.3 9-3V5M3 11v6c0 1.7 4 3 9 3s9-1.3 9-3v-6"/></svg>',
+        title: '<code>SQLite</code> как одна общая шина', desc: 'Очередь, FSM-состояние, лог событий, долговременная память — всё в одной базе. Нет ни Redis, ни брокера, ни RPC между процессами; никакой синхронизации памяти — только чтения и записи строк.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>',
+        title: 'Идемпотентность через <code>stage_results</code>', desc: 'Любая стадия — это «вычисли, если ещё не было». Crash в любой момент — задача подхватится и продолжит с последней неудавшейся стадии, не повторяя то, что уже сделано.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>',
+        title: 'Оркестратор сам решает переходы', desc: 'Стадии — простые функции, возвращающие dict. Решение «следующая стадия» принимается в <code>dev_task</code>, не в агенте и не в verifier\'е. Предсказуемый ход и место, где можно безопасно менять политику.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 008 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H2a2 2 0 010-4h.09A1.65 1.65 0 004.6 8a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V2a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H22a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>',
+        title: 'Per-stage <code>AgentSettings</code>', desc: 'PLAN, IMPLEMENT, VERIFY — независимые наборы (backend / model / turns / timeout). Дешёвая модель на дешёвые шаги, мощная — только на implement. Никаких глобальных «default settings» для всего пайплайна.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
+        title: 'Append-only event log + SSE', desc: 'Один поток событий с монотонным <code>seq</code> обслуживает и сервер-проекцию, и клиентскую таймлайн, и replay при reconnect через <code>Last-Event-ID</code>. Никаких отдельных «delta vs snapshot»-режимов.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>',
+        title: 'Двухуровневый verify', desc: 'Детерминированные команды (<code>pytest</code> / <code>ruff</code>) — сначала и дёшево; LLM-ревьюер — только если код хотя бы собирается. И cost экономит, и сводит ложные «agent says PASS» к минимуму.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>',
+        title: 'Изолированные worktree-попытки', desc: 'Каждая попытка <code>implement</code> стартует с чистого worktree, бинарный патч предыдущей попытки сохраняется в <code>data/checkpoints/</code>. Failed-task worktree остаётся на диске для разбора.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>',
+        title: 'Жёсткий env-allowlist для агента', desc: 'Сам субпроцесс CLI получает только нужные секреты и <code>PATH</code>; никакие лишние переменные из окружения оператора в агента не утекают. <code>GITHUB_TOKEN</code> намеренно не передаётся.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+        title: 'Polling-only архитектура', desc: 'Три разнотемповых цикла (GitHub 30 сек, SSE-poll 0.5 сек, UI REST 3 сек) — никаких webhook\'ов, никаких подписок. Простота за счёт latency; для single-tenant сценария — оптимально.' }
+    ];
+
+    var propsGrid = document.getElementById('propertiesGrid');
+    properties.forEach(function(p) {
+      var el = document.createElement('div');
+      el.className = 'property reveal';
+      el.dataset.reveal = '';
+      el.innerHTML =
+        '<div class="property-icon">' + p.icon + '</div>' +
+        '<div><h4>' + p.title + '</h4><p>' + p.desc + '</p></div>';
+      propsGrid.appendChild(el);
+      revealObserver.observe(el);
+    });
+
+    function onThemeChange() {}
+  </script>
+</body>
+</html>

@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="ru" class="theme-dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Anvils — архитектура простыми словами</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
+  <style>
+    /* ===== The Anvils — уникальные секции (defense layers + sweep loops + watchers) ===== */
+
+    /* Категории компонентов: state / core / worker / pipeline / observe / security */
+    .component-card[data-cat="state"] { --cat-color: #14b8a6; }
+    .component-card[data-cat="core"] { --cat-color: #06b6d4; }
+    .component-card[data-cat="worker"] { --cat-color: #8b5cf6; }
+    .component-card[data-cat="pipeline"] { --cat-color: #3b82f6; }
+    .component-card[data-cat="observe"] { --cat-color: #ec4899; }
+    .component-card[data-cat="security"] { --cat-color: #f43f5e; }
+    html.theme-light .component-card[data-cat="state"] { --cat-color: #0d9488; }
+    html.theme-light .component-card[data-cat="core"] { --cat-color: #0891b2; }
+    html.theme-light .component-card[data-cat="worker"] { --cat-color: #7c3aed; }
+    html.theme-light .component-card[data-cat="pipeline"] { --cat-color: #2563eb; }
+    html.theme-light .component-card[data-cat="observe"] { --cat-color: #db2777; }
+    html.theme-light .component-card[data-cat="security"] { --cat-color: #e11d48; }
+
+    /* Defense-in-depth layers */
+    .defense-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+    .defense-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      transition: all 0.25s;
+      position: relative;
+      overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    .defense-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--defense-color);
+    }
+    .defense-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--border-strong);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+    }
+    .defense-card[data-layer="envelope"] { --defense-color: #f43f5e; }
+    .defense-card[data-layer="sanitizer"] { --defense-color: #f59e0b; }
+    .defense-card[data-layer="shell-deny"] { --defense-color: #ef4444; }
+    .defense-card[data-layer="tokens"] { --defense-color: #8b5cf6; }
+    .defense-card[data-layer="stop-crane"] { --defense-color: #06b6d4; }
+    .defense-card[data-layer="deny-default"] { --defense-color: #ec4899; }
+    html.theme-light .defense-card[data-layer="envelope"] { --defense-color: #e11d48; }
+    html.theme-light .defense-card[data-layer="sanitizer"] { --defense-color: #d97706; }
+    html.theme-light .defense-card[data-layer="shell-deny"] { --defense-color: #dc2626; }
+    html.theme-light .defense-card[data-layer="tokens"] { --defense-color: #7c3aed; }
+    html.theme-light .defense-card[data-layer="stop-crane"] { --defense-color: #0891b2; }
+    html.theme-light .defense-card[data-layer="deny-default"] { --defense-color: #db2777; }
+
+    .defense-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .defense-num {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 0.6875rem; font-weight: 700;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--defense-color);
+      padding: 5px 10px; border-radius: 6px;
+      background: color-mix(in srgb, var(--defense-color) 14%, transparent);
+    }
+    .defense-icon {
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--defense-color) 12%, transparent);
+      color: var(--defense-color);
+    }
+    .defense-title {
+      font-weight: 700; font-size: 1.0625rem; color: var(--text);
+      margin-bottom: 8px; line-height: 1.35;
+    }
+    .defense-desc {
+      font-size: 0.9375rem; color: var(--text-secondary);
+      line-height: 1.6; margin-bottom: 16px;
+    }
+    .defense-desc strong { color: var(--text); font-weight: 500; }
+    .defense-effect {
+      margin-top: auto; padding: 11px 14px;
+      background: color-mix(in srgb, var(--defense-color) 8%, transparent);
+      border: 1px solid color-mix(in srgb, var(--defense-color) 22%, transparent);
+      border-radius: 10px;
+      font-size: 0.8125rem; color: var(--text);
+      display: flex; align-items: flex-start; gap: 10px;
+      line-height: 1.5;
+    }
+    .defense-effect svg { color: var(--defense-color); flex-shrink: 0; margin-top: 2px; }
+    .defense-effect strong { color: var(--defense-color); font-weight: 600; }
+
+    /* Two sweep loops */
+    .sweeps-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .sweep-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 32px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.25s;
+      display: flex; flex-direction: column;
+    }
+    .sweep-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--sweep-color);
+    }
+    .sweep-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--border-strong);
+      box-shadow: 0 16px 40px rgba(0,0,0,0.18);
+    }
+    .sweep-card[data-sweep="heartbeat"] { --sweep-color: #06b6d4; }
+    .sweep-card[data-sweep="visibility"] { --sweep-color: #8b5cf6; }
+    html.theme-light .sweep-card[data-sweep="heartbeat"] { --sweep-color: #0891b2; }
+    html.theme-light .sweep-card[data-sweep="visibility"] { --sweep-color: #7c3aed; }
+
+    .sweep-header { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+    .sweep-icon {
+      width: 48px; height: 48px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--sweep-color) 14%, transparent);
+      color: var(--sweep-color);
+      flex-shrink: 0;
+    }
+    .sweep-name {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 1.0625rem; font-weight: 700;
+      color: var(--text);
+    }
+    .sweep-tagline {
+      font-size: 0.875rem; color: var(--sweep-color);
+      font-style: italic; font-weight: 500;
+      margin-top: 2px;
+    }
+    .sweep-stats {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+      margin-bottom: 16px;
+      padding: 14px 16px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    .sweep-stat-label {
+      font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--text-secondary); font-weight: 600; margin-bottom: 4px;
+    }
+    .sweep-stat-value {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 0.9375rem; font-weight: 700;
+      color: var(--sweep-color);
+    }
+    .sweep-desc { font-size: 0.9375rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px; }
+    .sweep-desc strong { color: var(--text); font-weight: 500; }
+    .sweep-purpose {
+      margin-top: auto; padding: 13px 15px;
+      background: color-mix(in srgb, var(--sweep-color) 8%, transparent);
+      border: 1px solid color-mix(in srgb, var(--sweep-color) 22%, transparent);
+      border-radius: 10px;
+      font-size: 0.875rem; color: var(--text); line-height: 1.55;
+    }
+    .sweep-purpose strong { color: var(--sweep-color); font-weight: 600; }
+
+    /* Observation channels — 4 каналов из одного источника */
+    .watchers-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+    }
+    .watcher-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px;
+      transition: all 0.25s;
+      position: relative;
+      overflow: hidden;
+      display: flex; flex-direction: column;
+      text-align: center;
+    }
+    .watcher-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--watcher-color);
+    }
+    .watcher-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--border-strong);
+      box-shadow: 0 12px 28px rgba(0,0,0,0.12);
+    }
+    .watcher-card[data-watcher="sse"] { --watcher-color: #3b82f6; }
+    .watcher-card[data-watcher="htmx"] { --watcher-color: #06b6d4; }
+    .watcher-card[data-watcher="prom"] { --watcher-color: #f59e0b; }
+    .watcher-card[data-watcher="jsonl"] { --watcher-color: #14b8a6; }
+    html.theme-light .watcher-card[data-watcher="sse"] { --watcher-color: #2563eb; }
+    html.theme-light .watcher-card[data-watcher="htmx"] { --watcher-color: #0891b2; }
+    html.theme-light .watcher-card[data-watcher="prom"] { --watcher-color: #d97706; }
+    html.theme-light .watcher-card[data-watcher="jsonl"] { --watcher-color: #0d9488; }
+
+    .watcher-icon {
+      width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--watcher-color) 14%, transparent);
+      color: var(--watcher-color);
+      margin: 0 auto 14px;
+    }
+    .watcher-name {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 0.9375rem; font-weight: 700;
+      color: var(--text); margin-bottom: 6px;
+    }
+    .watcher-target {
+      font-size: 0.75rem; color: var(--watcher-color);
+      font-weight: 500; margin-bottom: 10px;
+    }
+    .watcher-desc {
+      font-size: 0.8125rem; color: var(--text-secondary);
+      line-height: 1.55;
+    }
+
+    .watchers-source {
+      display: flex; align-items: center; justify-content: center; gap: 14px;
+      padding: 18px 22px;
+      background: var(--surface-elevated);
+      border: 1px dashed var(--border-strong);
+      border-radius: 14px;
+      font-size: 0.9375rem;
+      color: var(--text-secondary);
+      margin-bottom: 22px;
+    }
+    .watchers-source svg { color: var(--accent); flex-shrink: 0; }
+    .watchers-source strong { color: var(--text); font-weight: 600; }
+    .watchers-source .mono { color: var(--accent); }
+
+    /* Responsive — уникальные сетки */
+    @media (max-width: 1024px) {
+      .defense-grid { grid-template-columns: 1fr; }
+      .sweeps-grid { grid-template-columns: 1fr; }
+      .watchers-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 480px) {
+      .watchers-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 375px) {
+      .defense-card, .sweep-card, .watcher-card { padding: 22px; }
+    }
+    @media print {
+      .defense-card, .sweep-card, .watcher-card {
+        break-inside: avoid; border: 1px solid #ddd; box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-to-content">К основному контенту</a>
+
+  <div class="viz-menu">
+    <button class="viz-menu-toggle" onclick="toggleMenu()" aria-label="Меню">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="3" y1="5" x2="17" y2="5"/><line x1="3" y1="10" x2="17" y2="10"/><line x1="3" y1="15" x2="17" y2="15"/>
+      </svg>
+    </button>
+    <div class="viz-menu-dropdown" id="vizMenuDropdown">
+      <button onclick="cycleTheme()"><span id="themeIcon">🌙</span><span id="themeLabel">Тёмная</span></button>
+      <button onclick="downloadImage()"><span>📥</span><span>Скачать PNG</span></button>
+      <button onclick="window.print()"><span>🖨️</span><span>Печать / PDF</span></button>
+    </div>
+  </div>
+
+  <main id="main-content" role="main">
+
+    <!-- ============== HERO ============== -->
+    <section class="hero" role="banner">
+      <div class="container hero-content">
+        <a href="index.html" class="hero-back animate">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          К каталогу
+        </a>
+        <h1 class="animate delay-1">The Anvils</h1>
+        <a href="https://github.com/podlodka-ai-club/the-anvils" class="hero-repo animate delay-1" target="_blank" rel="noopener">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+          github.com/podlodka-ai-club/the-anvils
+        </a>
+        <p class="hero-subtitle animate delay-2">
+          Whilly Orchestrator — распределённый «диспетчер» кодинг-агентов, выросший из карманного
+          Ralph/Whilly Wiggum loop'а в полноценный сервис. Источник истины — <strong style="color: var(--accent);">Postgres</strong>:
+          атомарные SQL-транзакции мутируют задачи и пишут аудит-события в одном statement'е, гонки
+          сотен воркеров разруливает <span class="mono" style="color: var(--accent);">SELECT FOR UPDATE SKIP LOCKED</span>,
+          а вокруг — толстый слой адаптеров для GitHub / Jira / Forge / Claude CLI.
+        </p>
+
+        <div class="hero-stack animate delay-2">
+          <span class="stack-pill">Python</span>
+          <span class="stack-pill">FastAPI</span>
+          <span class="stack-pill">Postgres</span>
+          <span class="stack-pill">HTMX</span>
+          <span class="stack-pill">Claude CLI</span>
+        </div>
+
+        <div class="hero-stats">
+          <div class="stat-card animate delay-3">
+            <div class="stat-value accent" data-count="12" data-suffix="">12</div>
+            <div class="stat-label">Компонентов архитектуры</div>
+            <div class="stat-sublabel">от Postgres до stop-crane</div>
+          </div>
+          <div class="stat-card animate delay-3">
+            <div class="stat-value" data-count="6" data-suffix="">6</div>
+            <div class="stat-label">Переходов FSM</div>
+            <div class="stat-sublabel">CLAIM · START · COMPLETE · FAIL · SKIP · RELEASE</div>
+          </div>
+          <div class="stat-card animate delay-4">
+            <div class="stat-value" data-count="2" data-suffix="">2</div>
+            <div class="stat-label">Тела одного контракта</div>
+            <div class="stat-sublabel">local asyncpg · remote httpx</div>
+          </div>
+          <div class="stat-card animate delay-4">
+            <div class="stat-value" data-count="4" data-suffix="">4</div>
+            <div class="stat-label">Канала наблюдения</div>
+            <div class="stat-sublabel">SSE · HTMX · Prometheus · JSONL</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== KEY IDEA ============== -->
+    <section style="padding-top: 0;">
+      <div class="container">
+        <div class="key-idea reveal" data-reveal>
+          <div class="section-eyebrow">Главная идея</div>
+          <h3>Postgres — единственный источник истины, всё остальное — толстые адаптеры</h3>
+          <p>
+            Всё, что меняет состояние задачи, проходит через одну SQL-транзакцию, которая одновременно делает
+            <strong>атомарный UPDATE</strong> и пишет <strong>аудит-событие</strong>. Никаких файлов-state, никаких
+            mutex'ов в Python — гонки между сотней параллельных воркеров разруливает сам Postgres через
+            <span class="mono" style="color: var(--accent);">SKIP LOCKED</span> и optimistic-locking по столбцу
+            <span class="mono" style="color: var(--accent);">version</span>. Над этой базой висит чистое ядро
+            (FSM, scheduler, prompts) под защитой <span class="mono" style="color: var(--accent);">import-linter</span>,
+            а вокруг — толстый слой адаптеров для всего, что трогает внешний мир.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== ARCHITECTURE FLOW ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Высокоуровневая схема</div>
+        <h2 class="section-title">Как устроена «наковальня»</h2>
+        <p class="section-subtitle">
+          Источники задач нормализуются в одну модель и кладутся в Postgres. Поверх — FastAPI control plane
+          с двумя sweep'ами; снизу — два физических тела воркера под одним FSM.
+        </p>
+
+        <div class="arch-flow">
+          <div class="arch-diagram reveal" data-reveal>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18M6 11h12M9 15h6M11 19h2"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">GitHub / Jira / Forge / PRD-визард</div>
+                <div class="arch-node-meta">источники задач → одна модель</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ нормализуют в Task + Plan</div>
+            <div class="arch-node active">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0018 0V5"/><path d="M3 12a9 3 0 0018 0"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">Postgres</div>
+                <div class="arch-node-meta">tasks / events / plans / workers — append-only audit</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ SKIP LOCKED + version</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">FastAPI control plane</div>
+                <div class="arch-node-meta">SSE · HTMX · Prometheus · 2 sweep-loop'а</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ claim / complete</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">Local + Remote workers</div>
+                <div class="arch-node-meta">asyncpg / httpx — одно FSM, два транспорта</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ subprocess в workspace</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">Claude CLI + GitHub PR</div>
+                <div class="arch-node-meta">deny-by-default permissions · post-COMPLETE hook</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="reveal" data-reveal>
+            <h3 style="margin-bottom: 16px;">Что важно понять</h3>
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 14px;">
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Один SQL-statement на переход.</strong> <span class="mono">UPDATE … RETURNING</span> + <span class="mono">INSERT INTO events</span> в одной транзакции. Аудит-лог никогда не разъезжается с tasks-таблицей.</span>
+              </li>
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Чистое ядро под import-linter'ом.</strong> FSM, scheduler, prompts и gates физически не могут импортировать <span class="mono">asyncpg</span> или <span class="mono">httpx</span> — нарушение ловится сборкой.</span>
+              </li>
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Два тела одного FSM.</strong> Local-воркер ходит в Postgres напрямую, remote — через HTTP. На удалённой VM не ставится <span class="mono">asyncpg</span>; контракт <span class="mono">worker-entry-purity</span> защищает это статически.</span>
+              </li>
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Deny-by-default для Claude.</strong> <span class="mono">--disallowedTools Write,Edit,Bash</span> по умолчанию; чтобы «развязать руки», оператор обязан явно поставить <span class="mono">WHILLY_AGENT_ALLOW_SHELL=1</span>.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== TWO SWEEP LOOPS ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Auto-recovery</div>
+        <h2 class="section-title">Два независимых sweep'а</h2>
+        <p class="section-subtitle">
+          В лайфспане сервера крутятся два sweep-loop'а — ловят разные типы зависаний. Оба одним SQL-statement'ом,
+          чтобы audit-log не разъехался с tasks-row. Задача никогда не остаётся <span class="mono" style="color: var(--accent);">claimed</span> навсегда.
+        </p>
+
+        <div class="sweeps-grid reveal" data-reveal id="sweepsGrid">
+          <!-- Sweeps injected -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== DEFENSE-IN-DEPTH ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Defense-in-depth</div>
+        <h2 class="section-title">Шесть независимых слоёв защиты</h2>
+        <p class="section-subtitle">
+          Никакого «одного большого guard'а» — несколько ортогональных слоёв, каждый закрывает свой класс
+          атак. Если один слой обошли, остальные продолжают работать.
+        </p>
+
+        <div class="defense-grid reveal" data-reveal id="defenseGrid">
+          <!-- Defense layers injected -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== OBSERVATION CHANNELS ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Зрители</div>
+        <h2 class="section-title">Четыре канала наблюдения из одного источника</h2>
+        <p class="section-subtitle">
+          У базы есть четыре независимых способа смотреть на происходящее, и все они получают данные из одного
+          и того же event-stream'а. Картинка в браузере и в логах не расходится.
+        </p>
+
+        <div class="watchers-source reveal" data-reveal>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0018 0V5"/><path d="M3 12a9 3 0 0018 0"/></svg>
+          <span>Источник — append-only таблица <span class="mono">events</span> + Postgres-триггер <span class="mono">pg_notify('whilly_events', ...)</span>. <strong>Один asyncpg-коннект</strong> слушает канал и фан-аутит подписчикам.</span>
+        </div>
+
+        <div class="watchers-grid reveal" data-reveal id="watchersGrid">
+          <!-- Watchers injected -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== COMPONENTS ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Из чего собран</div>
+        <h2 class="section-title">Двенадцать строительных блоков</h2>
+        <p class="section-subtitle">
+          От Postgres-таблиц как источника истины до stop-crane'а singleton'а — каждый компонент закрывает
+          свой класс задач. Используйте фильтр для просмотра по категориям.
+        </p>
+
+        <div class="components-filter">
+          <button class="filter-btn active" data-filter="all">Все · 12</button>
+          <button class="filter-btn" data-filter="state">Состояние · 1</button>
+          <button class="filter-btn" data-filter="core">Ядро · 2</button>
+          <button class="filter-btn" data-filter="worker">Воркеры · 3</button>
+          <button class="filter-btn" data-filter="pipeline">Конвейер · 3</button>
+          <button class="filter-btn" data-filter="observe">Наблюдение · 1</button>
+          <button class="filter-btn" data-filter="security">Безопасность · 2</button>
+        </div>
+
+        <div class="components-grid" id="componentsGrid">
+          <!-- Components injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== TIMELINE ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Жизненный цикл</div>
+        <h2 class="section-title">Что происходит с типичной задачей</h2>
+        <p class="section-subtitle">
+          От момента, когда оператор поднял Postgres и накатил миграции, до закрытия PR и follow-up'а
+          на review-комментарии — пятнадцать конкретных шагов.
+        </p>
+
+        <div class="timeline" id="timeline">
+          <!-- Timeline injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== KEY PROPERTIES ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">На чём всё держится</div>
+        <h2 class="section-title">Ключевые свойства архитектуры</h2>
+        <p class="section-subtitle">
+          Двенадцать решений, которые делают Whilly предсказуемым после падений, безопасным в multitenancy
+          и совместимым с операторскими привычками.
+        </p>
+
+        <div class="properties-grid" id="propertiesGrid">
+          <!-- Properties injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== FOOTER ============== -->
+    <footer class="footer">
+      <div class="container">
+        <p>
+          Архитектурный обзор <strong style="color: var(--text);">the-anvils</strong> ·
+          Сгенерировано из <span class="mono">arch/the-anvils-arch-review.md</span>
+        </p>
+      </div>
+    </footer>
+
+  </main>
+
+  <script>
+    // === Menu ===
+    function toggleMenu() {
+      var dropdown = document.getElementById('vizMenuDropdown');
+      if (dropdown) dropdown.classList.toggle('open');
+    }
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.viz-menu')) {
+        var dropdown = document.getElementById('vizMenuDropdown');
+        if (dropdown) dropdown.classList.remove('open');
+      }
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        var dropdown = document.getElementById('vizMenuDropdown');
+        if (dropdown) dropdown.classList.remove('open');
+      }
+    });
+
+    // === Theme ===
+    var savedTheme = localStorage.getItem('viz-theme');
+    var currentTheme = savedTheme || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    function applyTheme(t) {
+      document.documentElement.className = 'theme-' + t;
+      var icon = document.getElementById('themeIcon');
+      var label = document.getElementById('themeLabel');
+      if (icon) icon.textContent = t === 'dark' ? '🌙' : '☀️';
+      if (label) label.textContent = t === 'dark' ? 'Тёмная' : 'Светлая';
+      localStorage.setItem('viz-theme', t);
+      currentTheme = t;
+      if (typeof onThemeChange === 'function') onThemeChange();
+    }
+    function cycleTheme() { applyTheme(currentTheme === 'dark' ? 'light' : 'dark'); }
+    applyTheme(currentTheme);
+
+    // === Scroll Reveal ===
+    document.querySelectorAll('[data-reveal]').forEach(function(el) { el.classList.add('reveal'); });
+    var revealObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          revealObserver.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.reveal').forEach(function(el) { revealObserver.observe(el); });
+
+    // === Number Counter ===
+    function animateCounters() {
+      document.querySelectorAll('[data-count]').forEach(function(el) {
+        if (el.dataset.counted) return;
+        el.dataset.counted = '1';
+        var target = parseFloat(el.dataset.count),
+            prefix = el.dataset.prefix || '',
+            suffix = el.dataset.suffix || '';
+        var start = performance.now(), duration = 1100;
+        (function tick(now) {
+          var p = Math.min((now - start) / duration, 1),
+              eased = 1 - Math.pow(1 - p, 3);
+          el.textContent = prefix + Math.round(target * eased).toLocaleString() + suffix;
+          if (p < 1) requestAnimationFrame(tick);
+        })(start);
+      });
+    }
+    var counterEl = document.querySelector('[data-count]');
+    if (counterEl) {
+      var cObs = new IntersectionObserver(function(entries) {
+        entries.forEach(function(e) {
+          if (e.isIntersecting) { animateCounters(); cObs.disconnect(); }
+        });
+      }, { threshold: 0.3 });
+      cObs.observe(counterEl);
+    }
+
+    // === Download PNG ===
+    async function downloadImage() {
+      var menu = document.querySelector('.viz-menu');
+      menu.style.display = 'none';
+      try {
+        var url = await htmlToImage.toPng(document.body, {
+          quality: 1, pixelRatio: 2,
+          filter: function(n) { return !n.classList || !n.classList.contains('viz-menu'); }
+        });
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'the-anvils-architecture.png';
+        a.click();
+      } catch(e) { console.error('Download failed:', e); }
+      menu.style.display = '';
+    }
+
+    // === DATA: Sweeps ===
+    var sweeps = [
+      {
+        id: 'heartbeat',
+        name: 'release_offline_workers',
+        tagline: 'быстрый — для убитого процесса',
+        icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',
+        stats: [
+          { label: 'Период', value: '~10 сек' },
+          { label: 'Порог', value: '2 минуты' }
+        ],
+        desc: 'Ищет воркеров без heartbeat\'а более 2 минут (двойной интервал по умолчанию), флипает их в <strong>offline</strong> и одновременно отпускает все их in-flight задачи с reason <strong>"worker_offline"</strong>.',
+        purpose: 'Срабатывает быстро для «обычного» SIGKILL воркера, когда процесс больше не стучится в базу.'
+      },
+      {
+        id: 'visibility',
+        name: 'release_stale_tasks',
+        tagline: 'длинный страховочный пояс',
+        icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+        stats: [
+          { label: 'Период', value: '~10 сек' },
+          { label: 'Порог', value: '15 минут' }
+        ],
+        desc: 'Ищет задачи в <strong>CLAIMED</strong>/<strong>IN_PROGRESS</strong> старше 15 минут (visibility-timeout) и возвращает их в <strong>PENDING</strong> с reason <strong>"visibility_timeout"</strong>.',
+        purpose: 'Страховка для случая, когда воркер сам тикает heartbeat, но runner внутри намертво залип в subprocess\'е.'
+      }
+    ];
+
+    var sweepsGrid = document.getElementById('sweepsGrid');
+    sweeps.forEach(function(s) {
+      var el = document.createElement('div');
+      el.className = 'sweep-card';
+      el.dataset.sweep = s.id;
+      var statsHtml = s.stats.map(function(st) {
+        return '<div><div class="sweep-stat-label">' + st.label + '</div><div class="sweep-stat-value">' + st.value + '</div></div>';
+      }).join('');
+      el.innerHTML =
+        '<div class="sweep-header">' +
+          '<div class="sweep-icon">' + s.icon + '</div>' +
+          '<div>' +
+            '<div class="sweep-name">' + s.name + '</div>' +
+            '<div class="sweep-tagline">' + s.tagline + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="sweep-stats">' + statsHtml + '</div>' +
+        '<div class="sweep-desc">' + s.desc + '</div>' +
+        '<div class="sweep-purpose"><strong>Зачем:</strong> ' + s.purpose + '</div>';
+      sweepsGrid.appendChild(el);
+    });
+
+    // === DATA: Defense layers ===
+    var defenseLayers = [
+      {
+        id: 'envelope',
+        num: 'Layer 1',
+        title: 'Envelope с blake2s-nonce',
+        icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 13 21 7"/></svg>',
+        desc: 'Описание задачи оборачивается в детерминистский envelope <span class="mono">BEGIN-WHILLY-DESC-&lt;nonce&gt;</span> / <span class="mono">END-WHILLY-DESC-&lt;nonce&gt;</span>, где nonce — <strong>blake2s</strong> от plan_id и task_id.',
+        effect: 'Агент не может «закрыть» свой блок и инжектировать новые инструкции.'
+      },
+      {
+        id: 'sanitizer',
+        num: 'Layer 2',
+        title: 'Sanitizer + UNTRUSTED-fence',
+        icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+        desc: 'Любой untrusted-текст (PR-комментарии, Jira-description\'ы, issue body) заворачивается в <span class="mono">&lt;UNTRUSTED kind=...&gt;</span> fence. Регексы ловят prompt-injection включая кириллические homoglyph\'ы «<strong>с y s т e m</strong>». Секреты редактируются, control-bytes стрипаются.',
+        effect: 'Идемпотентно — повторное прогон не накручивает фенсы.'
+      },
+      {
+        id: 'shell-deny',
+        num: 'Layer 3',
+        title: 'Shell-deny сканер',
+        icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>',
+        desc: 'Сканирует <span class="mono">description+criteria+test_steps</span> на baseline-deny-паттерны: <span class="mono">rm -rf /</span>, <span class="mono">git push --force</span>, fork-bomb, <span class="mono">curl | sh</span> и <strong>base64-обёрнутые варианты</strong>. Та же проверка для verify-команд оператора.',
+        effect: 'До запуска runner\'а — задача мгновенно в FAILED.'
+      },
+      {
+        id: 'deny-default',
+        num: 'Layer 4',
+        title: 'Deny-by-default для Claude',
+        icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>',
+        desc: 'Permission-флаги для CLI — <span class="mono">--disallowedTools Write,Edit,MultiEdit,NotebookEdit,Bash</span> по умолчанию. Чтобы вернуть «всё разрешено», оператор обязан явно поставить <span class="mono">WHILLY_AGENT_ALLOW_SHELL=1</span>.',
+        effect: 'Безопасный профиль — настройка по умолчанию, не «забыли включить».'
+      },
+      {
+        id: 'tokens',
+        num: 'Layer 5',
+        title: 'Per-user bootstrap tokens',
+        icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>',
+        desc: 'Таблица <span class="mono">bootstrap_tokens</span> с <strong>owner_email</strong>, <strong>expires_at</strong>, <strong>revoked_at</strong>, <strong>is_admin</strong>. Плейнтекст не лежит в БД — только <strong>SHA-256</strong>. Все сравнения через <span class="mono">secrets.compare_digest</span> — timing-attack не вытащит префикс.',
+        effect: 'Полноценный per-user registry, а не «один общий ключ».'
+      },
+      {
+        id: 'stop-crane',
+        num: 'Layer 6',
+        title: 'Stop-crane через singleton',
+        icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="12" height="16" rx="2"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="9" y1="12" x2="15" y2="12"/></svg>',
+        desc: 'Singleton <span class="mono">control_state</span>: одна команда <span class="mono">pause_workers(reason, operator)</span> — и все воркеры на ближайшем checkpoint\'е отпускают in-flight задачи с reason <strong>"operator_pause"</strong>.',
+        effect: 'Мягкая остановка без kill\'а — задачи не теряются.'
+      }
+    ];
+
+    var defenseGrid = document.getElementById('defenseGrid');
+    defenseLayers.forEach(function(d) {
+      var el = document.createElement('div');
+      el.className = 'defense-card';
+      el.dataset.layer = d.id;
+      el.innerHTML =
+        '<div class="defense-header">' +
+          '<span class="defense-num">' + d.num + '</span>' +
+          '<div class="defense-icon">' + d.icon + '</div>' +
+        '</div>' +
+        '<div class="defense-title">' + d.title + '</div>' +
+        '<div class="defense-desc">' + d.desc + '</div>' +
+        '<div class="defense-effect">' +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
+          '<span><strong>Эффект:</strong> ' + d.effect + '</span>' +
+        '</div>';
+      defenseGrid.appendChild(el);
+    });
+
+    // === DATA: Watchers ===
+    var watchers = [
+      {
+        id: 'sse',
+        name: 'SSE-stream',
+        target: '/events/stream',
+        icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
+        desc: 'Server-sent events в браузер с поддержкой <span class="mono">Last-Event-ID</span> для catch-up через SELECT на старые строки.'
+      },
+      {
+        id: 'htmx',
+        name: 'HTMX-dashboard',
+        target: '/',
+        icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="15" x2="15" y2="15"/></svg>',
+        desc: 'Live-swap таблиц tasks/workers с фоллбеком на 5-секундный poll — для тех, кто открыл вкладку.'
+      },
+      {
+        id: 'prom',
+        name: 'Prometheus',
+        target: '/metrics',
+        icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
+        desc: '<span class="mono">whilly_claims_total</span>, <span class="mono">_completes_total</span>, <span class="mono">_workers_online</span>, <span class="mono">_plan_budget_remaining_usd</span> за отдельным токеном (fail-closed).'
+      },
+      {
+        id: 'jsonl',
+        name: 'JSONL-mirror',
+        target: 'whilly_events.jsonl',
+        icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+        desc: 'Параллельно пишется на диск для операторов, которые любят <span class="mono">tail -f | jq</span>. Best-effort sink — exception\'ы свопаются.'
+      }
+    ];
+
+    var watchersGrid = document.getElementById('watchersGrid');
+    watchers.forEach(function(w) {
+      var el = document.createElement('div');
+      el.className = 'watcher-card';
+      el.dataset.watcher = w.id;
+      el.innerHTML =
+        '<div class="watcher-icon">' + w.icon + '</div>' +
+        '<div class="watcher-name">' + w.name + '</div>' +
+        '<div class="watcher-target">' + w.target + '</div>' +
+        '<div class="watcher-desc">' + w.desc + '</div>';
+      watchersGrid.appendChild(el);
+    });
+
+    // === DATA: Components ===
+    var components = [
+      { num: '01', cat: 'state', catLabel: 'Состояние', title: 'Postgres-таблицы', tagline: '«единый источник истины»',
+        desc: 'Главные сущности — <strong>plans, tasks, events, workers, pull_requests, bootstrap_tokens, control_state</strong>. У каждой задачи статус, <strong>version</strong> для optimistic-locking, <strong>claimed_by/at</strong> для visibility-timeout. Таблица <strong>events</strong> — append-only.' },
+      { num: '02', cat: 'core', catLabel: 'Ядро', title: 'whilly.core — чистый мозг', tagline: '«мозг под import-linter\'ом»',
+        desc: 'Замороженные dataclass\'ы и pure-функции: FSM из 6 переходов, <strong>Kahn</strong>-топологический сортировщик, <strong>Tarjan</strong>-детектор циклов, билдер промптов, Decision Gate, shell-deny-сканер. Контракт <span class="mono">import-linter</span> запрещает тянуть asyncpg/httpx/fastapi/subprocess.' },
+      { num: '03', cat: 'core', catLabel: 'Ядро', title: 'WhillyConfig', tagline: '«пятислойная конфигурация»',
+        desc: 'Один dataclass с дефолтами, поверх — TOML пользователя, TOML репозитория <span class="mono">./whilly.toml</span>, <span class="mono">.env</span>, shell-env. Поля могут ссылаться на секреты — <span class="mono">env:VAR</span>, <span class="mono">keyring:service/account</span>, <span class="mono">file:/path</span>. <span class="mono">cfg.resolved()</span> разворачивает.' },
+      { num: '04', cat: 'pipeline', catLabel: 'Конвейер', title: 'TaskRepository', tagline: '«атомарные SQL-переходы»',
+        desc: 'Один класс над asyncpg pool\'ом, ~40 публичных async-методов: <strong>claim/start/complete/fail/release/skip_task</strong>, <strong>release_stale_tasks</strong>, <strong>release_offline_workers</strong>. Каждый — один SQL-statement: CTE с <span class="mono">UPDATE … RETURNING</span> + <span class="mono">INSERT INTO events</span> в одной транзакции.' },
+      { num: '05', cat: 'worker', catLabel: 'Воркеры', title: 'Local + Remote workers', tagline: '«два тела одного контракта»',
+        desc: '<span class="mono">whilly.worker.local</span> ходит в Postgres напрямую (asyncpg). <span class="mono">whilly.worker.remote</span> — через HTTP с FastAPI, не знает про asyncpg. <strong>worker-entry-purity</strong> в import-linter защищает invariant. Оба — один цикл claim → start → runner → complete/fail.' },
+      { num: '06', cat: 'worker', catLabel: 'Воркеры', title: 'Claude CLI runner', tagline: '«изолированный subprocess»',
+        desc: 'Async-обёртка над <span class="mono">asyncio.create_subprocess_exec</span>. Argv как список (no shell-interp), <span class="mono">--output-format json</span>, default model <span class="mono">claude-opus-4-6[1m]</span>. <strong>Deny-by-default</strong>: <span class="mono">--disallowedTools Write,Edit,Bash</span>. 5 ретраев <strong>5/10/20/40/60s</strong> на 5xx, мгновенный return на auth-ошибки.' },
+      { num: '07', cat: 'worker', catLabel: 'Воркеры', title: 'Workspace per task', tagline: '«изолированные репо-папки»',
+        desc: 'Если есть <span class="mono">repo_target_id</span> — клонирует репу в <span class="mono">.whilly_workspaces/repos/&lt;repo&gt;/&lt;plan&gt;/&lt;task&gt;</span>, ставит ветку. Подготовка в <span class="mono">asyncio.to_thread</span>, факт пишется как <strong>workspace.prepared</strong>. Git-падение → FAILED + событие <strong>workspace.prepare_failed</strong>.' },
+      { num: '08', cat: 'pipeline', catLabel: 'Конвейер', title: 'FastAPI control plane', tagline: '«единая HTTP-шина»',
+        desc: 'Один app через <span class="mono">create_app(pool, ...)</span>. RPC (<span class="mono">/tasks/claim</span> с long-poll до 30 сек, <span class="mono">/complete</span>, <span class="mono">/fail</span>), bootstrap (<span class="mono">/workers/register</span>, <span class="mono">/heartbeat</span>), admin (<span class="mono">/pause/resume</span>), наблюдательные (<span class="mono">/health</span>, <span class="mono">/metrics</span>, <span class="mono">/events/stream</span>). HTMX-дашборд на <span class="mono">/</span>.' },
+      { num: '09', cat: 'pipeline', catLabel: 'Конвейер', title: 'Sources & Sinks', tagline: '«адаптеры к чужим форматам»',
+        desc: 'Источники: <span class="mono">github_issues</span> (парсит <span class="mono">gh issue list</span> + H2-секции), <span class="mono">github_issues_and_project</span> (Projects v2), <span class="mono">jira</span> (3 схемы авторизации), <span class="mono">forge.intake</span> (идемпотентно через partial UNIQUE-индекс), PRD-визард. Sink: <span class="mono">github_pr</span> + post-COMPLETE hook.' },
+      { num: '10', cat: 'pipeline', catLabel: 'Конвейер', title: 'PR-цикл — first-class', tagline: '«review-комменты как follow-up»',
+        desc: 'После DONE — <span class="mono">git push</span>, <span class="mono">gh pr create</span>, запись в <strong>pull_requests</strong>, событие <strong>pr.opened</strong>. <span class="mono">whilly pr-feedback poll</span> эмитит <strong>pr.review.changes_requested/approved/merged</strong>. С <span class="mono">WHILLY_ITERATE_ON_FAILURE=1</span> — follow-up task через тот же FSM, обрывается на 3-й итерации.' },
+      { num: '11', cat: 'observe', catLabel: 'Наблюдение', title: 'События в 4 канала', tagline: '«один источник, четыре зрителя»',
+        desc: 'Postgres-триггер на INSERT в <strong>events</strong> бросает <span class="mono">pg_notify(\'whilly_events\', ...)</span>. Отдельный asyncpg-коннект слушает канал и фан-аутит на bounded-очереди подписчиков. SSE, HTMX, Prometheus, JSONL — все получают одни и те же события, картинка в браузере и логах не расходится.' },
+      { num: '12', cat: 'security', catLabel: 'Безопасность', title: 'Защитные слои', tagline: '«defense-in-depth»',
+        desc: 'Envelope с blake2s-nonce вокруг description, sanitizer с UNTRUSTED-fence для внешних текстов, shell-deny regex (включая кириллические homoglyph\'ы), per-user bootstrap-токены (SHA-256 + <span class="mono">secrets.compare_digest</span>), stop-crane через singleton <strong>control_state</strong>.' }
+    ];
+
+    var grid = document.getElementById('componentsGrid');
+    components.forEach(function(c) {
+      var card = document.createElement('article');
+      card.className = 'component-card';
+      card.dataset.cat = c.cat;
+      card.innerHTML =
+        '<div class="component-header">' +
+          '<span class="component-num">' + c.num + '</span>' +
+          '<span class="component-cat">' + c.catLabel + '</span>' +
+        '</div>' +
+        '<h4>' + c.title + '</h4>' +
+        '<div class="component-tagline">' + c.tagline + '</div>' +
+        '<p class="component-desc">' + c.desc + '</p>';
+      grid.appendChild(card);
+    });
+
+    // Recalculate counts
+    var counts = { all: components.length, state: 0, core: 0, worker: 0, pipeline: 0, observe: 0, security: 0 };
+    components.forEach(function(c) { counts[c.cat]++; });
+    document.querySelectorAll('.filter-btn').forEach(function(btn) {
+      var f = btn.dataset.filter;
+      var label = btn.textContent.split(' · ')[0];
+      btn.textContent = label + ' · ' + counts[f];
+    });
+
+    document.querySelectorAll('.filter-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        var filter = btn.dataset.filter;
+        document.querySelectorAll('.component-card').forEach(function(card) {
+          if (filter === 'all' || card.dataset.cat === filter) {
+            card.classList.remove('hidden');
+          } else {
+            card.classList.add('hidden');
+          }
+        });
+      });
+    });
+
+    // === DATA: Timeline ===
+    var timelineSteps = [
+      { step: 'Шаг 01', title: 'Поднимаем инфраструктуру', desc: 'Оператор запускает Postgres через <code>docker-compose up</code>, накатывает миграции через Alembic, выставляет <code>WHILLY_DATABASE_URL</code>.' },
+      { step: 'Шаг 02', title: 'Импортируем план', desc: 'Один из вариантов: <code>whilly plan import tasks.json</code>, либо <code>whilly forge intake owner/repo/42</code> (issue → PRD → план), либо <code>whilly init "build a thing" --interactive</code> (PRD-визард).' },
+      { step: 'Шаг 03', title: 'Старт control plane', desc: 'Запускается <code>whilly server</code> — поднимается FastAPI с пулом, заводятся фоновые sweep\'ы, NOTIFY-listener и event-flusher в одном <code>asyncio.TaskGroup</code>.' },
+      { step: 'Шаг 04', title: 'Воркер подключается', desc: 'На второй машине (или той же) — <code>whilly-worker --connect URL --token TOKEN --plan ID</code>. Сразу отправляет heartbeat, начинает long-poll claim\'а.' },
+      { step: 'Шаг 05', title: 'Claim через SKIP LOCKED', desc: 'Сервер находит задачу в <code>PENDING</code>, отдаёт через <code>SELECT FOR UPDATE SKIP LOCKED</code>, пишет <code>CLAIM</code> event, возвращает <code>Task</code> с текущим <code>version</code>.' },
+      { step: 'Шаг 06', title: 'Сборка промпта + сканеры', desc: 'Воркер билдит промпт: описание в envelope с blake2s-nonce, GUARD-предупреждение, dependencies/criteria/test_steps. Если сработал prompt-injection-сканер или shell-deny — задача в FAILED, никакой Claude не запускается.' },
+      { step: 'Шаг 07', title: 'Подготовка workspace', desc: 'Если у задачи есть <code>repo_target_id</code> — клонирует репу в <code>.whilly_workspaces/repos/...</code>, ставит ветку, пишет событие <code>workspace.prepared</code>.' },
+      { step: 'Шаг 08', title: 'Запуск Claude CLI', desc: 'Async-subprocess в этом workspace\'е. Параллельно воркер крутит race между runner-coroutine и <code>stop</code>-event\'ом, чтобы SIGTERM можно было поймать на лету.' },
+      { step: 'Шаг 09', title: 'Парсинг результата', desc: 'Claude возвращает JSON; парсер достаёт <code>result</code>-текст, <code>usage.cost_usd</code>, ищет в выводе <code>&lt;promise&gt;COMPLETE&lt;/promise&gt;</code>. Defensive: malformed JSON → <code>AgentResult</code> с дефолтами.' },
+      { step: 'Шаг 10', title: 'Verification', desc: 'Если включены verify-команды — они запускаются после агента в том же workspace, с allowlist\'ом env-переменных и таймаутом 10 минут. Required-команда упала → задача FAIL.' },
+      { step: 'Шаг 11', title: 'Human-review checkpoint', desc: 'Если включён checkpoint — воркер смотрит в <code>events</code>, есть ли свежий <code>human_review.approved</code>. Если нет — задача отпускается в <code>PENDING</code> с reason <code>"human_review_required"</code>, ждёт оператора в TUI.' },
+      { step: 'Шаг 12', title: 'COMPLETE + budget', desc: '<code>complete_task</code> инкрементирует <code>spent_usd</code> плана, пишет <code>COMPLETE</code> event. Если пересекли границу бюджета — эмитится sentinel <code>plan.budget_exceeded</code>, больше задач из плана воркер не заберёт.' },
+      { step: 'Шаг 13', title: 'PR + post-COMPLETE hook', desc: 'После DONE: <code>git push</code>, <code>gh pr create</code>, запись в <code>pull_requests</code>, событие <code>pr.opened</code>. Если упало — <code>pr.open_failed</code> с failure_mode, состояние задачи это не меняет.' },
+      { step: 'Шаг 14', title: 'Параллельные зрители', desc: 'Весь этот танец видят SSE-подписчики, HTMX-дашборд, Prometheus-скрейпер и JSONL-tailer. Все получают одни и те же события через <code>pg_notify</code>.' },
+      { step: 'Шаг 15', title: 'Цикл + recovery', desc: 'Воркер возвращается к long-poll\'у. SIGTERM по дороге → задача отпускается в <code>PENDING</code>, peer заберёт через секунду. Если воркер умер — heartbeat-sweep через 2 минуты отпустит задачу. Если умер control-plane — Postgres-state переживёт рестарт.' }
+    ];
+
+    var timeline = document.getElementById('timeline');
+    timelineSteps.forEach(function(t) {
+      var el = document.createElement('div');
+      el.className = 'timeline-item reveal';
+      el.dataset.reveal = '';
+      el.innerHTML =
+        '<div class="timeline-step">' + t.step + '</div>' +
+        '<div class="timeline-title">' + t.title + '</div>' +
+        '<div class="timeline-desc">' + t.desc + '</div>';
+      timeline.appendChild(el);
+      revealObserver.observe(el);
+    });
+
+    // === DATA: Properties ===
+    var properties = [
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0018 0V5"/><path d="M3 12a9 3 0 0018 0"/></svg>',
+        title: 'Postgres — единственный источник истины', desc: 'Никаких .whilly_state.json, никаких файловых блокировок. Гонки решаются SKIP LOCKED и version-колонкой, а не Python-кодом.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>',
+        title: 'Один SQL-statement на каждый переход', desc: 'UPDATE и INSERT INTO events в одной транзакции — audit-log и tasks-таблица никогда не расходятся.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+        title: 'Чистое ядро под import-linter\'ом', desc: 'FSM, scheduler, prompts и gates физически не могут импортировать asyncpg или httpx. Нарушение этого ловится сборкой, не review\'ом.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
+        title: 'Два физических воркера под одним FSM', desc: 'Local через asyncpg для colocated-setup, remote через httpx для удалённой VM. Remote-deps закрыты вторым import-linter-контрактом.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>',
+        title: 'Deny-by-default для Claude', desc: '--disallowedTools по умолчанию запрещает Write/Edit/Bash. «Развязать руки» нужно явно через env-переменную.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+        title: 'Два независимых sweep\'а', desc: 'Heartbeat-timeout (быстро, для убитого процесса) и visibility-timeout (медленно, для зависшего runner\'а). Задача никогда не остаётся claimed навсегда.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+        title: 'Append-only events + flusher', desc: 'Батч-INSERT через asyncio.Queue без DELETE/UPDATE. На transient-ошибки — backoff, события не теряются.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
+        title: 'Один event-поток в четырёх каналах', desc: 'Postgres-таблица, JSONL-файл, SSE-стрим, Prometheus-метрики — оператор не получает рассогласований между «что в логах» и «что в браузере».' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c2.39 0 4.56.93 6.18 2.44"/></svg>',
+        title: 'Defense-in-depth для промптов', desc: 'Envelope с blake2s-nonce + sanitizer с UNTRUSTED-fence + deny-list-regex с кириллическими homoglyph\'ами — три независимых слоя против prompt-injection.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="12" height="16" rx="2"/><line x1="9" y1="8" x2="15" y2="8"/></svg>',
+        title: 'Stop-crane через singleton', desc: 'Operator-pause не убивает процессы, а просит воркеров отпустить задачи на безопасных checkpoint\'ах — и так же мягко отпускает.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>',
+        title: 'Best-effort observability', desc: 'JSONL, Slack, LLM-Ops файлы, TRIZ-аналайзер — все swallow-ят свои exception\'ы. Контракт «база durable, всё остальное opportunistic».' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3v12"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 01-9 9"/></svg>',
+        title: 'PR-цикл — first-class', desc: 'PR в pull_requests, review-комментарии превращаются в follow-up задачи через тот же FSM и version-counter. Повторный поллер не плодит дубликатов благодаря cursor\'у.' }
+    ];
+
+    var propsGrid = document.getElementById('propertiesGrid');
+    properties.forEach(function(p) {
+      var el = document.createElement('div');
+      el.className = 'property reveal';
+      el.dataset.reveal = '';
+      el.innerHTML =
+        '<div class="property-icon">' + p.icon + '</div>' +
+        '<div><h4>' + p.title + '</h4><p>' + p.desc + '</p></div>';
+      propsGrid.appendChild(el);
+      revealObserver.observe(el);
+    });
+
+    function onThemeChange() {}
+  </script>
+</body>
+</html>

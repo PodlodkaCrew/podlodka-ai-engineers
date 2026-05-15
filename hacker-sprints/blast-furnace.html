@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="ru" class="theme-dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blast Furnace — архитектура простыми словами</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script>Chart.defaults.animation = false;</script>
+  <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
+  <style>
+    /* ===== Blast Furnace — уникальные секции (pipeline + chart-grid) ===== */
+
+    /* Категории компонентов: codex / infra / state / github */
+    .component-card[data-cat="codex"] { --cat-color: #06b6d4; }
+    .component-card[data-cat="infra"] { --cat-color: #3b82f6; }
+    .component-card[data-cat="state"] { --cat-color: #14b8a6; }
+    .component-card[data-cat="github"] { --cat-color: #8b5cf6; }
+    html.theme-light .component-card[data-cat="codex"] { --cat-color: #0891b2; }
+    html.theme-light .component-card[data-cat="infra"] { --cat-color: #2563eb; }
+    html.theme-light .component-card[data-cat="state"] { --cat-color: #0d9488; }
+    html.theme-light .component-card[data-cat="github"] { --cat-color: #7c3aed; }
+
+    /* Pipeline stages */
+    .pipeline-wrapper {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 40px;
+      overflow: visible;
+    }
+    .pipeline-track {
+      display: grid;
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+      gap: 10px;
+      position: relative;
+    }
+    .pipeline-stage {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 14px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      position: relative;
+    }
+    .pipeline-stage:hover { background: var(--surface-hover); transform: translateY(-3px); border-color: var(--border-strong); }
+    .pipeline-stage.codex { border-color: var(--accent); background: linear-gradient(180deg, var(--accent-glow), transparent 70%), var(--surface-elevated); }
+    .pipeline-stage.codex:hover { box-shadow: var(--pipeline-glow); }
+    .pipeline-stage-num {
+      font-size: 0.6875rem; font-weight: 600; color: var(--text-secondary);
+      letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px;
+    }
+    .pipeline-stage-name {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 0.8125rem; font-weight: 600; color: var(--text);
+      margin-bottom: 8px;
+      word-break: break-all;
+    }
+    .pipeline-stage-tag {
+      display: inline-block;
+      font-size: 0.625rem; padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--text-secondary);
+      letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600;
+    }
+    .pipeline-stage.codex .pipeline-stage-tag { background: var(--accent); color: white; }
+    .pipeline-stage-arrow {
+      position: absolute; right: -10px; top: 50%; transform: translateY(-50%);
+      width: 16px; height: 16px;
+      color: var(--text-secondary);
+      z-index: 2;
+    }
+    .pipeline-stage:last-child .pipeline-stage-arrow { display: none; }
+
+    .pipeline-detail {
+      margin-top: 32px;
+      padding: 28px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+    .pipeline-detail.active { display: block; }
+    .pipeline-detail-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .pipeline-detail-name {
+      font-family: 'Fira Code', 'JetBrains Mono', monospace; font-weight: 700; font-size: 1.0625rem; color: var(--accent);
+    }
+    .pipeline-detail-text { color: var(--text-secondary); line-height: 1.7; }
+    .pipeline-detail-text strong { color: var(--text); }
+
+    .pipeline-legend {
+      display: flex; gap: 24px; margin-top: 24px; flex-wrap: wrap;
+      padding-top: 24px; border-top: 1px solid var(--border);
+    }
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.8125rem; color: var(--text-secondary); }
+    .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+    .legend-dot.codex { background: var(--accent); }
+    .legend-dot.deterministic { background: var(--surface-hover); border: 1px solid var(--border-strong); }
+
+    /* Charts: парная сетка */
+    .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+
+    /* Responsive — уникальные сетки */
+    @media (max-width: 1100px) {
+      .pipeline-track { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+    @media (max-width: 1024px) {
+      .chart-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 768px) {
+      .pipeline-wrapper { padding: 24px; }
+      .pipeline-track { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 375px) {
+      .pipeline-wrapper { padding: 18px; }
+      .component-card { padding: 20px; }
+    }
+    @media print {
+      .pipeline-stage { break-inside: avoid; border: 1px solid #ddd; box-shadow: none; }
+      .pipeline-detail { display: block !important; }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-to-content">К основному контенту</a>
+
+  <!-- MENU -->
+  <div class="viz-menu">
+    <button class="viz-menu-toggle" onclick="toggleMenu()" aria-label="Меню">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="3" y1="5" x2="17" y2="5"/><line x1="3" y1="10" x2="17" y2="10"/><line x1="3" y1="15" x2="17" y2="15"/>
+      </svg>
+    </button>
+    <div class="viz-menu-dropdown" id="vizMenuDropdown">
+      <button onclick="cycleTheme()"><span id="themeIcon">🌙</span><span id="themeLabel">Тёмная</span></button>
+      <button onclick="downloadImage()"><span>📥</span><span>Скачать PNG</span></button>
+      <button onclick="window.print()"><span>🖨️</span><span>Печать / PDF</span></button>
+    </div>
+  </div>
+
+  <main id="main-content" role="main">
+
+    <!-- ============== HERO ============== -->
+    <section class="hero" role="banner">
+      <div class="container hero-content">
+        <a href="index.html" class="hero-back animate">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          К каталогу
+        </a>
+        <h1 class="animate delay-1">Blast Furnace</h1>
+        <a href="https://github.com/podlodka-ai-club/blast-furnace" class="hero-repo animate delay-1" target="_blank" rel="noopener">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+          github.com/podlodka-ai-club/blast-furnace
+        </a>
+        <p class="hero-subtitle animate delay-2">
+          Домашняя фабрика для одного GitHub-репозитория. Раз в минуту смотрит issue с лейблом
+          <strong style="color: var(--accent);">ready</strong>,
+          сама ведёт его через девять стадий конвейера и открывает PR — без webhooks,
+          без внешней БД, на одном Codex CLI и Redis-очереди.
+        </p>
+
+        <div class="hero-stack animate delay-2">
+          <span class="stack-pill">TypeScript</span>
+          <span class="stack-pill">Fastify</span>
+          <span class="stack-pill">BullMQ</span>
+          <span class="stack-pill">Redis</span>
+          <span class="stack-pill">Codex CLI</span>
+        </div>
+
+        <div class="hero-stats">
+          <div class="stat-card animate delay-3">
+            <div class="stat-value accent" data-count="9" data-suffix="">9</div>
+            <div class="stat-label">Стадий конвейера</div>
+            <div class="stat-sublabel">от prepare-run до pr-rework-intake</div>
+          </div>
+          <div class="stat-card animate delay-3">
+            <div class="stat-value" data-count="4" data-suffix="">4</div>
+            <div class="stat-label">Стадии Codex</div>
+            <div class="stat-sublabel">plan · develop · review · триаж</div>
+          </div>
+          <div class="stat-card animate delay-4">
+            <div class="stat-value" data-count="1" data-suffix="">1</div>
+            <div class="stat-label">Воркер на инсталляцию</div>
+            <div class="stat-sublabel">единая BullMQ-очередь</div>
+          </div>
+          <div class="stat-card animate delay-4">
+            <div class="stat-value" data-count="3" data-suffix="">3</div>
+            <div class="stat-label">Лейбла-контракта</div>
+            <div class="stat-sublabel">ready · in review · rework</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== KEY IDEA ============== -->
+    <section style="padding-top: 0;">
+      <div class="container">
+        <div class="key-idea reveal" data-reveal>
+          <div class="section-eyebrow">Главная идея</div>
+          <h3>Конвейер с одним работником и общим бортовым журналом</h3>
+          <p>
+            Любой переход между стадиями — это <strong>запись в журнал</strong>, и следующая стадия
+            читает её, чтобы понять, что делать дальше. Состояние не передаётся в payload очереди,
+            оно живёт в файле. Codex играет роль «рук» только на четырёх стадиях из девяти —
+            всё остальное делается обычным детерминированным кодом.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== ARCHITECTURE FLOW ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Высокоуровневая схема</div>
+        <h2 class="section-title">Как устроена фабрика</h2>
+        <p class="section-subtitle">
+          Один процесс на инсталляцию, никаких webhooks и внешней БД — только Redis для очереди
+          и файловая система для журнала прогонов.
+        </p>
+
+        <div class="arch-flow">
+          <div class="arch-diagram reveal" data-reveal>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5 0-4M15 5c5-1.5 5 2.5 0 4M14 8a5 5 0 11-7 7 5 5 0 017-7z"/><path d="M9 12l6 0M12 9l0 6"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">Target GitHub repository</div>
+                <div class="arch-node-meta">issue с label ready · PR с label rework</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ polling раз в минуту</div>
+            <div class="arch-node active">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">BullMQ Worker (Redis)</div>
+                <div class="arch-node-meta">один воркер на все 9 типов стадий</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ один stage = один job</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">Stage handlers + Handoff-ledger</div>
+                <div class="arch-node-meta">.orchestrator/runs/&lt;id&gt;/handoff.jsonl + run.json</div>
+              </div>
+            </div>
+            <div class="arch-arrow">↓ payload = только указатель</div>
+            <div class="arch-node">
+              <div class="arch-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+              </div>
+              <div>
+                <div class="arch-node-title">Codex CLI в /tmp/&lt;uuid&gt;</div>
+                <div class="arch-node-meta">node-pty + Stop-hook (Quality Gate)</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="reveal" data-reveal>
+            <h3 style="margin-bottom: 16px;">Что важно понять</h3>
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 14px;">
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Бизнес-данные не ездят в очереди.</strong> В payload только тип стадии, runId, попытка и указатель на запись в журнале. Очередь можно дропнуть и пересоздать.</span>
+              </li>
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Workspace в /tmp/.</strong> Codex физически не видит ни orchestrator-папку, ни другие прогоны. Не sandbox — но практический файловый забор.</span>
+              </li>
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Git и GitHub — у orchestrator'а.</strong> Токен только у Blast Furnace. У Codex его нет в принципе, поэтому даже в bypass-режиме он не может ничего залить.</span>
+              </li>
+              <li style="display: flex; gap: 12px;">
+                <span style="color: var(--accent); font-weight: 700;">→</span>
+                <span><strong>Polling вместо webhooks.</strong> Никакого публичного endpoint'а. Цена — латентность реакции в пределах минуты.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== PIPELINE ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Конвейер</div>
+        <h2 class="section-title">Девять станций пайплайна</h2>
+        <p class="section-subtitle">
+          Issue проходит по жёсткому порядку. Codex участвует только на четырёх станциях
+          (план, разработка, ревью, триаж комментариев). Остальное — обычный TypeScript.
+          Кликните на станцию, чтобы увидеть детали.
+        </p>
+
+        <div class="pipeline-wrapper reveal" data-reveal>
+          <div class="pipeline-track" id="pipelineTrack">
+            <!-- Stages will be injected -->
+          </div>
+
+          <div class="pipeline-detail" id="pipelineDetail">
+            <div class="pipeline-detail-header">
+              <span class="pipeline-detail-name" id="detailName"></span>
+              <span class="pipeline-stage-tag" id="detailTag"></span>
+            </div>
+            <div class="pipeline-detail-text" id="detailText"></div>
+          </div>
+
+          <div class="pipeline-legend">
+            <div class="legend-item"><span class="legend-dot codex"></span>Codex CLI как «руки»</div>
+            <div class="legend-item"><span class="legend-dot deterministic"></span>Детерминированный TypeScript-код</div>
+            <div class="legend-item" style="margin-left: auto;">⏱ Codex-сессия ≤ 10 мин · poll-интервал ≥ 1 сек</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== CHARTS ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Лимиты и инварианты</div>
+        <h2 class="section-title">Безопасные дефолты</h2>
+        <p class="section-subtitle">
+          Сервис нельзя случайно «оставить молотить вечно». Все таймауты ограничены сверху,
+          ретраи лимитированы для каждой ключевой стадии.
+        </p>
+
+        <div class="chart-grid">
+          <div class="chart-card reveal" data-reveal>
+            <h4>Лимиты ретраев на стадиях</h4>
+            <p class="chart-desc">До какого числа попыток фабрика будет крутить ключевые этапы прежде чем остановить прогон или отдать управление человеку.</p>
+            <div class="chart-container" role="img" aria-label="Bar chart of retry limits per pipeline stage">
+              <canvas id="retriesChart"></canvas>
+            </div>
+          </div>
+          <div class="chart-card reveal" data-reveal>
+            <h4>Распределение работы по типам кода</h4>
+            <p class="chart-desc">Из девяти стадий конвейера только четыре полагаются на Codex. Остальные — git, GitHub API, файловые операции, проверка лейблов.</p>
+            <div class="chart-container" role="img" aria-label="Doughnut chart showing 4 Codex stages vs 5 deterministic stages">
+              <canvas id="splitChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== COMPONENTS ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Из чего собран</div>
+        <h2 class="section-title">Тринадцать строительных блоков</h2>
+        <p class="section-subtitle">
+          От «дежурного по смене» до «контролёра прямо в цехе» — каждый компонент решает
+          одну конкретную задачу. Используйте фильтр, чтобы посмотреть по категориям.
+        </p>
+
+        <div class="components-filter">
+          <button class="filter-btn active" data-filter="all">Все · 13</button>
+          <button class="filter-btn" data-filter="infra">Инфраструктура · 4</button>
+          <button class="filter-btn" data-filter="state">Состояние и журнал · 3</button>
+          <button class="filter-btn" data-filter="codex">Codex и quality · 3</button>
+          <button class="filter-btn" data-filter="github">GitHub-интеграция · 3</button>
+        </div>
+
+        <div class="components-grid" id="componentsGrid">
+          <!-- Components injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== TIMELINE ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">Жизненный цикл</div>
+        <h2 class="section-title">Что происходит с типичным issue</h2>
+        <p class="section-subtitle">
+          От момента, когда оператор повесил лейбл <code style="font-family: 'Fira Code', 'JetBrains Mono', monospace; background: var(--surface-elevated); padding: 2px 6px; border-radius: 4px; color: var(--accent); border: 1px solid var(--border);">ready</code>,
+          до закрытия PR — четырнадцать конкретных шагов.
+        </p>
+
+        <div class="timeline" id="timeline">
+          <!-- Timeline injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== KEY PROPERTIES ============== -->
+    <section>
+      <div class="container">
+        <div class="section-eyebrow">На чём всё держится</div>
+        <h2 class="section-title">Ключевые свойства архитектуры</h2>
+        <p class="section-subtitle">
+          Девять решений, которые делают сервис простым в эксплуатации и предсказуемым
+          даже после падений.
+        </p>
+
+        <div class="properties-grid" id="propertiesGrid">
+          <!-- Properties injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== FOOTER ============== -->
+    <footer class="footer">
+      <div class="container">
+        <p>
+          Архитектурный обзор <strong style="color: var(--text);">Blast Furnace</strong> ·
+          Сгенерировано из <span class="mono">arch/blast-furnace-arch-review.md</span>
+        </p>
+      </div>
+    </footer>
+
+  </main>
+
+  <script>
+    // === Menu ===
+    function toggleMenu() {
+      var dropdown = document.getElementById('vizMenuDropdown');
+      if (dropdown) dropdown.classList.toggle('open');
+    }
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.viz-menu')) {
+        var dropdown = document.getElementById('vizMenuDropdown');
+        if (dropdown) dropdown.classList.remove('open');
+      }
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        var dropdown = document.getElementById('vizMenuDropdown');
+        if (dropdown) dropdown.classList.remove('open');
+      }
+    });
+
+    // === Theme ===
+    var savedTheme = localStorage.getItem('viz-theme');
+    var currentTheme = savedTheme || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    function applyTheme(t) {
+      document.documentElement.className = 'theme-' + t;
+      var icon = document.getElementById('themeIcon');
+      var label = document.getElementById('themeLabel');
+      if (icon) icon.textContent = t === 'dark' ? '🌙' : '☀️';
+      if (label) label.textContent = t === 'dark' ? 'Тёмная' : 'Светлая';
+      localStorage.setItem('viz-theme', t);
+      currentTheme = t;
+      if (typeof onThemeChange === 'function') onThemeChange();
+    }
+    function cycleTheme() { applyTheme(currentTheme === 'dark' ? 'light' : 'dark'); }
+    applyTheme(currentTheme);
+
+    // === Scroll Reveal ===
+    document.querySelectorAll('[data-reveal]').forEach(function(el) { el.classList.add('reveal'); });
+    var revealObserver = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          revealObserver.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.reveal').forEach(function(el) { revealObserver.observe(el); });
+
+    // === Number Counter ===
+    function animateCounters() {
+      document.querySelectorAll('[data-count]').forEach(function(el) {
+        if (el.dataset.counted) return;
+        el.dataset.counted = '1';
+        var target = parseFloat(el.dataset.count),
+            prefix = el.dataset.prefix || '',
+            suffix = el.dataset.suffix || '';
+        var start = performance.now(), duration = 1100;
+        (function tick(now) {
+          var p = Math.min((now - start) / duration, 1),
+              eased = 1 - Math.pow(1 - p, 3);
+          el.textContent = prefix + Math.round(target * eased).toLocaleString() + suffix;
+          if (p < 1) requestAnimationFrame(tick);
+        })(start);
+      });
+    }
+    var counterEl = document.querySelector('[data-count]');
+    if (counterEl) {
+      var cObs = new IntersectionObserver(function(entries) {
+        entries.forEach(function(e) {
+          if (e.isIntersecting) { animateCounters(); cObs.disconnect(); }
+        });
+      }, { threshold: 0.3 });
+      cObs.observe(counterEl);
+    }
+
+    // === Download PNG ===
+    async function downloadImage() {
+      var menu = document.querySelector('.viz-menu');
+      menu.style.display = 'none';
+      try {
+        var url = await htmlToImage.toPng(document.body, {
+          quality: 1, pixelRatio: 2,
+          filter: function(n) { return !n.classList || !n.classList.contains('viz-menu'); }
+        });
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'blast-furnace-architecture.png';
+        a.click();
+      } catch(e) { console.error('Download failed:', e); }
+      menu.style.display = '';
+    }
+
+    // === DATA: Pipeline stages ===
+    var stages = [
+      { num: 1, name: 'prepare-run', tag: 'код', codex: false, desc: 'Создаёт ветку в target-репо (или переиспользует), клонирует репо в свежую <strong>/tmp/</strong>-папку, делает hard reset на нужный коммит и записывает первую строку в журнал.' },
+      { num: 2, name: 'assess', tag: 'заглушка', codex: false, desc: 'Сегодня просто пропускает дальше — ставит запись «оценка отложена». Зарезервированное место под «отказ при недостаточно описанном issue», но логика ещё не написана.' },
+      { num: 3, name: 'plan', tag: 'Codex', codex: true, desc: 'Отдаёт Codex\'у промпт из <strong>prompts/plan.md</strong> и просит ответ с тремя обязательными секциями. Если секций нет — даёт до трёх попыток. Если так и не получилось — прогон останавливается со статусом <strong>blocked</strong>.' },
+      { num: 4, name: 'develop', tag: 'Codex', codex: true, desc: 'Подкладывает Codex\'у Stop-hook, открывает сессию и просит реализовать план. Когда Codex готов завершиться, Quality Gate стреляет изнутри: тесты упали — Codex продолжает чинить, тесты прошли — стадия записывает успех и пинает review.' },
+      { num: 5, name: 'review', tag: 'Codex', codex: true, desc: 'Запускает другую сессию Codex\'а в read-only режиме и просит вернуть ровно либо <strong>Review Success</strong>, либо <strong>Review failed</strong> со списком замечаний. Успех — идём в make-pr. Замечания — возвращаемся в develop с feedback\'ом, до трёх раз.' },
+      { num: 6, name: 'make-pr', tag: 'код', codex: false, desc: 'Смотрит git status (исключая служебные папки .orchestrator/ и .codex/), коммитит, делает push с авто-retry на non-fast-forward, открывает PR с телом <strong>Closes #N</strong>. Если PR уже существует или GitHub отказал — записывает терминальный результат.' },
+      { num: 7, name: 'sync-tracker-state', tag: 'код', codex: false, desc: 'Снимает с issue лейбл <strong>ready</strong>, ставит <strong>in review</strong>, удаляет лейбл <strong>rework</strong> с PR (если это finalization rework\'а), чистит /tmp/-папку и пинает pr-rework-intake.' },
+      { num: 8, name: 'pr-rework-intake', tag: 'дежурство + Codex', codex: true, desc: 'Раз в минуту опрашивает PR. Смержен — закрываем прогон <strong>completed</strong>. Закрыт без merge — <strong>terminated</strong>. Висит лейбл <strong>rework</strong> — собирает непротухшие комментарии, отдаёт Codex\'у на короткий триаж «куда вернуться: к плану или сразу к разработке», и заново запускает конвейер с prepare-run.' }
+    ];
+
+    var pipelineTrack = document.getElementById('pipelineTrack');
+    stages.forEach(function(s, idx) {
+      var el = document.createElement('div');
+      el.className = 'pipeline-stage' + (s.codex ? ' codex' : '');
+      el.dataset.idx = idx;
+      el.innerHTML =
+        '<div class="pipeline-stage-num">Стадия ' + s.num + '</div>' +
+        '<div class="pipeline-stage-name">' + s.name + '</div>' +
+        '<span class="pipeline-stage-tag">' + s.tag + '</span>' +
+        (idx < stages.length - 1 ? '<svg class="pipeline-stage-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>' : '');
+      el.addEventListener('click', function() {
+        document.querySelectorAll('.pipeline-stage').forEach(function(n) { n.style.boxShadow = ''; });
+        el.style.boxShadow = 'var(--pipeline-glow)';
+        var detail = document.getElementById('pipelineDetail');
+        document.getElementById('detailName').textContent = s.name;
+        var tag = document.getElementById('detailTag');
+        tag.textContent = s.tag;
+        tag.style.background = s.codex ? 'var(--accent)' : 'var(--surface)';
+        tag.style.color = s.codex ? 'white' : 'var(--text-secondary)';
+        document.getElementById('detailText').innerHTML = s.desc;
+        detail.classList.add('active');
+      });
+      pipelineTrack.appendChild(el);
+    });
+    // Auto-open first stage
+    setTimeout(function() {
+      var first = document.querySelector('.pipeline-stage');
+      if (first) first.click();
+    }, 800);
+
+    // === DATA: Components ===
+    var components = [
+      { num: '01', cat: 'infra', catLabel: 'Инфраструктура', title: 'Точка входа', tagline: '«дежурный по смене»',
+        desc: 'Маленький <strong>index.ts</strong> поднимает Fastify (исключительно ради /health), регистрирует repeatable-задачу intake и создаёт одного BullMQ-воркера, который умеет обрабатывать все девять типов стадий через простой switch. Graceful shutdown по SIGINT/SIGTERM.' },
+      { num: '02', cat: 'infra', catLabel: 'Инфраструктура', title: 'Конфиг из ENV', tagline: '«всё из переменных окружения»',
+        desc: 'Никаких YAML, никакого merge слоёв. Один файл читает <strong>process.env</strong> при импорте и собирает типизированный объект. Дефолты безопасные но строгие: poll-интервал ≥1 сек, Codex-сессия ≤10 мин — чтобы случайно не запустить с подвешенными агентами.' },
+      { num: '03', cat: 'infra', catLabel: 'Инфраструктура', title: 'BullMQ-очередь и Worker', tagline: '«лента и работник»',
+        desc: 'Все стадии конвейера ездят по одной очереди <strong>agent-orchestrator</strong>. В payload только тип стадии, runId, попытка, указатель — никаких бизнес-данных. До 5 параллельных job\'ов, 3 ретрая с экспоненциальным backoff.' },
+      { num: '04', cat: 'github', catLabel: 'GitHub', title: 'Intake', tagline: '«вахта»',
+        desc: 'Repeatable-job, который раз в минуту дёргает себя сам. На каждом тике спрашивает GitHub: «какие issue с лейблом ready появились?». Дедупликация двойная: проверка по файлам прогонов + Redis-лок с TTL ~двух Codex-сессий.' },
+      { num: '05', cat: 'state', catLabel: 'Состояние', title: 'Pipeline из 9 стадий', tagline: '«станции конвейера»',
+        desc: 'Главная фактура проекта. Issue проходит по жёсткому порядку. У каждой стадии свой handler-файл, своя задача, свой формат output. Codex участвует только на четырёх станциях. Стадия <strong>assess</strong> сейчас заглушка.' },
+      { num: '06', cat: 'state', catLabel: 'Состояние', title: 'Handoff-ledger', tagline: '«бортовой журнал»',
+        desc: 'Сердце системы. На каждый run в <strong>.orchestrator/runs/&lt;id&gt;/</strong> лежат два файла: append-only JSONL-журнал (одна строка = один переход) и мутабельный <strong>run.json</strong>. Любая стадия читает только указатель из payload и сама достаёт нужное.' },
+      { num: '07', cat: 'state', catLabel: 'Состояние', title: 'Stage-local output', tagline: '«таможенный контроль»',
+        desc: 'Жёсткая дисциплина: каждая стадия пишет в журнал <strong>только свой</strong> output. Стабильный контекст лежит в run.json и не дублируется. Output чужих стадий запрещён. Любая попытка обойти контракт прерывает стадию до side-effect\'а — закон проекта.' },
+      { num: '08', cat: 'codex', catLabel: 'Codex', title: 'Codex Session Runner', tagline: '«руки»',
+        desc: 'Тонкий модуль для запуска Codex CLI. Сам процесс поднимается через <strong>node-pty</strong> — Codex рассчитан на терминал, а не на pipe. Аккуратно собирает аргументы: subcommand exec, resume --last, sandbox по стадии (read-only для review, bypass для develop), --model.' },
+      { num: '09', cat: 'codex', catLabel: 'Codex', title: 'Stop-hook + Quality Gate', tagline: '«контролёр прямо в цехе»',
+        desc: 'Самая интересная инженерная идея. Quality Gate (обычно <strong>npm test</strong>) не запускается отдельной стадией. Codex сам дёргает хук при попытке выйти. Тесты упали — хук возвращает «не уходи, чини». До двух раз. На третьем подряд провале — quality-failed. Codex остаётся в одной сессии и сохраняет контекст.' },
+      { num: '10', cat: 'codex', catLabel: 'Codex', title: 'Workspace в /tmp/', tagline: '«временный цех»',
+        desc: 'Под каждый прогон создаётся отдельная <strong>/tmp/prepare-run-&lt;uuid&gt;</strong> с полной копией target-репо. Codex запускается строго в этой папке, без доступа к orchestrator-коду. Cleanup отказывается удалять что-либо вне /tmp/ и боится symlink\'ов.' },
+      { num: '11', cat: 'github', catLabel: 'GitHub', title: 'GitHub-адаптер и лейблы', tagline: '«триггеры на ленте»',
+        desc: 'Тонкие обёртки над Octokit, retry — у BullMQ. Жизнь issue описывается тремя лейблами: <strong>ready</strong> запускает прогон, <strong>in review</strong> ставится после PR, <strong>rework</strong> вешает человек. Никаких GitHub Projects API, никаких webhooks — всё polling.' },
+      { num: '12', cat: 'github', catLabel: 'GitHub', title: 'Tracker status comment', tagline: '«табло для оператора»',
+        desc: 'В каждый issue кладётся ровно один комментарий с прогресс-таблицей. На каждом значимом переходе он обновляется. Невидимый HTML-маркер с runId позволяет сервису всегда найти «свой» комментарий после рестарта. <strong>State recovery без какой-либо БД.</strong>' },
+      { num: '13', cat: 'state', catLabel: 'Состояние', title: 'PR Rework Intake', tagline: '«дежурный на ночь»',
+        desc: 'После PR прогон не заканчивается — переходит в режим ожидания. Раз в минуту проверяет PR: смержен → completed, закрыт без merge → terminated, лейбл rework → собирает комментарии, отдаёт Codex\'у на триаж и пускает новый цикл. Единственное место с recovery от падения между append и enqueue.' }
+    ];
+    // Reclassify: state items count 3 — let me recount
+    // infra: 1,2,3 = 3
+    // github: 4, 11, 12 = 3
+    // state: 5, 6, 7, 13 = 4
+    // codex: 8, 9, 10 = 3
+    // total = 13 ✓ (need to fix filter labels)
+
+    var grid = document.getElementById('componentsGrid');
+    components.forEach(function(c) {
+      var card = document.createElement('article');
+      card.className = 'component-card';
+      card.dataset.cat = c.cat;
+      card.innerHTML =
+        '<div class="component-header">' +
+          '<span class="component-num">' + c.num + '</span>' +
+          '<span class="component-cat">' + c.catLabel + '</span>' +
+        '</div>' +
+        '<h4>' + c.title + '</h4>' +
+        '<div class="component-tagline">' + c.tagline + '</div>' +
+        '<p class="component-desc">' + c.desc + '</p>';
+      grid.appendChild(card);
+    });
+
+    // Update filter button labels with correct counts
+    var counts = { all: components.length, infra: 0, state: 0, codex: 0, github: 0 };
+    components.forEach(function(c) { counts[c.cat]++; });
+    document.querySelectorAll('.filter-btn').forEach(function(btn) {
+      var f = btn.dataset.filter;
+      var label = btn.textContent.split(' · ')[0];
+      btn.textContent = label + ' · ' + counts[f];
+    });
+
+    document.querySelectorAll('.filter-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        var filter = btn.dataset.filter;
+        document.querySelectorAll('.component-card').forEach(function(card) {
+          if (filter === 'all' || card.dataset.cat === filter) {
+            card.classList.remove('hidden');
+          } else {
+            card.classList.add('hidden');
+          }
+        });
+      });
+    });
+
+    // === DATA: Timeline ===
+    var timelineSteps = [
+      { step: 'Шаг 01', title: 'Оператор завёл issue', desc: 'В target-репо появляется issue с описанием. Оператор вешает на него лейбл <code>ready</code>.' },
+      { step: 'Шаг 02', title: 'Intake-тик подхватывает', desc: 'Через минуту intake опрашивает GitHub, видит issue, проверяет отсутствие активного прогона и берёт его эксклюзивно через Redis-лок.' },
+      { step: 'Шаг 03', title: 'Прогон стартует', desc: 'Создаётся папка прогона, инициализируются <code>run.json</code> и пустой журнал, в issue появляется первый комментарий-табло.' },
+      { step: 'Шаг 04', title: 'prepare-run', desc: 'Создаёт ветку, клонирует репо в свежую <code>/tmp/</code>-папку, делает hard reset, записывает первую строку в журнал.' },
+      { step: 'Шаг 05', title: 'assess (заглушка)', desc: 'Сегодня просто пропускает дальше — ставит запись «оценка отложена».' },
+      { step: 'Шаг 06', title: 'plan — Codex составляет план', desc: 'Получает промпт из <code>prompts/plan.md</code>, должен вернуть ответ с тремя секциями. До трёх попыток. Иначе — статус <code>blocked</code>.' },
+      { step: 'Шаг 07', title: 'develop — реализация с Quality Gate', desc: 'Codex реализует план. При попытке выйти Stop-hook стреляет тестами. Тесты упали — Codex чинит. Тесты прошли — пинает review.' },
+      { step: 'Шаг 08', title: 'review — read-only проверка', desc: 'Другая Codex-сессия в read-only возвращает <strong>Review Success</strong> или <strong>Review failed</strong>. Замечания — возвращаемся в develop, до трёх раз.' },
+      { step: 'Шаг 09', title: 'make-pr — публикация', desc: 'Смотрит git status, коммитит, push с авто-retry на non-fast-forward, открывает PR с телом <code>Closes #N</code>.' },
+      { step: 'Шаг 10', title: 'sync-tracker-state', desc: 'Снимает <code>ready</code>, ставит <code>in review</code>, чистит <code>/tmp/</code>-папку, пинает pr-rework-intake.' },
+      { step: 'Шаг 11', title: 'pr-rework-intake — ожидание', desc: 'Раз в минуту опрашивает PR. Смержен — прогон закрывается. Закрыт без merge — terminated. Иначе — ждём ещё минуту.' },
+      { step: 'Шаг 12', title: 'Человек просит правки', desc: 'Оставляет review-комментарии и вешает <code>rework</code>. Dispatcher собирает комментарии, фильтрует устаревшие, Codex решает «куда вернуться — plan или develop», и пускает новый цикл с prepare-run. До трёх итераций.' },
+      { step: 'Шаг 13', title: 'Параллельно — табло', desc: 'На каждое значимое событие переписывается комментарий-табло в issue. Оператор видит происходящее без логов.' },
+      { step: 'Шаг 14', title: 'Завершение', desc: 'После merge или закрытия PR прогон завершён, файлы <code>.orchestrator/runs/&lt;id&gt;/</code> остаются для разбора. Цикл начнётся заново на следующем issue с лейблом ready.' }
+    ];
+
+    var timeline = document.getElementById('timeline');
+    timelineSteps.forEach(function(t) {
+      var el = document.createElement('div');
+      el.className = 'timeline-item reveal';
+      el.dataset.reveal = '';
+      el.innerHTML =
+        '<div class="timeline-step">' + t.step + '</div>' +
+        '<div class="timeline-title">' + t.title + '</div>' +
+        '<div class="timeline-desc">' + t.desc + '</div>';
+      timeline.appendChild(el);
+      revealObserver.observe(el);
+    });
+
+    // === DATA: Properties ===
+    var properties = [
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>',
+        title: 'Один target-репо на инсталляцию', desc: 'Все решения деревьев конфигурации, лейблы, ветки и токены проектируются под одну фабрику на одно репо. Это упрощает буквально всё.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>',
+        title: 'Бизнес-данные живут в файле, не в очереди', desc: 'В payload только указатель. Очередь можно дропнуть и пересоздать — состояние не пропадёт. Журнал можно читать как историю прогона.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/></svg>',
+        title: 'Stage-local output', desc: 'Каждая стадия пишет только своё. Инвариант защищает от случайного «протекания» состояния между станциями и держит журнал компактным.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>',
+        title: 'Stop-hook вместо отдельной Quality-стадии', desc: 'Codex чинит тесты в той же сессии, сохраняя контекст реализации. Дешевле и точнее, чем заводить новый прогон.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+        title: 'Workspace в /tmp/', desc: 'Codex физически не видит ни orchestrator-папку, ни другие прогоны. Не sandbox в смысле permissions, но практический файловый забор.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>',
+        title: 'Git и GitHub — у orchestrator\'а', desc: 'Токен только у Blast Furnace, у Codex его нет в принципе. Даже при «опасном» bypass-режиме Codex не может ничего залить в репо мимо контроля.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>',
+        title: 'Маркер-комментарий в issue', desc: 'Сервис после перезапуска заново «находит» свой комментарий-табло без хранения внешнего id. Маленький, но красивый трюк state recovery без БД.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+        title: 'Polling вместо webhooks', desc: 'Никакого публичного endpoint\'а и инфраструктуры на стороне сети. Цена — латентность реакции в пределах минуты.' },
+      { icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
+        title: 'Лейблы как контракт с трекером', desc: 'Blast Furnace владеет тремя лейблами; всё остальное на стороне target-репо (колонки, доски, автоматика) проектируется независимо.' }
+    ];
+
+    var propsGrid = document.getElementById('propertiesGrid');
+    properties.forEach(function(p) {
+      var el = document.createElement('div');
+      el.className = 'property reveal';
+      el.dataset.reveal = '';
+      el.innerHTML =
+        '<div class="property-icon">' + p.icon + '</div>' +
+        '<div><h4>' + p.title + '</h4><p>' + p.desc + '</p></div>';
+      propsGrid.appendChild(el);
+      revealObserver.observe(el);
+    });
+
+    // === Charts ===
+    var chartsBuilt = false;
+    var retriesChart = null;
+    var splitChart = null;
+
+    function getChartColors() {
+      var s = getComputedStyle(document.documentElement);
+      return {
+        text: s.getPropertyValue('--text').trim(),
+        textSecondary: s.getPropertyValue('--text-secondary').trim(),
+        border: s.getPropertyValue('--border').trim(),
+        gridLine: s.getPropertyValue('--grid-line').trim(),
+        accent: s.getPropertyValue('--accent').trim(),
+        accentSecondary: s.getPropertyValue('--accent-secondary').trim(),
+        surface: s.getPropertyValue('--surface').trim(),
+        positive: s.getPropertyValue('--positive').trim()
+      };
+    }
+
+    function resetCanvas(id) {
+      var old = document.getElementById(id);
+      if (!old) return null;
+      var parent = old.parentNode;
+      var canvas = document.createElement('canvas');
+      canvas.id = id;
+      canvas.setAttribute('role', 'img');
+      canvas.setAttribute('aria-label', id);
+      parent.replaceChild(canvas, old);
+      return canvas;
+    }
+
+    function buildCharts() {
+      if (typeof Chart === 'undefined') { console.error('Chart.js not loaded'); return; }
+      var c = getChartColors();
+
+      // === RETRIES CHART ===
+      try { if (retriesChart) retriesChart.destroy(); } catch(e) {}
+      var retriesCanvas = resetCanvas('retriesChart');
+      if (retriesCanvas) {
+        retriesChart = new Chart(retriesCanvas.getContext('2d'), {
+          type: 'bar',
+          data: {
+            labels: ['plan\n(до плана)', 'review → develop\n(итераций)', 'rework\n(человеческих)', 'Quality Gate\n(блокировок выхода)', 'BullMQ\n(автоматических)'],
+            datasets: [{
+              label: 'Лимит ретраев',
+              data: [3, 3, 3, 2, 3],
+              backgroundColor: [c.accent, c.accent, c.accentSecondary, c.accent, c.textSecondary + '88'],
+              borderRadius: 8,
+              borderSkipped: false,
+              maxBarThickness: 60
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            indexAxis: 'y',
+            layout: { padding: { top: 12, right: 24, bottom: 12, left: 12 } },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                enabled: true,
+                backgroundColor: c.surface,
+                borderColor: c.border, borderWidth: 1,
+                titleColor: c.text, bodyColor: c.textSecondary,
+                padding: 12, cornerRadius: 8,
+                titleFont: { family: 'Inter', size: 14, weight: '600' },
+                bodyFont: { family: 'Inter', size: 13 }
+              }
+            },
+            scales: {
+              x: {
+                beginAtZero: true,
+                max: 4,
+                ticks: { color: c.textSecondary, stepSize: 1, font: { family: 'Inter', size: 12 } },
+                grid: { color: c.gridLine, drawBorder: false }
+              },
+              y: {
+                ticks: { color: c.textSecondary, font: { family: 'Inter', size: 12 } },
+                grid: { display: false }
+              }
+            }
+          }
+        });
+      }
+
+      // === SPLIT CHART ===
+      try { if (splitChart) splitChart.destroy(); } catch(e) {}
+      var splitCanvas = resetCanvas('splitChart');
+      if (splitCanvas) {
+        splitChart = new Chart(splitCanvas.getContext('2d'), {
+          type: 'doughnut',
+          data: {
+            labels: ['Codex CLI как «руки»', 'Детерминированный TS-код'],
+            datasets: [{
+              data: [4, 5],
+              backgroundColor: [c.accent, c.textSecondary + '55'],
+              borderColor: c.surface,
+              borderWidth: 4,
+              hoverOffset: 8
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            cutout: '65%',
+            layout: { padding: 12 },
+            plugins: {
+              legend: {
+                position: 'bottom',
+                labels: {
+                  color: c.text,
+                  padding: 16,
+                  font: { family: 'Inter', size: 13, weight: '500' },
+                  usePointStyle: true, pointStyle: 'circle'
+                }
+              },
+              tooltip: {
+                enabled: true,
+                backgroundColor: c.surface,
+                borderColor: c.border, borderWidth: 1,
+                titleColor: c.text, bodyColor: c.textSecondary,
+                padding: 12, cornerRadius: 8,
+                callbacks: {
+                  label: function(ctx) {
+                    var pct = Math.round(ctx.parsed / 9 * 100);
+                    return ctx.label + ': ' + ctx.parsed + ' / 9 (' + pct + '%)';
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+
+      chartsBuilt = true;
+    }
+
+    function onThemeChange() {
+      if (chartsBuilt) buildCharts();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', buildCharts);
+    } else {
+      buildCharts();
+    }
+  </script>
+</body>
+</html>
