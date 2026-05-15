@@ -7,11 +7,23 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    (function() {
+      var saved = localStorage.getItem('theme');
+      var t = (saved === 'dark' || saved === 'light')
+        ? saved
+        : (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      document.documentElement.className = 'theme-' + t;
+    })();
+    window.addEventListener('storage', function(e) {
+      if (e.key === 'theme' && (e.newValue === 'dark' || e.newValue === 'light')) {
+        document.documentElement.className = 'theme-' + e.newValue;
+      }
+    });
+  </script>
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-  <script>Chart.defaults.animation = false;</script>
-  <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
-  <style>
+  <script>Chart.defaults.animation = false;</script>  <style>
     /* ===== Iron Press — уникальные секции (3 статуса + 2 типа узлов + permissions) ===== */
 
     /* Категории компонентов: engine / node / io / ui */
@@ -268,19 +280,6 @@
 </head>
 <body>
   <a href="#main-content" class="skip-to-content">К основному контенту</a>
-
-  <div class="viz-menu">
-    <button class="viz-menu-toggle" onclick="toggleMenu()" aria-label="Меню">
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-        <line x1="3" y1="5" x2="17" y2="5"/><line x1="3" y1="10" x2="17" y2="10"/><line x1="3" y1="15" x2="17" y2="15"/>
-      </svg>
-    </button>
-    <div class="viz-menu-dropdown" id="vizMenuDropdown">
-      <button onclick="cycleTheme()"><span id="themeIcon">🌙</span><span id="themeLabel">Тёмная</span></button>
-      <button onclick="downloadImage()"><span>📥</span><span>Скачать PNG</span></button>
-      <button onclick="window.print()"><span>🖨️</span><span>Печать / PDF</span></button>
-    </div>
-  </div>
 
   <main id="main-content" role="main">
 
@@ -607,39 +606,6 @@
   </main>
 
   <script>
-    // === Menu ===
-    function toggleMenu() {
-      var dropdown = document.getElementById('vizMenuDropdown');
-      if (dropdown) dropdown.classList.toggle('open');
-    }
-    document.addEventListener('click', function(e) {
-      if (!e.target.closest('.viz-menu')) {
-        var dropdown = document.getElementById('vizMenuDropdown');
-        if (dropdown) dropdown.classList.remove('open');
-      }
-    });
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') {
-        var dropdown = document.getElementById('vizMenuDropdown');
-        if (dropdown) dropdown.classList.remove('open');
-      }
-    });
-
-    // === Theme ===
-    var savedTheme = localStorage.getItem('viz-theme');
-    var currentTheme = savedTheme || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-    function applyTheme(t) {
-      document.documentElement.className = 'theme-' + t;
-      var icon = document.getElementById('themeIcon');
-      var label = document.getElementById('themeLabel');
-      if (icon) icon.textContent = t === 'dark' ? '🌙' : '☀️';
-      if (label) label.textContent = t === 'dark' ? 'Тёмная' : 'Светлая';
-      localStorage.setItem('viz-theme', t);
-      currentTheme = t;
-      if (typeof onThemeChange === 'function') onThemeChange();
-    }
-    function cycleTheme() { applyTheme(currentTheme === 'dark' ? 'light' : 'dark'); }
-    applyTheme(currentTheme);
 
     // === Scroll Reveal ===
     document.querySelectorAll('[data-reveal]').forEach(function(el) { el.classList.add('reveal'); });
@@ -678,23 +644,6 @@
         });
       }, { threshold: 0.3 });
       cObs.observe(counterEl);
-    }
-
-    // === Download PNG ===
-    async function downloadImage() {
-      var menu = document.querySelector('.viz-menu');
-      menu.style.display = 'none';
-      try {
-        var url = await htmlToImage.toPng(document.body, {
-          quality: 1, pixelRatio: 2,
-          filter: function(n) { return !n.classList || !n.classList.contains('viz-menu'); }
-        });
-        var a = document.createElement('a');
-        a.href = url;
-        a.download = 'iron-press-architecture.png';
-        a.click();
-      } catch(e) { console.error('Download failed:', e); }
-      menu.style.display = '';
     }
 
     // === DATA: Three statuses ===
