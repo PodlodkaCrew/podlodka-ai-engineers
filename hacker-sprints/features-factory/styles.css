@@ -125,15 +125,15 @@ section::before {
 }
 section.hero::before { display: none; }
 
-/* «Подзаголовок над заголовком» — без круглой плашки, моноширинный лейбл */
+/* «Подзаголовок над заголовком» — отдельной строкой над h2 */
 .section-eyebrow {
-  display: inline-block;
+  display: block;
   font-size: 13px; font-weight: 600;
   letter-spacing: 0.12em; text-transform: uppercase;
   color: var(--accent);
   padding: 0;
   background: transparent;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 .section-eyebrow::before { display: none; }
 
