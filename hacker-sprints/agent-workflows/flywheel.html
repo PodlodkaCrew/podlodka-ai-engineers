@@ -162,19 +162,42 @@ h1{font-size:22px;line-height:1.2;margin:0 0 12px}.tabs{display:flex;gap:6px}.ta
     <li>Автоматического обучения весов, непрерывного production A/B-test, внешнего observability backend и общей политики удаления старой памяти не описано.</li>
   </ul>
 </main>
+
+<script src="./mermaid.min.js?v=12.0.0"></script>
+<script>
+(async function () {
+  const diagrams = document.querySelectorAll('.mermaid');
+  if (!diagrams.length) return;
+  try {
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default'
+    });
+    await mermaid.run({nodes: diagrams});
+    document.documentElement.dataset.mermaid = 'rendered';
+  } catch (error) {
+    document.documentElement.dataset.mermaid = 'error';
+    console.error('Mermaid rendering failed', error);
+  }
+})();
+</script>
 </body>
 </html>
 </template>
 <noscript><p class="nojs">Для переключения вкладок нужен JavaScript.</p></noscript>
 <script>
-for (const name of ['questionnaire','report']) {
-  document.querySelector('#'+name+' iframe').srcdoc = document.getElementById(name+'-doc').innerHTML;
+function activate(name) {
+  for (const button of document.querySelectorAll('.tab')) {
+    button.setAttribute('aria-selected', String(button.dataset.panel === name));
+  }
+  for (const panel of document.querySelectorAll('.panel')) panel.hidden = panel.id !== name;
+  const frame = document.querySelector('#'+name+' iframe');
+  if (!frame.srcdoc) frame.srcdoc = document.getElementById(name+'-doc').innerHTML;
 }
 for (const button of document.querySelectorAll('.tab')) {
-  button.addEventListener('click', () => {
-    for (const other of document.querySelectorAll('.tab')) other.setAttribute('aria-selected', String(other === button));
-    for (const panel of document.querySelectorAll('.panel')) panel.hidden = panel.id !== button.dataset.panel;
-  });
+  button.addEventListener('click', () => activate(button.dataset.panel));
 }
+activate('questionnaire');
 </script>
 </body></html>

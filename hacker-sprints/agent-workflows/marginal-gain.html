@@ -119,8 +119,8 @@ body{font:15px/1.5 system-ui,sans-serif;max-width:1100px;margin:32px auto;paddin
 </tbody>
 </table>
 
-<p>Mermaid source (намеренно без JS/CDN; это исходник диаграммы, а не встроенный renderer):</p>
-<pre class="mermaid">flowchart TD
+<p>Диаграмма пайплайна:</p>
+<pre class="mermaid">flowchart LR
   A[UserPromptSubmit: request received] --> G{directory enabled?}
   G -- no --> Z[silent: request continues without memory]
   G -- yes --> Q[queue append: user_message]
@@ -253,19 +253,42 @@ Replay проверяет harness/delivery, но не годится как ме
 <li>SETUP.md устарел относительно requirements.txt в утверждении «runtime без сторонних пакетов».</li>
 <li>Разрешение конфликтующих фактов, семантическое объединение дублей, автоматическая верификация истинности и полное восстановление внешних действий <strong>не описаны / в репозитории не найдены</strong>.</li>
 </ul>
+
+<script src="./mermaid.min.js?v=12.0.0"></script>
+<script>
+(async function () {
+  const diagrams = document.querySelectorAll('.mermaid');
+  if (!diagrams.length) return;
+  try {
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default'
+    });
+    await mermaid.run({nodes: diagrams});
+    document.documentElement.dataset.mermaid = 'rendered';
+  } catch (error) {
+    document.documentElement.dataset.mermaid = 'error';
+    console.error('Mermaid rendering failed', error);
+  }
+})();
+</script>
 </body>
 </html>
 </template>
 <noscript><p class="nojs">Для переключения вкладок нужен JavaScript.</p></noscript>
 <script>
-for (const name of ['questionnaire','report']) {
-  document.querySelector('#'+name+' iframe').srcdoc = document.getElementById(name+'-doc').innerHTML;
+function activate(name) {
+  for (const button of document.querySelectorAll('.tab')) {
+    button.setAttribute('aria-selected', String(button.dataset.panel === name));
+  }
+  for (const panel of document.querySelectorAll('.panel')) panel.hidden = panel.id !== name;
+  const frame = document.querySelector('#'+name+' iframe');
+  if (!frame.srcdoc) frame.srcdoc = document.getElementById(name+'-doc').innerHTML;
 }
 for (const button of document.querySelectorAll('.tab')) {
-  button.addEventListener('click', () => {
-    for (const other of document.querySelectorAll('.tab')) other.setAttribute('aria-selected', String(other === button));
-    for (const panel of document.querySelectorAll('.panel')) panel.hidden = panel.id !== button.dataset.panel;
-  });
+  button.addEventListener('click', () => activate(button.dataset.panel));
 }
+activate('questionnaire');
 </script>
 </body></html>

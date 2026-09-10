@@ -103,20 +103,31 @@ h1{font-size:22px;line-height:1.2;margin:0 0 12px}.tabs{display:flex;gap:6px}.ta
 
     <p class="muted">Диаграмма отражает составные состояния задачи и её набора; в коде нет единого enum со всеми этими значениями.</p>
     <pre class="mermaid">stateDiagram-v2
-    [*] --> Черновик_набора
-    Черновик_набора --> Опубликована
-    Опубликована --> Назначена
-    Назначена --> Выбрана_как_следующая
-    Выбрана_как_следующая --> Показана
-    Показана --> Ответ_получен
-    Ответ_получен --> Проверена
-    Проверена --> Нужна_практика
-    Нужна_практика --> Показана
-    Проверена --> Решена
-    Решена --> Следующая_задача
-    Следующая_задача --> Показана
-    Решена --> Набор_завершён
-    Набор_завершён --> [*]</pre>
+    state "Черновик набора" as draft
+    state "Опубликована" as published
+    state "Назначена" as assigned
+    state "Выбрана как следующая" as selected
+    state "Показана" as shown
+    state "Ответ получен" as answered
+    state "Проверена" as checked
+    state "Нужна практика" as practice
+    state "Решена" as solved
+    state "Следующая задача" as next_task
+    state "Набор завершён" as completed
+    [*] --> draft
+    draft --> published
+    published --> assigned
+    assigned --> selected
+    selected --> shown
+    shown --> answered
+    answered --> checked
+    checked --> practice
+    practice --> shown
+    checked --> solved
+    solved --> next_task
+    next_task --> shown
+    solved --> completed
+    completed --> [*]</pre>
 
     <h3>1.2. Как воспроизвести</h3>
     <ol>
@@ -192,24 +203,47 @@ h1{font-size:22px;line-height:1.2;margin:0 0 12px}.tabs{display:flex;gap:6px}.ta
         <li>В репозитории не найдено измерение того, что педагогическое качество или успешность ученика улучшаются от версии к версии.</li>
         <li>Не описаны production-развёртывание, внешние алерты, SLO и централизованный tracing.</li>
         <li>Live-интеграции Deepgram, DeepSeek, ElevenLabs, LiveKit и XMemory не проверялись без credentials; выводы о них сделаны по коду, конфигурации и документации.</li>
-        <li>Mermaid оставлена как исходный блок <code>&lt;pre class="mermaid"&gt;</code>, как требовалось; внешний renderer намеренно не подключён, чтобы HTML оставался одним файлом без зависимостей.</li>
+        <li>Диаграммы рендерятся локальной копией Mermaid без CDN.</li>
       </ul>
     </div>
   </section>
 </main>
+
+<script src="./mermaid.min.js?v=12.0.0"></script>
+<script>
+(async function () {
+  const diagrams = document.querySelectorAll('.mermaid');
+  if (!diagrams.length) return;
+  try {
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default'
+    });
+    await mermaid.run({nodes: diagrams});
+    document.documentElement.dataset.mermaid = 'rendered';
+  } catch (error) {
+    document.documentElement.dataset.mermaid = 'error';
+    console.error('Mermaid rendering failed', error);
+  }
+})();
+</script>
 </body>
 </html>
 </template>
 <noscript><p class="nojs">Для переключения вкладок нужен JavaScript.</p></noscript>
 <script>
-for (const name of ['questionnaire','report']) {
-  document.querySelector('#'+name+' iframe').srcdoc = document.getElementById(name+'-doc').innerHTML;
+function activate(name) {
+  for (const button of document.querySelectorAll('.tab')) {
+    button.setAttribute('aria-selected', String(button.dataset.panel === name));
+  }
+  for (const panel of document.querySelectorAll('.panel')) panel.hidden = panel.id !== name;
+  const frame = document.querySelector('#'+name+' iframe');
+  if (!frame.srcdoc) frame.srcdoc = document.getElementById(name+'-doc').innerHTML;
 }
 for (const button of document.querySelectorAll('.tab')) {
-  button.addEventListener('click', () => {
-    for (const other of document.querySelectorAll('.tab')) other.setAttribute('aria-selected', String(other === button));
-    for (const panel of document.querySelectorAll('.panel')) panel.hidden = panel.id !== button.dataset.panel;
-  });
+  button.addEventListener('click', () => activate(button.dataset.panel));
 }
+activate('questionnaire');
 </script>
 </body></html>
