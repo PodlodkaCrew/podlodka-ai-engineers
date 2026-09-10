@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="ru">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cadence — анкета и анализ агента</title><style>
+:root{color-scheme:light dark;--bg:#f5f5f7;--fg:#1d1d1f;--panel:#fff;--line:#d2d2d7;--accent:#ff5a1f;--muted:#6e6e73}
+@media(prefers-color-scheme:dark){:root{--bg:#141416;--fg:#f5f5f7;--panel:#1f2024;--line:#3a3b40;--muted:#aaa}}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+body{display:flex;flex-direction:column}.top{padding:16px 18px 0;background:var(--panel);border-bottom:1px solid var(--line)}
+h1{font-size:22px;line-height:1.2;margin:0 0 12px}.tabs{display:flex;gap:6px}.tab{appearance:none;border:1px solid var(--line);border-bottom:0;background:var(--bg);color:var(--fg);padding:10px 15px;border-radius:9px 9px 0 0;font:600 14px system-ui;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:#fff}.panels{position:relative;flex:1;min-height:0}.panel{position:absolute;inset:0}.panel[hidden]{display:none}.panel iframe{border:0;width:100%;height:100%;background:#fff}.nojs{padding:12px 18px;color:var(--muted)}
+</style></head>
+<body>
+<header class="top"><h1>Cadence — анкета и анализ агента</h1><nav class="tabs" aria-label="Материалы команды">
+<button class="tab" type="button" id="tab-questionnaire" data-panel="questionnaire" role="tab" aria-selected="true" aria-controls="questionnaire">Анкета команды</button>
+<button class="tab" type="button" id="tab-report" data-panel="report" role="tab" aria-selected="false" aria-controls="report">Анализ агента</button>
+</nav></header>
+<main class="panels">
+<section class="panel" id="questionnaire" role="tabpanel" aria-labelledby="tab-questionnaire"><iframe title="Анкета команды"></iframe></section>
+<section class="panel" id="report" role="tabpanel" aria-labelledby="tab-report" hidden><iframe title="Анализ агента"></iframe></section>
+</main>
+<template id="questionnaire-doc"><!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cadence — анкета команды</title><style>
+:root{color-scheme:light dark;--bg:#fafafa;--fg:#202124;--muted:#666;--card:#fff;--line:#d8dadd;--link:#1558d6;--accent:#ff5a1f}
+@media(prefers-color-scheme:dark){:root{--bg:#17181a;--fg:#e7e8ea;--muted:#aaa;--card:#202226;--line:#3b3e44;--link:#8ab4ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}main{max-width:980px;margin:auto;padding:28px 20px 56px}h1{font-size:28px;margin:0 0 8px}.meta{color:var(--muted);margin-bottom:26px}.meta a,a{color:var(--link)}.qa{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:17px 19px;margin:14px 0}.qa h2{font-size:17px;line-height:1.35;margin:0 0 9px}.answer{white-space:pre-wrap;overflow-wrap:anywhere}.badge{display:inline-block;padding:3px 8px;border-radius:999px;background:var(--accent);color:white;font-size:12px;font-weight:700;margin-left:7px}
+</style></head><body><main><h1>Cadence — анкета команды <span class="badge">xmemory</span></h1><div class="meta">Репозиторий: <a href="https://github.com/podlodka-ai-club/cadence" target="_blank" rel="noopener">https://github.com/podlodka-ai-club/cadence</a> · ответ отправлен 08.09.2026 8:11:24</div><section class="qa"><h2>Представьте, что вы делаете лендинг для вашего проекта или поднимаете инвестиции. Как бы вы описали его одной фразой, чтобы он выделялся среди всех остальных?</h2><div class="answer">Афиша будущего для ваших агентов</div></section><section class="qa"><h2>Что и как делает ваш агент?</h2><div class="answer">На вход в обработку приходит информация о событиях в городе, в рамках хакатона я использовал телегам посты, так как они содержат много мусора и часото не релеваную информацию. 
+
+Первый агенский цикл, должен быть максимально дешёвым, чтобы принимать бинарный результат, это мусор или событие и пропускаем дальше. Тут же должны промт иньекции откидываться. Мной сделан набор eval, возможность сравнивать работу фильтра на выборке против размеченных данных и детерминированно оценивать стало ли лучше с новыми правилами или нет.
+
+Дальше события попадают в xmemory где автоматически парсятся и раскладываются в БД.
+
+Второй цикл это eval чёрного ящика xmemory, чтобы правильно уметь выбирать схему данных, подстраивать описание полей. Есть отдельный наблюдатель агент, который зная сырые данные карточек и опрашивая xmemory может принимать решение что что то сделано не так, эти решения накапливаются в БД и потом отдаются на анализ системе которая выносит гипотезу по изменению схемы, или добавления правила. Это гипотеза автоматически прогонятется на eval наборе, с поднятеием чистого инстанса. Обновление прода конечно за человеков, но он получает четкие метрики до после правила.
+
+В конце пользователь спрашивает куда сходить в воскресенье и получает выборку, пользователем должен быть агент пользователя но это пока не доделано </div></section><section class="qa"><h2>Про технический и AI стек</h2><div class="answer">Подробный отчёт https://github.com/podlodka-ai-club/cadence/blob/main/hacker-sprint-2/report.md 
+
+Глобально выбрал xmemory чтобы проверить как работает и показалось что снимет головную боль. В итоге скорее эвалил и разбирался в xmemory чтобы получить что то нормально. 
+
+Отдельно идея была в том, что на моей стороне тупой и дешёвый агент занимающийся фильтрацией мусора. И настройка xmemory. А парсинг данных и ответы на их стороне. Я не уверен что оно того стоило по итогу.
+
+Eval делал сам, через разметку телеграм постов, разметил где то 200+ штук. Но в итоге изза лимитов пользовался выборкой примерно в 50</div></section><section class="qa"><h2>Если бы у вас была ещё одна неделя, что бы вы сделали в первую очередь и почему именно это?</h2><div class="answer">Перестал заниматься eval и оставил поработать недельку на прод данных. Чтобы понять на сколько рабочая схема с самообучением xmemory и какая в итоге экономика по токенам</div></section><section class="qa"><h2>Какие решения оправдали себя настолько, что вы бы рекомендовали другим командам их переиспользовать? Например: паттерн реализации, выбор технологии, архитектурное решение, продуктовая идея.</h2><div class="answer">Банальная истина. Я сначало разметил 100 постов самостоятельно, а потом вторую сотню прогнал через агента, а сам в UI видел решение агента и соглашался либо правил его. Где то сократило процентов 30 на разметку второй части. Ментально сил примерно столько же уходит, но механика нажать некст сильно быстрее чем поставить пару галочек и нажать некст.</div></section><section class="qa"><h2>Какие решения оказались неудачными или не дали ожидаемой пользы?</h2><div class="answer">xmemory не очень готов для продакшена либо у меня совсем не получилось его приготовить.</div></section><section class="qa"><h2>Пример работы агента до и после обучения</h2><div class="answer">https://disk.yandex.ru/i/TPid5yDnyCH60A</div></section><section class="qa"><h2>Участвуете ли вы в номинации от xmemory?</h2><div class="answer">Да</div></section></main></body></html></template>
+<template id="report-doc"><!doctype html>
+<html lang="ru">
+<head><base target="_blank">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cadence: анализ самообучающегося агента</title>
+  <style>
+    :root{color-scheme:light dark;--bg:#fff;--fg:#202124;--muted:#5f6368;--line:#d7dbe0;--panel:#f5f7f9;--link:#1769aa}
+    @media(prefers-color-scheme:dark){:root{--bg:#151719;--fg:#e8eaed;--muted:#aeb4bb;--line:#3b4046;--panel:#202328;--link:#8ab4f8}}
+    body{max-width:980px;margin:0 auto;padding:28px 20px 64px;background:var(--bg);color:var(--fg);font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
+    h1,h2,h3{line-height:1.2} h1{margin-bottom:.35rem} h2{margin-top:2.2rem;border-bottom:1px solid var(--line);padding-bottom:.35rem} h3{margin-top:1.6rem}
+    a{color:var(--link)} .meta,.note{color:var(--muted)} code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+    code{background:var(--panel);padding:.12rem .3rem;border-radius:4px} pre{overflow:auto;padding:14px;background:var(--panel);border:1px solid var(--line);border-radius:7px}
+    table{width:100%;border-collapse:collapse;margin:1rem 0} th,td{padding:9px 11px;border:1px solid var(--line);vertical-align:top;text-align:left} th{background:var(--panel)}
+    .answer{font-weight:600}.facts{margin-top:.35rem}.question{padding:0 0 1rem;border-bottom:1px solid var(--line)}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Cadence: анализ самообучающегося агента</h1>
+    <div class="meta">
+      Репозиторий: <a href="https://github.com/podlodka-ai-club/cadence">podlodka-ai-club/cadence</a><br>
+      Ветка: <code>main</code>; commit: <a href="https://github.com/podlodka-ai-club/cadence/tree/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1"><code>2b0e8d9836c8a985deb8f8d62df0b2d870123cb1</code></a><br>
+      Дата анализа: <time datetime="2026-09-09">9 сентября 2026</time>
+    </div>
+  </header>
+
+  <main>
+    <h2>1. Анализ</h2>
+
+    <h3>1.1. Пошаговый пайплайн</h3>
+    <p>Cadence решает узкую задачу: собирает посты о городских событиях, фильтрует их, передаёт принятые карточки во внешнюю память xmemory и улучшает правила/схему через сравнимые прогоны. Общая схема прямо разбита на сбор, фильтрацию, парсинг, хранение и интерфейс вопросов в <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/README.md#what-we-are-doing">README.md</a>.</p>
+    <table>
+      <thead><tr><th>Шаг</th><th>Что происходит</th><th>Результат / свидетельство</th></tr></thead>
+      <tbody>
+        <tr><td>1. Сбор</td><td>Парсер читает историю или новые сообщения Telegram и превращает каждый пост в нормализованную карточку без интерпретации содержания.</td><td>JSON-файл либо запись MongoDB; <a href="https://github.com/podlodka-ai-club/cadence/tree/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/parsers">parsers/</a>, <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/parsers/README.md#the-card">контракт карточки</a>.</td></tr>
+        <tr><td>2. Фильтрация</td><td>Claude Code с навыком <code>filter-card</code> решает, является ли карточка посещаемым событием; отказ получает причины из закрытого списка.</td><td>Вердикт <code>accept/reject</code> в MongoDB; <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/.claude/skills/filter-card/SKILL.md#1-judge-the-card">filter-card</a>, <a href="https://github.com/podlodka-ai-club/cadence/tree/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/judge">judge/</a>.</td></tr>
+        <tr><td>3. Развилка</td><td>Отклонённая карточка дальше не парсится. Принятая передаётся в xmemory.</td><td>Граница этапов описана в <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/README.md#2-filtering">README.md, «Filtering»</a>.</td></tr>
+        <tr><td>4. Извлечение и память</td><td>xmemory как чёрный ящик извлекает Event, Place и Schedule, связывает их и хранит между запросами.</td><td>Записи в instance xmemory по схеме <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/schema/xmemory-schema.md">schema/xmemory-schema.md</a>; граница ответственности — <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/README.md#3-parsing">README.md, «Parsing»</a>.</td></tr>
+        <tr><td>5. Ответ</td><td>Человек или агент задаёт xmemory вопрос естественным языком о событиях, местах и времени.</td><td>Ответ печатается, но собственный бот/MCP-прокси проекта не построен; <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/README.md#5-the-way-in">README.md, «The way in»</a>, <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/memory/ask.py">memory/ask.py</a>.</td></tr>
+        <tr><td>6. Наблюдение</td><td>Для выбранных карточек отдельные сессии <code>observe-record</code> сравнивают исходный пост с содержимым xmemory и ставят три оценки: schedule, event, place.</td><td>Observations в MongoDB; <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/memory/README.md#mark-how-the-cards-landed">memory/README.md</a>, <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/.claude/skills/observe-record/SKILL.md#4-mark-the-three">шкала оценок</a>.</td></tr>
+        <tr><td>7. Предложение</td><td>Система выбирает наиболее частую метку дефекта и просит <code>propose-rule</code> сформулировать правило; если правило не поможет, создаётся draft изменения схемы.</td><td>Draft в <code>rules</code> или <code>schema_changes</code>; <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/memory/README.md#draft-a-rule-from-what-the-observers-complained-about">memory/README.md</a>, <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/.claude/skills/propose-rule/SKILL.md">propose-rule</a>.</td></tr>
+        <tr><td>8. Контрольный прогон</td><td>Та же выборка записывается в новый пустой instance с кандидатом; проблемные и контрольные карточки наблюдаются повторно.</td><td>Сопоставимые before/after observations; <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/memory/README.md#one-turn-of-the-loop">полный цикл memory</a>, <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/demo/README.md">demo/README.md</a>.</td></tr>
+        <tr><td>9. Gate</td><td>Детерминированный gate принимает изменение, если оно исправило хотя бы одну целевую карточку и не ухудшило ни одну; иначе отклоняет.</td><td>Статус <code>active</code> или <code>rejected</code> и числа сравнения; <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/memory/README.md#decide-the-rule">memory gate</a>, <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/memory/gate.py">memory/gate.py</a>.</td></tr>
+      </tbody>
+    </table>
+    <p class="note">В репозитории нет сущности «task» и единого task-state-machine. Ниже показаны фактические состояния основной единицы работы — карточки поста — и связанного кандидата на обучение.</p>
+    <pre class="mermaid">flowchart TD
+    A[Пост в источнике] --> B[Карточка собрана]
+    B --> C[Ожидает фильтрации]
+    C --> D[Вердикт сохранён]
+    D --> E[Отклонена]
+    D --> F[Принята]
+    F --> G[Отправлена в xmemory]
+    G --> H[Event / Place / Schedule сохранены]
+    H --> I[Доступна для вопросов]
+    H --> J[Наблюдение записано]
+    J --> K[Draft правила или изменения схемы]
+    K --> L[Контрольный instance проверен]
+    L --> M[Active]
+    L --> N[Rejected]
+    M --> O[Применяется к следующим карточкам]</pre>
+
+    <h3>1.2. Как воспроизвести</h3>
+    <ol>
+      <li>Подготовить Python 3, MongoDB, Claude Code и аккаунт xmemory; создать xmemory instance по <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/schema/xmemory-schema.md">schema/xmemory-schema.md</a>. Полный список предпосылок дан в <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/README.md#getting-started">README.md</a>.</li>
+      <li>Из корня: <code>pip install -r requirements.txt</code>, затем <code>cp .env.example .env</code>; заполнить MongoDB и Telegram-параметры. Зависимости — <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/requirements.txt">requirements.txt</a>.</li>
+      <li>Инициализировать коллекции: <code>python -m storage.setup</code>.</li>
+      <li>Загрузить данные: либо экспорт Telegram через <code>python -m parsers.telegram_history &lt;export&gt; --out &lt;dir&gt;</code> и <code>python -m storage.load_cards &lt;dir&gt;</code>, либо войти через <code>python -m parsers.telegram_live --login</code>, добавить источник и запустить live-парсер; см. <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/parsers/README.md">parsers/README.md</a>.</li>
+      <li>Запустить фильтр: <code>python -m judge.run --run live</code>. Для проверяемого набора использовать <code>--set</code>/<code>--answered</code>, затем <code>python -m judge.report --run NAME</code>; см. <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/judge/README.md#running-it">judge/README.md</a>.</li>
+      <li>Для ручной разметки скопировать <code>admin/config.example.json</code> в <code>admin/config.json</code>, задать пути и запустить <code>python -m admin</code>; см. <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/admin/README.md#running-it">admin/README.md</a>.</li>
+      <li>Самый прямой end-to-end сценарий обучения: в Claude Code из корня выполнить <code>/demo</code>. Он загружает 50 карточек и ответы, прогоняет фильтр, создаёт два пустых xmemory instance, выполняет observe → propose → gate и повторяет вопрос; см. <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/.claude/skills/demo/SKILL.md">.claude/skills/demo/SKILL.md</a>.</li>
+    </ol>
+    <p><strong>Практическое ограничение:</strong> README сообщает, что весь production-flow целиком не был поднят; продемонстрирован один полный цикл на пустых БД и memories (<a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/hacker-sprint-2/report.md#2-%D1%80%D0%B5%D0%B7%D1%83%D0%BB%D1%8C%D1%82%D0%B0%D1%82%D1%8B">hacker-sprint-2/report.md</a>).</p>
+
+    <h3>1.3. Технический стек</h3>
+    <ul>
+      <li><strong>Агенты:</strong> Claude Code skills <code>filter-card</code>, <code>observe-record</code>, <code>propose-rule</code>, <code>demo</code>; xmemory extraction/query agent (<a href="https://github.com/podlodka-ai-club/cadence/tree/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/.claude/skills">.claude/skills/</a>).</li>
+      <li><strong>LLM:</strong> Claude Code; <code>judge.run</code> по умолчанию использует <code>sonnet</code>; точная версия модели не зафиксирована (<a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/judge/README.md#running-it">judge/README.md</a>).</li>
+      <li><strong>Интеграции:</strong> Telegram/Telethon, MongoDB/PyMongo, xmemory/xmemcli/MCP, systemd (<a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/requirements.txt">requirements.txt</a>, <a href="https://github.com/podlodka-ai-club/cadence/tree/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/deploy">deploy/</a>).</li>
+      <li><strong>Память:</strong> MongoDB для карточек, эталонов, verdicts, runs, observations и правил; xmemory instance для Event/Place/Schedule и natural-language read (<a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/storage/README.md#what-is-kept">storage/README.md</a>).</li>
+      <li><strong>Эвалы:</strong> неизменяемые named sets, human answers, deterministic verdict comparison; before/after observations и gates для правил/схемы (<a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/judge/README.md#measuring-a-run">judge/README.md</a>, <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/memory/README.md#decide-the-rule">memory/README.md</a>).</li>
+      <li><strong>Фреймворки:</strong> специализированный agent/eval-фреймворк не используется; orchestration написан на Python, локальная admin UI — стандартный Python HTTP server (<a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/hacker-sprint-2/report.md#5-%D1%81%D0%B0%D0%BC%D0%BE%D0%BE%D0%B1%D1%83%D1%87%D0%B5%D0%BD%D0%B8%D0%B5-%D0%B0%D0%B3%D0%B5%D0%BD%D1%82%D0%BE%D0%B2">hacker-sprint-2/report.md</a>, <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/admin/server.py">admin/server.py</a>).</li>
+    </ul>
+
+    <h2>2. Ответы на вопросы</h2>
+
+    <section class="question">
+      <h3>1. С какими задачами работает агент?</h3>
+      <p class="answer">Агент не выбирает произвольные задачи: он обрабатывает карточки постов из заданных Telegram-источников и отвечает на вопросы о сохранённых событиях. Карточки выбираются CLI-фильтрами, именованным набором или наличием human-answer.</p>
+      <ul class="facts"><li><code>judge.run</code> поддерживает <code>--set</code>, <code>--answered</code>, source/date/limit и пропускает уже обработанные карточки: <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/judge/README.md#running-it">judge/README.md</a>.</li><li>Источники live-парсера лежат в MongoDB и хранят cursor: <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/parsers/README.md#telegram_live">parsers/README.md</a>.</li></ul>
+    </section>
+
+    <section class="question">
+      <h3>2. Как агент выбирает, что сохранить в память?</h3>
+      <p class="answer">Сначала <code>filter-card</code> сохраняет только карточки, где есть посещаемое событие с временем и местом; xmemory затем самостоятельно извлекает структуру по заданной схеме. Внутренние критерии извлечения xmemory в репозитории не описаны: это внешний чёрный ящик.</p>
+      <ul class="facts"><li>Критерий фильтра и закрытый список причин отказа: <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/.claude/skills/filter-card/SKILL.md#1-judge-the-card">filter-card/SKILL.md</a>.</li><li>Схема Event/Place/Schedule: <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/schema/xmemory-schema.md">schema/xmemory-schema.md</a>; статус xmemory как black box: <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/README.md#3-parsing">README.md</a>.</li></ul>
+    </section>
+
+    <section class="question">
+      <h3>3. Как организована память между рестартами агента?</h3>
+      <p class="answer">Долгосрочность обеспечивают две внешние персистентные системы: MongoDB хранит сырьё и весь контур оценки/обучения, а xmemory — извлечённые сущности и связи. После рестарта live-парсер продолжает с сохранённого cursor, а активные правила снова читаются из MongoDB.</p>
+      <ul class="facts"><li>Разделение двух stores: <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/README.md#4-storage">README.md, «Storage»</a>.</li><li>Cursor обновляется после записи, повтор поглощается upsert: <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/storage/README.md#what-is-kept">storage/README.md</a>.</li><li>Привязанный instance <code>City Events &amp; Places</code>: <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/.xmemory.json">.xmemory.json</a>.</li></ul>
+    </section>
+
+    <section class="question">
+      <h3>4. Как агент обучается и меняет поведение?</h3>
+      <p class="answer">Параметры модели не дообучаются. Поведение меняется через активируемые текстовые правила для фильтра/записи и через проверенные изменения схемы xmemory.</p>
+      <ul class="facts"><li>Observer → common complaint → draft → second memory → gate: <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/memory/README.md#one-turn-of-the-loop">memory/README.md</a>.</li><li>Фильтр получает active/candidate rules при запуске: <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/judge/README.md#running-it">judge/README.md</a>.</li><li>Автоматическая генерация правил фильтра из расхождений не закончена: <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/README.md#known-issues">README.md, «Known issues»</a>.</li></ul>
+    </section>
+
+    <section class="question">
+      <h3>5. Как память обновляется?</h3>
+      <p class="answer">Новые карточки дополняют или обновляют записи xmemory; кандидаты правил и схем проходят gate и остаются <code>active</code> либо <code>rejected</code>. Автоматического TTL, decay, удаления устаревших фактов, разрешения противоречий или rollback существующего xmemory instance в репозитории не найдено.</p>
+      <ul class="facts"><li>Rejected rule сохраняется, чтобы не предлагаться снова: <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/storage/README.md#what-is-kept">storage/README.md</a>.</li><li>Для честного сравнения создаётся новый пустой instance вместо перезаписи старого: <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/memory/README.md#one-turn-of-the-loop">memory/README.md</a>.</li><li>Отсутствие snapshot/backup/rollback и миграции перезаливкой: <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/hacker-sprint-2/report.md#%D0%BA%D0%B0%D0%BA-%D0%B4%D0%B5%D0%BB%D0%B0%D1%82%D1%8C-eval">hacker-sprint-2/report.md</a>.</li></ul>
+    </section>
+
+    <section class="question">
+      <h3>6. Как работают эвалы?</h3>
+      <p class="answer">Фильтр сравнивается детерминированно с human-labeled answers на неизменяемом наборе; отчёт показывает agreement, fixed, broken и moved. Память сравнивается на одинаковых карточках в двух пустых instances по сумме трёх оценок наблюдателя; gate принимает только улучшение без поломок.</p>
+      <ul class="facts"><li>Метрика и сравнение run/base: <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/judge/README.md#measuring-a-run">judge/README.md</a>.</li><li>Формула memory gate: <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/memory/README.md#decide-the-rule">memory/README.md</a>.</li><li>Временной benchmark/trend, который регулярно доказывает улучшение системы от версии к версии, <strong>в репозитории не найден</strong>; есть сравнение конкретных before/after прогонов.</li></ul>
+    </section>
+
+    <section class="question">
+      <h3>7. Как работает human in the loop?</h3>
+      <p class="answer">Человек размечает или подтверждает карточки в локальной admin UI, создавая эталонные answers, а также формулирует замену для draft schema change. В demo человек видит команды/ответы, освобождает слот xmemory при необходимости и не даёт процессу молча обходить сбои.</p>
+      <ul class="facts"><li>Три режима разметки и правило «verdict не становится answer без человека»: <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/admin/README.md">admin/README.md</a>.</li><li><code>memory.approve</code> добавляет выбранный текст изменения схемы: <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/memory/README.md#say-what-to-write-into-the-schema-instead">memory/README.md</a>.</li><li>Точки остановки и участия человека в demo: <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/.claude/skills/demo/SKILL.md#how-to-behave-throughout">demo/SKILL.md</a>.</li></ul>
+    </section>
+
+    <section class="question">
+      <h3>8. Используется ли xmemory?</h3>
+      <p class="answer">Да. xmemory используется как внешний агент для извлечения Event/Place/Schedule из принятых постов, их долговременного хранения и ответов на естественно-языковые вопросы; отдельные instances служат изолированными средами before/after eval.</p>
+      <ul class="facts"><li>Назначение xmemory: <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/README.md#3-parsing">README.md</a>.</li><li>Project binding и сценарии engage: <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/.xmemory.json">.xmemory.json</a>.</li><li>CLI/MCP wiring и два instances: <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/.claude/skills/demo/SKILL.md#3-the-first-memory">demo/SKILL.md</a>.</li></ul>
+    </section>
+
+    <section class="question">
+      <h3>9. Сбои во время выполнения задачи</h3>
+      <p class="answer">Сбор и judge сделаны возобновляемыми: cursor и уже сохранённые verdicts позволяют перезапустить команду без пропуска и дублирования. Нечитаемый batch не записывается и сохраняется для разбора; demo при любой ошибке останавливается, а systemd перезапускает live-парсер.</p>
+      <ul class="facts"><li>Live cursor и idempotent upsert после restart: <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/parsers/README.md#telegram_live">parsers/README.md</a>.</li><li>Resume judge и <code>judge-failed/</code>: <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/judge/README.md#running-it">judge/README.md</a>.</li><li>Fail-stop demo: <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/.claude/skills/demo/SKILL.md#how-to-behave-throughout">demo/SKILL.md</a>; systemd unit: <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/deploy/cadence-parser.service">deploy/cadence-parser.service</a>.</li></ul>
+    </section>
+
+    <section class="question">
+      <h3>10. Мониторинг</h3>
+      <p class="answer">Есть прикладные журналы и сохранённые артефакты: systemd journal, card/verdict/run/observation/rule collections, список заданных xmemory-вопросов и failed replies. Полный distributed tracing с единой task/span-моделью не описан; действия можно восстановить частично по карточке, run, model, rules, observations и журналам, но не как полный пошаговый LLM trace.</p>
+      <ul class="facts"><li><code>systemctl status</code>, <code>journalctl</code> и <code>lastPolledAt</code>: <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/deploy/README.md#looking-at-it">deploy/README.md</a>.</li><li>Коллекции аудита и их поля: <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/storage/README.md#what-is-kept">storage/README.md</a>.</li><li>Observer сохраняет, что именно он спрашивал: <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/.claude/skills/observe-record/SKILL.md#6-return-the-marks">observe-record/SKILL.md</a>.</li><li>OpenTelemetry, Prometheus, Sentry или аналогичный tracing/monitoring stack — <strong>в репозитории не найдено</strong>.</li></ul>
+    </section>
+
+    <h2>Ограничения анализа</h2>
+    <ul>
+      <li>Анализ статический: внешние MongoDB, Telegram, Claude Code и xmemory не запускались; фактическая доступность credentials, quotas и instances не проверялась.</li>
+      <li>В репозитории нет автоматизированной тестовой директории и CI-конфигурации; корректность заявленных ~97.5–98% фильтра подтверждается документацией/отчётом, а не воспроизведённым прогоном (<a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/README.md#the-eval-of-that-agent">README.md</a>).</li>
+      <li>Не описаны внутренний алгоритм xmemory, точные версии LLM, production-прокси для пользователей, единый orchestration service, автоматическое забывание/миграции и полный tracing.</li>
+      <li>Контур обучения фильтра не замкнут автоматически, а весь production-flow, по авторскому отчёту, запускался только по частям (<a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/README.md#known-issues">README.md</a>, <a href="https://github.com/podlodka-ai-club/cadence/blob/2b0e8d9836c8a985deb8f8d62df0b2d870123cb1/hacker-sprint-2/report.md#2-%D1%80%D0%B5%D0%B7%D1%83%D0%BB%D1%8C%D1%82%D0%B0%D1%82%D1%8B">hacker-sprint-2/report.md</a>).</li>
+    </ul>
+  </main>
+</body>
+</html>
+</template>
+<noscript><p class="nojs">Для переключения вкладок нужен JavaScript.</p></noscript>
+<script>
+for (const name of ['questionnaire','report']) {
+  document.querySelector('#'+name+' iframe').srcdoc = document.getElementById(name+'-doc').innerHTML;
+}
+for (const button of document.querySelectorAll('.tab')) {
+  button.addEventListener('click', () => {
+    for (const other of document.querySelectorAll('.tab')) other.setAttribute('aria-selected', String(other === button));
+    for (const panel of document.querySelectorAll('.panel')) panel.hidden = panel.id !== button.dataset.panel;
+  });
+}
+</script>
+</body></html>

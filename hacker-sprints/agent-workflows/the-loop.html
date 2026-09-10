@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="ru">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>The Loop — анкета и анализ агента</title><style>
+:root{color-scheme:light dark;--bg:#f5f5f7;--fg:#1d1d1f;--panel:#fff;--line:#d2d2d7;--accent:#ff5a1f;--muted:#6e6e73}
+@media(prefers-color-scheme:dark){:root{--bg:#141416;--fg:#f5f5f7;--panel:#1f2024;--line:#3a3b40;--muted:#aaa}}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+body{display:flex;flex-direction:column}.top{padding:16px 18px 0;background:var(--panel);border-bottom:1px solid var(--line)}
+h1{font-size:22px;line-height:1.2;margin:0 0 12px}.tabs{display:flex;gap:6px}.tab{appearance:none;border:1px solid var(--line);border-bottom:0;background:var(--bg);color:var(--fg);padding:10px 15px;border-radius:9px 9px 0 0;font:600 14px system-ui;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:#fff}.panels{position:relative;flex:1;min-height:0}.panel{position:absolute;inset:0}.panel[hidden]{display:none}.panel iframe{border:0;width:100%;height:100%;background:#fff}.nojs{padding:12px 18px;color:var(--muted)}
+</style></head>
+<body>
+<header class="top"><h1>The Loop — анкета и анализ агента</h1><nav class="tabs" aria-label="Материалы команды">
+<button class="tab" type="button" id="tab-questionnaire" data-panel="questionnaire" role="tab" aria-selected="true" aria-controls="questionnaire">Анкета команды</button>
+<button class="tab" type="button" id="tab-report" data-panel="report" role="tab" aria-selected="false" aria-controls="report">Анализ агента</button>
+</nav></header>
+<main class="panels">
+<section class="panel" id="questionnaire" role="tabpanel" aria-labelledby="tab-questionnaire"><iframe title="Анкета команды"></iframe></section>
+<section class="panel" id="report" role="tabpanel" aria-labelledby="tab-report" hidden><iframe title="Анализ агента"></iframe></section>
+</main>
+<template id="questionnaire-doc"><!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>The Loop — анкета команды</title><style>
+:root{color-scheme:light dark;--bg:#fafafa;--fg:#202124;--muted:#666;--card:#fff;--line:#d8dadd;--link:#1558d6;--accent:#ff5a1f}
+@media(prefers-color-scheme:dark){:root{--bg:#17181a;--fg:#e7e8ea;--muted:#aaa;--card:#202226;--line:#3b3e44;--link:#8ab4ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}main{max-width:980px;margin:auto;padding:28px 20px 56px}h1{font-size:28px;margin:0 0 8px}.meta{color:var(--muted);margin-bottom:26px}.meta a,a{color:var(--link)}.qa{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:17px 19px;margin:14px 0}.qa h2{font-size:17px;line-height:1.35;margin:0 0 9px}.answer{white-space:pre-wrap;overflow-wrap:anywhere}.badge{display:inline-block;padding:3px 8px;border-radius:999px;background:var(--accent);color:white;font-size:12px;font-weight:700;margin-left:7px}
+</style></head><body><main><h1>The Loop — анкета команды <span class="badge">xmemory</span></h1><div class="meta">Репозиторий: <a href="https://github.com/podlodka-ai-club/the-loop" target="_blank" rel="noopener">https://github.com/podlodka-ai-club/the-loop</a> · ответ отправлен 07.09.2026 21:43:46</div><section class="qa"><h2>Представьте, что вы делаете лендинг для вашего проекта или поднимаете инвестиции. Как бы вы описали его одной фразой, чтобы он выделялся среди всех остальных?</h2><div class="answer">Geoguessr как источник данных: агент определяет место съёмки по одному кадру, а люди приносят и подтверждают настоящие фотографии ландшафта с геокоординатами.</div></section><section class="qa"><h2>Что и как делает ваш агент?</h2><div class="answer">**Задача.** На вход — одна фотография. На выход — строгий JSON: `latitude`, `longitude`, `place`, `confidence`, `reasoning`.
+
+**Откуда взят подход.** Мы скопировали то, как играют сильные игроки Geoguessr. Игрок не «узнаёт место» целиком: он снимает с кадра набор мета-признаков — сторона движения, форма столбиков и опор, разметка, номерные знаки, отбойники, язык и шрифт вывесок, растительность, качество съёмки, — вспоминает, что каждый признак значит по регионам, и сводит признаки к точке. Внутренний цикл агента повторяет ровно эту последовательность, а память играет роль накопленного опыта игрока.
+
+**Внутренний цикл.** Сначала модель смотрит кадр и выписывает до 12 наблюдаемых признаков. Дальше начинается цикл с инструментом: по каждому признаку модель делает отдельный вызов `memory_retrieve` и сама формулирует запрос к памяти, а ответ инструмента возвращается в тот же диалог. Поэтому следующий признак модель ищет, уже зная, что нашлось по предыдущим. Цикл ограничен бюджетом: до двух попыток на признак при сбое, не больше 24 обращений и 60 подсказок на кадр. Перед выдачей подсказок работает relevance gate: он выбрасывает уроки не по тому признаку, дубликаты, уроки без контраста и уроки про чужой регион. Только после этого идёт финальный ход: модель получает кадр, всю историю поиска и отвечает по строгой схеме.
+
+**Внешний цикл (обучение).** По train-корпусу агент проходит тот же цикл, затем ему показывают истину — координаты и страну — и просят сформулировать урок по конкретному признаку: что он должен был заметить, чтобы попасть точнее или не повторить эту ошибку. Урок пишется в память с привязкой к ключу признака, id попытки и вердиктом (помог / не помог / нерелевантен). Гигиена урока режет пересказ кадра и упоминание страны, которой на кадре нет.
+
+**Память.** Записи вида «признак → урок» с provenance и счётчиками попаданий. Извлечение — по ключу признака и запросу модели, по умолчанию две подсказки на признак. Хранилище не прибито к файлам: за одним контрактом `Memory` живут четыре бэкенда — локальный файловый (JSONL со снапшотами), Mem0, Hindsight и xmemory, — плюс пустой бэкенд для прогонов без памяти. Бэкенд выбирается флагом запуска, поэтому один и тот же корпус и один и тот же цикл сравниваются на разных движках памяти.
+
+**Автоулучшение.** Это повторный запуск обучения на новых кадрах: корпус памяти доращивается, эвал перезапускается на неизменном eval-корпусе. В продуктовом виде тот же цикл кормится фотографиями пользователей после ручной фильтрации.
+
+**Данные.** Открытый датасет OpenStreetView-5M, test-сплит. Руками просмотрели 2008 кадров: 1725 оставил, 283 отбраковал — прежде всего кадры с выжженной строкой телеметрии, где координата написана прямо в пикселях. Повёрнутые кадры развернули. Пул разбит на два непересекающихся корпуса: eval n=863, train n=862. У них нет общих кадров, общей поездки, общего автора и общей ячейки сетки 25 км, а по странам они сбалансированы настолько, насколько допускают неделимые группы. Baseline для сравнения — один слепой вызов модели без памяти и без инструментов на том же eval-корпусе.</div></section><section class="qa"><h2>Про технический и AI стек</h2><div class="answer">Рантайм: Node 22, нативный TypeScript без сборки.
+Модель: `google/gemma-4-31b-it` через OpenRouter.
+Память: контракт `Memory` и четыре реализации за ним — файловый JSONL со снапшотами, Mem0, Hindsight, xmemory
+Эвалы: Arize Phoenix локально — датасеты и эксперименты через `@arizeai/phoenix-client`, трейсы через OpenInference поверх OpenTelemetry.
+Прочее: `sharp`, `csv-parse` и локальное веб-приложение ручного осмотра кадров на голом Node.</div></section><section class="qa"><h2>Если бы у вас была ещё одна неделя, что бы вы сделали в первую очередь и почему именно это?</h2><div class="answer">В первую очередь — эксперимент над тем, что и как хранить в памяти. Сейчас в неё пишется всё подряд, и это её главный дефект: 78% выданных подсказок модель сама помечает как нерелевантные, а в prompt они приходят наравне с полезными. Мы уже видим, что фильтр на выдаче и требование контраста при записи меняют картину, но у нас две крайности и ни одной середины: без фильтра 25 подсказок на кадр и значимое падение качества, с фильтром 0.1 подсказки на кадр и эффект, который на 50 кадрах (на которые хватило квот) не измеряется.
+
+Неделя ушла бы на три вещи. Первое — рубрика записи: какой урок вообще заслуживает места в памяти, и как отличить «полезное правило» от пересказа кадра. Второе — порог выдачи: сколько подсказок на признак действительно помогает, а не забивает контекст. Третье — прогон на объёме, достаточном для значимости: наблюдаемый разброс требует порядка нескольких тысяч кадров, а не пятидесяти.</div></section><section class="qa"><h2>Какие решения оправдали себя настолько, что вы бы рекомендовали другим командам их переиспользовать? Например: паттерн реализации, выбор технологии, архитектурное решение, продуктовая идея.</h2><div class="answer">**Продуктовая идея, которую можно проверить за день.** Мы искали задачу, у которой уже есть открытый датасет с готовой разметкой. Нашли — и весь вопрос свёлся к реализации, а не к спорам, работает ли идея. Рекомендуем этот фильтр при выборе темы: если для замера нужно сначала собрать данные, неделя уйдёт на сбор.
+
+**Инструмент для эвала с нормальной визуализацией.** Мы взяли Arize Phoenix: датасеты, эксперименты, трейсы и оценки в одном месте. Прогон сравнивается с прогоном, каждый пример раскрывается в трейс с промптами и вызовами инструментов, и рядом с точностью лежат метрики самой памяти — сколько подсказок попало в prompt и во сколько токенов они обошлись.
+
+**Один контракт памяти и несколько реализаций за ним.** Мы не выбирали движок заранее, а описали интерфейс и подключили четыре: локальные файлы, Mem0, Hindsight, xmemory. Бэкенд переключается флагом. Это стоило одного дня и позволило сравнить движки на одном корпусе и одном цикле.</div></section><section class="qa"><h2>Какие решения оказались неудачными или не дали ожидаемой пользы?</h2><div class="answer">**Наивное подключение памяти.** Главная неудача. Память, подключённая «в лоб», значимо ухудшает результат: −450 пунктов geoscore при t = −3.48, медиана ошибки 693 → 985 км. Проблема в retrieval: на кадр приходило 25 подсказок, 78% из них нерелевантны. Модель получала в prompt чужие уроки, следовала им и уезжала.
+Мы проверили, дело ли в релевантности подсказок. Перепутали привязки уроков к регионам, получив заведомо ложные правила вида «эвкалипты означают Нижний Новгород, а не Дели», и прогнали на тех же 430 кадрах. Результат неотличим от настоящей памяти: медиана парной разницы 0.0 км, 93 кадра лучше против 85 хуже, 252 кадра дали тот же ответ, Δgeoscore +14 при t = +0.47. Значит агент реагирует не на содержание уроков, а на сам факт того, что в промпте перечислены конкретные места. Доля предсказаний, попадающих в названные памятью регионы, растёт с 4% без памяти до 75% с полной, 32% при выдаче пяти подсказок и 16% при жёстком пороге.
+Мы это починили — relevance gate на выдаче и требование контраста при записи, — но починили в последний день. Прирост есть по медиане ошибки, 724 → 686 км, и он статистически незначим: на 50 кадрах разброс слишком велик. Чтобы доказать его, нужно было дообучать память на большем корпусе и мерить на тысячах кадров.
+
+**Цена памяти по времени.** 3-4 секунды на кадр без памяти против 90-168 секунд с ней. Для фонового агента это терпимо, для интерактивного продукта или запуска быстрых экспериментов — нет.
+
+**Автоматический отсев кадров с утечкой.** Часть кадров OSV-5M — снимки с регистратора с выжженной координатой внизу. Мы пробовали обрезать нижнюю полосу: детектор пропускал надпись, впечатанную в светлое полотно, и находил её примерно в 11% случаев. Потом пробовали OCR-экран из восьми проходов: он читал только низ кадра, поэтому перевёрнутые кадры проверял не с той стороны, срабатывал на гравии и дворниках и добавлял 16 минут к каждой заморозке корпуса. Оба решения убрали. Работает только ручной осмотр: человек смотрит кадр целиком и в той ориентации, в которой кадр попадёт в корпус.</div></section><section class="qa"><h2>Пример работы агента до и после обучения</h2><div class="answer">Три конфигурации на замороженном eval-корпусе OSV-5M, один и тот же список кадров, одна модель, зафиксированное декодирование.
+
+**Без памяти (база, 863 кадра):** медиана ошибки 729 км, geoscore 2663, 100% ответов разобрались, 3 секунды на кадр.
+
+**Память «в лоб» (Hindsight, 5 подсказок на каждый признак, 187 кадров):** медиана ошибки 985 км, geoscore 2238, 93% разобрались, 168 секунд на кадр. Парно по тем же кадрам это −450 пунктов geoscore при t = −3.48 — падение статистически значимое, не шум.
+Причина видна в логах: память отдавала 25 подсказок на кадр и 1195 токенов, и 78% из них модель на этапе рефлексии сама пометила как `irrelevant` — «густые лиственные деревья вдоль дорог встречаются во многих умеренных регионах». В prompt попадала не подсказка, а шум, и вместе с ним росла доля неразобранных ответов.
+
+**Память с фильтрацией и контрастной рубрикой (xmemory, 50 кадров):** урок принимается в память только если он называет контраст — что этот признак отличает от соседних вариантов, — а перед выдачей работает relevance gate. Выдача падает с 25 подсказок до 0.1 на кадр, токены с 1195 до 2. Медиана ошибки 724 → 686 км, выигрыш на 20 кадрах против 13 проигранных. Но по среднему баллу разница −56 при доверительном интервале [−403, +258]: на 50 кадрах такой эффект не измеряется, для значимости нужно порядка 3600 кадров.
+
+**Цена памяти по времени:** 3-4 секунды на кадр без памяти, 90-168 секунд с памятью, худший кадр 52 минуты. Цикл делает отдельный вызов модели на каждый наблюдённый признак, и hosted-память добавляет свою задержку на каждый вызов.</div></section><section class="qa"><h2>Участвуете ли вы в номинации от xmemory?</h2><div class="answer">Да</div></section></main></body></html></template>
+<template id="report-doc"><!doctype html>
+<html lang="ru">
+<head><base target="_blank">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Loop: анализ самообучающегося агента</title>
+<style>
+body{font:16px/1.55 system-ui,sans-serif;max-width:1050px;margin:32px auto;padding:0 20px;color:#20242a;background:#fafafa}h1,h2,h3{line-height:1.2}h1{margin-bottom:.3em}h2{margin-top:2em;border-bottom:2px solid #ddd;padding-bottom:.25em}h3{margin-top:1.5em}a{color:#075cab}code,pre{background:#f0f2f4;border-radius:5px}code{padding:.12em .3em}pre{padding:14px;overflow:auto;white-space:pre-wrap}table{border-collapse:collapse;width:100%;background:#fff}th,td{border:1px solid #ccd1d6;padding:9px;vertical-align:top;text-align:left}th{background:#eef2f5}.meta,.answer{background:#fff;border-left:4px solid #6688aa;padding:10px 14px}.limits{background:#fff4db;border-left:4px solid #c68a00;padding:10px 14px}li{margin:.35em 0}.facts{font-size:.95em}
+</style>
+</head>
+<body>
+<header>
+<h1>The Loop: анализ самообучающегося агента</h1>
+<div class="meta">
+<strong>Репозиторий:</strong> <a href="https://github.com/podlodka-ai-club/the-loop">podlodka-ai-club/the-loop</a><br>
+<strong>Ветка:</strong> <code>main</code><br>
+<strong>Commit:</strong> <a href="https://github.com/podlodka-ai-club/the-loop/commit/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea"><code>2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea</code></a><br>
+<strong>Дата анализа:</strong> 2026-09-09
+</div>
+<p><strong>Коротко:</strong> The Loop (в документации агент называется Loci) — TypeScript-система геолокации фотографии. «Обучение» здесь не меняет веса LLM: после раскрытия координат отдельная рефлексия пишет переносимые правила в долгосрочную память, а следующие задачи извлекают эти правила по наблюдаемым признакам.</p>
+</header>
+
+<main>
+<section>
+<h2>1. Анализ</h2>
+
+<h3>1.1. Пошаговый пайплайн</h3>
+<table>
+<thead><tr><th>Шаг</th><th>Что происходит</th><th>Результат</th><th>Основание</th></tr></thead>
+<tbody>
+<tr><td>1. Получение задачи</td><td>Одиночный запуск получает путь к фотографии; обучение и eval берут кадры из фиксированных manifest-файлов OSV-5M.</td><td><code>imagePath</code>, <code>attemptId</code>; в training/eval также скрытый ground truth.</td><td><a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/cli.ts">src/cli.ts</a>, <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/train.ts">src/train.ts</a></td></tr>
+<tr><td>2. Observe</td><td>Vision-LLM извлекает нормализованные видимые признаки: дорога, растительность, архитектура и т.п.</td><td>Набор feature observations.</td><td><a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/observe.ts">src/observe.ts</a>, <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/docs/workflows/locate.md">docs/workflows/locate.md</a></td></tr>
+<tr><td>3. Retrieve</td><td>Для каждого признака агент формирует query и вызывает <code>memory_retrieve</code>. Relevance gate оставляет только подходящие к feature/query уроки с эффектом <code>helped</code>.</td><td>Группы <code>hits</code>, <code>no_hit</code> или <code>failed</code>.</td><td><a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/tools/memory.ts">src/tools/memory.ts</a>, <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/memory/relevance.ts">src/memory/relevance.ts</a></td></tr>
+<tr><td>4. Analyze</td><td>Модель сопоставляет фотографию, наблюдения и прошедшие фильтр уроки, затем выдаёт место, координаты, confidence и reasoning.</td><td>Зафиксированный blind guess.</td><td><a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/locate.ts">src/locate.ts</a>, <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/agent.ts">src/agent.ts</a></td></tr>
+<tr><td>5. Reveal (только training)</td><td>После фиксации слепого ответа оркестратор раскрывает истинные координаты и считает расстояние ошибки.</td><td>Episode context: feature, один hit либо null, guess, truth, distance.</td><td><a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/task-feature-scoped.internal.ts">src/task-feature-scoped.internal.ts</a>, <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/docs/workflows/train.md">docs/workflows/train.md</a></td></tr>
+<tr><td>6. Reflect (только training)</td><td>Отдельный vision-вызов классифицирует эффект памяти как <code>helped</code>, <code>irrelevant</code>, <code>misleading</code> или <code>insufficient</code> и обязан вызвать strict tool <code>memory_store</code>.</td><td>Короткий урок с triggers, region и provenance либо явный failure.</td><td><a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/reflect-runtime.internal.ts">src/reflect-runtime.internal.ts</a></td></tr>
+<tr><td>7. Hygiene и запись</td><td>Проверяются длина, provenance, narrative/географическая утечка и контраст. Валидный урок идемпотентно сохраняется; для file-backend периодически создаётся content-addressed snapshot.</td><td>Долгосрочная память для будущих задач.</td><td><a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/lesson-hygiene.ts">src/lesson-hygiene.ts</a>, <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/memory/file/memory.ts">src/memory/file/memory.ts</a></td></tr>
+<tr><td>8. Eval</td><td>На замороженном eval-корпусе запускаются cold/warm arms; evaluation read-only и не записывает уроки. Phoenix сохраняет runs и code-based метрики.</td><td>Distance/geoscore/accuracy, валидность, retrieval, latency и episode-метрики.</td><td><a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/experiment.ts">src/experiment.ts</a>, <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/evaluators.ts">src/evaluators.ts</a></td></tr>
+</tbody>
+</table>
+
+<pre class="mermaid">stateDiagram-v2
+    [*] --> TaskReceived
+    TaskReceived --> Observe
+    Observe --> Retrieve
+    Retrieve --> Analyze
+    Analyze --> BlindAnswer
+    Retrieve --> Retry
+    Retry --> Observe
+    Observe --> Failed
+    Analyze --> Failed
+    BlindAnswer --> Reveal
+    Reveal --> Reflect
+    Reflect --> Store
+    Reflect --> ReflectionFailed
+    Store --> Completed
+    ReflectionFailed --> Completed
+    BlindAnswer --> Completed
+    Failed --> [*]
+    Completed --> [*]</pre>
+<p><small>Ветка <code>BlindAnswer → Completed</code> соответствует production/evaluation; <code>Reveal → Reflect → Store</code> — training. Диаграмма намеренно не содержит условий переходов.</small></p>
+
+<h3>1.2. Как воспроизвести</h3>
+<ol>
+<li>Установить Node.js ≥22.18, Docker (либо локальный Phoenix) и выполнить <code>npm ci</code>. Версия Node и команды зафиксированы в <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/package.json">package.json</a>.</li>
+<li>Скопировать <code>.env.example</code> в <code>.env</code> и задать ключ провайдера. Для актуального runtime исходники используют OpenRouter; перечень настроек дан в <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/.env.example">.env.example</a>. В <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/docs/benchmark/reproduce.md">docs/benchmark/reproduce.md</a> местами ещё упомянут Cerebras — это расхождение документации с кодом.</li>
+<li>Для полного benchmark скачать OSV-5M <code>test.csv</code> и пять image shards в <code>tmp/datasets/osv5m</code>, распаковать их и выполнить <code>npm run sample</code>. Точные команды и ожидаемые fingerprint приведены в <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/docs/benchmark/reproduce.md">docs/benchmark/reproduce.md</a>. Для одиночной собственной фотографии датасет не нужен.</li>
+<li>Запустить Phoenix: <code>docker run -p 6006:6006 -p 4317:4317 -i -t arizephoenix/phoenix:latest</code>; UI — <code>http://localhost:6006</code>.</li>
+<li>Проверить одиночный inference: <code>npm run geolocate -- /path/to/photo.jpg</code>. Реальная CLI-точка входа — <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/cli.ts">src/cli.ts</a>.</li>
+<li>Запустить baseline: <code>npm run experiment -- --name cold --memory-mode cold</code>. Затем обучить file-memory: <code>npm run train -- --backend file --memory-mode warm --limit 30</code>; команда напечатает ID финального snapshot.</li>
+<li>Проверить обученную память read-only: <code>npm run experiment -- --name warm --flow feature-scoped --backend file --memory-mode warm --snapshot &lt;ID&gt; --concurrency 1</code>. Сравнить метрики и traces в Phoenix. Командные параметры реализованы в <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/train.ts">src/train.ts</a> и <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/experiment.ts">src/experiment.ts</a>.</li>
+<li>Техническая проверка без API: <code>npm run typecheck</code> и backend-наборы <code>npm run test:file</code>, <code>npm run test:mem0</code>, <code>npm run test:hindsight</code>, <code>npm run test:xmemory</code>; остальные тесты можно запустить через <code>node --test src/*.test.ts</code>. Команды и расположение тестов видны в <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/package.json">package.json</a> и <a href="https://github.com/podlodka-ai-club/the-loop/tree/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src">src/</a>.</li>
+</ol>
+
+<h3>1.3. Технический стек</h3>
+<ul>
+<li><strong>Агенты:</strong> Loci; стадии observe, feature-scoped retrieve, analyze, post-reveal reflect.</li>
+<li><strong>LLM:</strong> OpenAI-compatible chat completions через OpenRouter; default <code>google/gemma-4-31b-it</code>, отдельные <code>GEOLOCATE_MODEL</code>/<code>OBSERVE_MODEL</code>/<code>REFLECT_MODEL</code>. <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/agent.ts">src/agent.ts</a>, <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/reflect-runtime.internal.ts">src/reflect-runtime.internal.ts</a>.</li>
+<li><strong>Интеграции:</strong> OpenRouter/OpenAI API, Arize Phoenix/OTLP, OSV-5M/Hugging Face, Mem0, Hindsight, xmemory; Sharp для изображений. <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/package.json">package.json</a>.</li>
+<li><strong>Память:</strong> общий reader/writer contract; локальный JSONL + SHA-256 snapshots либо hosted backends Mem0/Hindsight/xmemory; feature-scoped retrieval и relevance gate. <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/memory/memory.ts">src/memory/memory.ts</a>.</li>
+<li><strong>Эвалы:</strong> замороженный OSV-5M manifest, Phoenix experiments, code evaluators: WGS84 distance, geoscore, acc@radii, output/retrieval/leak/latency/episode metrics. <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/evaluators.ts">src/evaluators.ts</a>.</li>
+<li><strong>Фреймворки:</strong> Node.js 22.18+, TypeScript ESM, OpenAI SDK, OpenTelemetry/OpenInference, Phoenix Client; отдельного agent framework нет. <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/package.json">package.json</a>.</li>
+</ul>
+</section>
+
+<section>
+<h2>2. Ответы на вопросы</h2>
+
+<h3>1. С какими задачами работает агент?</h3>
+<div class="answer"><strong>Ответ:</strong> Агент решает узкую задачу геолокации по одной фотографии: выбирает вероятное место и координаты. В CLI задачу задаёт пользователь путём к файлу, а в training/eval её выбирает оркестратор из фиксированного manifest, а не сам агент.</div>
+<ul class="facts"><li><a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/cli.ts">src/cli.ts</a> принимает <code>PHOTO</code>.</li><li><a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/train.ts">src/train.ts</a> формирует выборку из train-manifest с seed/limit и исключает eval leakage; <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/experiment.ts">src/experiment.ts</a> читает замороженный eval sample.</li></ul>
+
+<h3>2. Как агент выбирает, что сохранить в память?</h3>
+<div class="answer"><strong>Ответ:</strong> Только в training после reveal модель рефлексирует отдельно по каждой паре feature + hit (или feature + null) и обязана выдать structured lesson. Запись проходит лишь после schema/provenance/content-проверок; эффект классифицируется как helped, irrelevant, misleading или insufficient.</div>
+<ul class="facts"><li>Условия запуска reflection и построение episodes реализованы в <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/task-feature-scoped.internal.ts">src/task-feature-scoped.internal.ts</a>.</li><li><a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/tools/memory.ts">src/tools/memory.ts</a> ограничивает lesson двумя предложениями, 1–8 triggers и ISO-region; <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/lesson-hygiene.ts">src/lesson-hygiene.ts</a> отбрасывает narrative/чужую географию и понижает <code>helped</code> без контраста до <code>insufficient</code>.</li></ul>
+
+<h3>3. Как организована память между рестартами агента?</h3>
+<div class="answer"><strong>Ответ:</strong> По умолчанию уроки переживают рестарт в JSONL-файле <code>data/memory/live.jsonl</code>; новые уроки дописываются, а служебные счётчики могут переписывать файл. SHA-256 content-addressed snapshots дают замороженное read-only состояние для eval; альтернативно состояние хранится у hosted backend — Mem0, Hindsight или xmemory.</div>
+<ul class="facts"><li><a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/memory/file/memory.ts">src/memory/file/memory.ts</a> реализует JSONL, file locking, restore и 12-символьный snapshot hash.</li><li><a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/memory/select.ts">src/memory/select.ts</a> выбирает <code>file|mem0|hindsight|xmemory</code>; hosted backends не дают доказуемо замороженный snapshot.</li></ul>
+
+<h3>4. Как агент обучается и меняет поведение?</h3>
+<div class="answer"><strong>Ответ:</strong> Веса и основной solver не меняются. Поведение меняется за счёт retrieval: новые уроки из прошлых ошибок/успехов попадают в контекст анализа следующей похожей фотографии.</div>
+<ul class="facts"><li>Цикл «blind answer → reveal → per-episode reflection → store» реализован в <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/task-feature-scoped.internal.ts">src/task-feature-scoped.internal.ts</a> и запускается потоком <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/train.ts">src/train.ts</a>.</li><li><a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/docs/workflows/train.md">docs/workflows/train.md</a> прямо фиксирует: обучение изменяет только память, не веса модели.</li></ul>
+
+<h3>5. Как память обновляется?</h3>
+<div class="answer"><strong>Ответ:</strong> Новые episode-lessons добавляются идемпотентно; ошибочные и слабые уроки не удаляются, а маркируются эффектом и не выдаются relevance gate. Автоматического TTL, decay, удаления, слияния или исправления старых file-lessons в репозитории не найдено.</div>
+<ul class="facts"><li>Детерминированный idempotency key и статусы <code>stored/already_stored</code> находятся в <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/memory/memory.ts">src/memory/memory.ts</a> и <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/memory/file/memory.ts">src/memory/file/memory.ts</a>.</li><li><a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/memory/relevance.ts">src/memory/relevance.ts</a> допускает к analyze только <code>helped</code>, совпадающий feature и достаточную relatedness; остальные записи остаются для статистики.</li></ul>
+
+<h3>6. Как работают эвалы?</h3>
+<div class="answer"><strong>Ответ:</strong> Агент прогоняется по фиксированному независимому eval-корпусу без записи в память; cold и warm результаты сравниваются на одинаковых кадрах. Улучшение подтверждается геодезическими метриками и retrieval/trace-метриками, однако автоматического критерия promotion и статистической значимости нет.</div>
+<ul class="facts"><li><a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/experiment.ts">src/experiment.ts</a> создаёт/переиспользует Phoenix dataset по fingerprint, требует read-only memory и агрегирует метрики.</li><li><a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/evaluators.ts">src/evaluators.ts</a> считает distance, geoscore, acc@1/25/200/750/2500 km, valid output, suspected leak, memory hits, tool calls, latency и эффекты episodes.</li><li><a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/docs/benchmark/reproduce.md">docs/benchmark/reproduce.md</a> рекомендует три A/A-прогона для оценки шума; формальный тест значимости <strong>не описан</strong>.</li></ul>
+
+<h3>7. Как работает human in the loop?</h3>
+<div class="answer"><strong>Ответ:</strong> Человек не вмешивается в решение отдельной задачи. Он вручную курирует benchmark-кадры до запуска и после eval вручную выбирает <code>memory_ref</code> для production.</div>
+<ul class="facts"><li><a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/review.ts">src/review.ts</a> и <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/review.html">src/review.html</a> дают UI для accept/reject/rotation; решения пишутся в <a href="https://github.com/podlodka-ai-club/the-loop/tree/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/benchmark/samples">benchmark/samples</a>.</li><li>Ручной выбор памяти после отчёта, без автоматического promotion, описан в <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/docs/workflows/evaluate.md">docs/workflows/evaluate.md</a>. Диалог, approval отдельного урока или online feedback пользователя <strong>в репозитории не найдено</strong>.</li></ul>
+
+<h3>8. Используется ли xmemory?</h3>
+<div class="answer"><strong>Ответ:</strong> Да, xmemory — полноценный опциональный backend для training/retrieval и отдельного pilot, но не default: по умолчанию выбран file-backend. В xmemory записи используют deep extraction и diff engine, чтение — schema-verified raw tables/synthesized answer; snapshots не поддерживаются.</div>
+<ul class="facts"><li><a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/memory/xmemory/memory.ts">src/memory/xmemory/memory.ts</a> реализует schema check, read/write, timeouts, idempotency и quarantine после неоднозначной записи.</li><li><a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/package.json">package.json</a> содержит dependency <code>xmemory</code> и команды provision/pilot/tests; <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/train.ts">src/train.ts</a> принимает <code>--backend xmemory</code>.</li></ul>
+
+<h3>9. Сбои во время выполнения задачи</h3>
+<div class="answer"><strong>Ответ:</strong> Ошибки классифицируются как unparseable, missing image, API error или memory binding failures. <code>unavailable/timeout</code> памяти повторяют всю sample-задачу в новом blind context с backoff; после исчерпания попыток training прерывается, а failure reflection/store остаётся локальным для episode.</div>
+<ul class="facts"><li>Retry и итоговые failure results реализованы в <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/task-feature-scoped.internal.ts">src/task-feature-scoped.internal.ts</a> и <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/retry-policy.ts">src/retry-policy.ts</a>.</li><li><a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/train.ts">src/train.ts</a> abort-ит run при <code>memory_not_found</code>, <code>memory_mismatch</code>, <code>unavailable</code> и <code>timeout</code>; file-memory использует lock с heartbeat/reclaim для падения writer-процесса в <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/memory/file/memory.ts">src/memory/file/memory.ts</a>.</li><li>Resume по имени Phoenix experiment описан в <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/docs/benchmark/reproduce.md">docs/benchmark/reproduce.md</a>; универсального checkpoint/resume для незавершённого training-run <strong>не описано</strong>.</li></ul>
+
+<h3>10. Мониторинг</h3>
+<div class="answer"><strong>Ответ:</strong> Есть console logging и OpenTelemetry/OpenInference tracing в Arize Phoenix, включая model calls, experiment runs, per-attempt tool events и метрики. По ним можно восстановить основные действия агента — наблюдения, retrieval/store, порядок и статусы, использованные hints, ответ и ошибки; полностью воспроизвести внутреннее reasoning провайдера нельзя.</div>
+<ul class="facts"><li><a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/tracing.ts">src/tracing.ts</a> настраивает OTLP exporter, OpenAI instrumentation и Phoenix project.</li><li><a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/tools/memory.ts">src/tools/memory.ts</a> определяет <code>AttemptTrace</code>/<code>ToolEvent</code> с attempt, phase, operation, feature, hit, status, sequence, memoryRef и prompt digest; <a href="https://github.com/podlodka-ai-club/the-loop/blob/2f50c374f0dc97a97a4d3b7ae1d6d5606b0512ea/src/experiment.ts">src/experiment.ts</a> сохраняет experiment metadata и выводит Phoenix URL.</li><li>Долгосрочные alerts, dashboards/SLO и production log retention <strong>в репозитории не найдено</strong>.</li></ul>
+</section>
+
+<section>
+<h2>Ограничения анализа</h2>
+<div class="limits">
+<ul>
+<li>Анализ статический: внешние LLM, Phoenix и hosted memory backends не запускались, поэтому их текущее состояние и реальные credentials не проверялись.</li>
+<li>Production orchestration, UI/API сервиса, online human feedback и автоматический promotion памяти описаны неполно либо отсутствуют; реально исполняемые entry points — CLI, train, experiment, review и backend pilots.</li>
+<li>Hosted Mem0/Hindsight/xmemory не поддерживают замороженные snapshots в этой интеграции, поэтому их warm-eval воспроизводим только при неизменном внешнем namespace.</li>
+<li>Документация местами отстаёт от кода: например, старое требование Cerebras и неполный список backend/флагов в reproduce-документе; выводы о runtime сделаны по <code>src/</code> и <code>package.json</code>.</li>
+</ul>
+</div>
+</section>
+</main>
+</body>
+</html>
+</template>
+<noscript><p class="nojs">Для переключения вкладок нужен JavaScript.</p></noscript>
+<script>
+for (const name of ['questionnaire','report']) {
+  document.querySelector('#'+name+' iframe').srcdoc = document.getElementById(name+'-doc').innerHTML;
+}
+for (const button of document.querySelectorAll('.tab')) {
+  button.addEventListener('click', () => {
+    for (const other of document.querySelectorAll('.tab')) other.setAttribute('aria-selected', String(other === button));
+    for (const panel of document.querySelectorAll('.panel')) panel.hidden = panel.id !== button.dataset.panel;
+  });
+}
+</script>
+</body></html>

@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="ru">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Uptick — анкета и анализ агента</title><style>
+:root{color-scheme:light dark;--bg:#f5f5f7;--fg:#1d1d1f;--panel:#fff;--line:#d2d2d7;--accent:#ff5a1f;--muted:#6e6e73}
+@media(prefers-color-scheme:dark){:root{--bg:#141416;--fg:#f5f5f7;--panel:#1f2024;--line:#3a3b40;--muted:#aaa}}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+body{display:flex;flex-direction:column}.top{padding:16px 18px 0;background:var(--panel);border-bottom:1px solid var(--line)}
+h1{font-size:22px;line-height:1.2;margin:0 0 12px}.tabs{display:flex;gap:6px}.tab{appearance:none;border:1px solid var(--line);border-bottom:0;background:var(--bg);color:var(--fg);padding:10px 15px;border-radius:9px 9px 0 0;font:600 14px system-ui;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:#fff}.panels{position:relative;flex:1;min-height:0}.panel{position:absolute;inset:0}.panel[hidden]{display:none}.panel iframe{border:0;width:100%;height:100%;background:#fff}.nojs{padding:12px 18px;color:var(--muted)}
+</style></head>
+<body>
+<header class="top"><h1>Uptick — анкета и анализ агента</h1><nav class="tabs" aria-label="Материалы команды">
+<button class="tab" type="button" id="tab-questionnaire" data-panel="questionnaire" role="tab" aria-selected="true" aria-controls="questionnaire">Анкета команды</button>
+<button class="tab" type="button" id="tab-report" data-panel="report" role="tab" aria-selected="false" aria-controls="report">Анализ агента</button>
+</nav></header>
+<main class="panels">
+<section class="panel" id="questionnaire" role="tabpanel" aria-labelledby="tab-questionnaire"><iframe title="Анкета команды"></iframe></section>
+<section class="panel" id="report" role="tabpanel" aria-labelledby="tab-report" hidden><iframe title="Анализ агента"></iframe></section>
+</main>
+<template id="questionnaire-doc"><!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Uptick — анкета команды</title><style>
+:root{color-scheme:light dark;--bg:#fafafa;--fg:#202124;--muted:#666;--card:#fff;--line:#d8dadd;--link:#1558d6;--accent:#ff5a1f}
+@media(prefers-color-scheme:dark){:root{--bg:#17181a;--fg:#e7e8ea;--muted:#aaa;--card:#202226;--line:#3b3e44;--link:#8ab4ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}main{max-width:980px;margin:auto;padding:28px 20px 56px}h1{font-size:28px;margin:0 0 8px}.meta{color:var(--muted);margin-bottom:26px}.meta a,a{color:var(--link)}.qa{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:17px 19px;margin:14px 0}.qa h2{font-size:17px;line-height:1.35;margin:0 0 9px}.answer{white-space:pre-wrap;overflow-wrap:anywhere}.badge{display:inline-block;padding:3px 8px;border-radius:999px;background:var(--accent);color:white;font-size:12px;font-weight:700;margin-left:7px}
+</style></head><body><main><h1>Uptick — анкета команды </h1><div class="meta">Репозиторий: <a href="https://github.com/podlodka-ai-club/uptick" target="_blank" rel="noopener">https://github.com/podlodka-ai-club/uptick</a> · ответ отправлен 07.09.2026 21:15:07</div><section class="qa"><h2>Представьте, что вы делаете лендинг для вашего проекта или поднимаете инвестиции. Как бы вы описали его одной фразой, чтобы он выделялся среди всех остальных?</h2><div class="answer">Uptick — AI-инженеры, которые учатся на авариях в нашем симуляторе, накапливают опыт и осваивают главное искусство SRE: держать сервис доступным без лишних расходов на инфраструктуру.</div></section><section class="qa"><h2>Что и как делает ваш агент?</h2><div class="answer">AK2 — агент, который осваивает новую среду, сам создаёт инструменты для работы с ней и накапливает опыт между запусками. Мы проверяли его на SRE-задаче: поддерживать доступность веб-сервиса не ниже 99% при минимальных расходах на инфраструктуру. Агент управляет серверами, диагностирует перегрузки, настраивает firewall, очищает диски и выполняет миграции базы данных.
+При подключении мира человек задаёт его описание и начальную команду. Агент получает документацию API, изучает доступные действия и самостоятельно создаёт адаптер, скрипты, инструкции и промпт для этой среды. Интеграция проходит проверки перед использованием. Универсальное ядро не содержит готовой стратегии прохождения SRE-сценариев; решения об инфраструктуре принимает модель. Возможность подключить другую среду мы дополнительно проверили на небольшом симуляторе кухни.
+Внутренний цикл устроен так: агент получает наблюдение, извлекает подходящий опыт, сопоставляет состояние с целью и текущим планом, выбирает действия и проверяет их фактический результат. Успешный ответ API и достижение цели учитываются отдельно: например, создание сервера ещё не означает устранение перегрузки. Очередь действий, идентификаторы запросов и состояние сохраняются, чтобы после остановки продолжить работу без повторного выполнения уже подтверждённых операций.
+Память разделена на три слоя:
+- Рабочая память: цель, план, последние наблюдения и незавершённые действия.
+- Знание мира: документация, адаптеры и инструкции, описывающие способы взаимодействия со средой.
+- Приобретённый опыт: условные уроки и процедуры в SQLite, связанные с конкретными фактами, подтверждениями и противоречиями.
+У каждого мира собственная память. При выборе уроков учитываются релевантность, важность и накопленные подтверждения. Повторно подтверждённые процедуры становятся навыками, слабые записи постепенно теряют вес и могут удаляться. Само использование урока не считается доказательством его правильности.
+Внешний цикл улучшения работает через осмысление опыта. Агент сопоставляет ожидаемый и наблюдаемый результат, предлагает новые уроки или фиксирует противоречия существующим. Перед записью отдельный вызов модели проверяет, достаточно ли исходных фактов для такого вывода. Повторное чтение одного события не создаёт нового подтверждения, а изменение смысла урока требует новой записи. После завершения или остановки запуска агент выполняет ретроспективу по сохранённой истории. Если ему не хватает способа наблюдения или действия, он может самостоятельно расширить инструменты выбранного мира. Обучение происходит на уровне памяти и средств работы, без изменения весов модели.
+Данные для обучения мы получаем в собственном симуляторе, также разработанном в рамках хакатона. Он генерирует воспроизводимые сценарии нагрузки, DDoS, заполнения дисков и других инфраструктурных событий. Опыт формируется из реальных взаимодействий агента с этой средой: наблюдений, действий и их последствий.
+Например, в одном запуске агент обнаружил, что общего запаса мощности недостаточно: отдельный запрос должен помещаться в свободную мощность конкретного backend. Он сохранил этот урок, а в другом запуске применил его для расчёта необходимого числа серверов. После расширения обе проверяемые страницы стали отвечать успешно.
+Для оценки реализовано парное сравнение на новых seed: одинаковые инструменты и знание протокола, но одна группа получает накопленный опыт, а другая работает без него; обучение на время оценки отключается. Перенос конкретных уроков между запусками уже подтверждён. Для количественной оценки среднего выигрыша от памяти ещё требуется завершённая серия таких сравнений на неизменной версии системы.</div></section><section class="qa"><h2>Про технический и AI стек</h2><div class="answer">Основное ядро AK2 написано на Python 3.12+. Для управления зависимостями используем uv, для HTTP-взаимодействия — httpx, для типизации и проверки решений модели — Pydantic. Модель возвращает структурированный ответ с оценкой ситуации, планом, действиями и предложениями обновить память. Собственное агентное ядро позволяет отдельно менять модель, память и интеграцию с миром.
+Для работы с LLM используем Codex SDK (openai-codex) через авторизацию ChatGPT. Основная модель — gpt-5.6-sol с reasoning effort low. В ходе экспериментов также пробовали Luna и Spark. Это закрытые модели; открытые модели и дообучение весов в текущей реализации не использовали. Sol стала практическим выбором по результатам разработки, хотя строгого сравнительного рейтинга моделей мы не проводили. Повышение reasoning effort само по себе не устраняло неэффективные стратегии, а большое число обращений к модели заметно увеличивало время прохождения.
+Движок памяти — собственная реализация на SQLite. В ней хранятся события, факты, уроки, процедуры, подтверждения, противоречия и история изменений. Поиск основан на лексической релевантности, важности и силе урока; embeddings и векторную БД пока не использовали. SQLite оказалась удобна своей прозрачностью: можно проследить происхождение вывода, проверить его основания и воспроизвести состояние памяти. Ограничение такого подхода — лексический поиск хуже учитывает смысловую близость разных формулировок.
+Обновления памяти проходят отдельную проверку моделью по исходным доказательствам. Есть дедупликация фактов, привязка подтверждений к конкретной формулировке урока, затухание и забывание. Такой подход помогает не превращать любой успешный ответ API в «выученный навык». При этом проверяющая модель тоже может ошибаться, а качество обучения сильно зависит от полноты фактов, которые предоставляет адаптер.
+Инструменты работы с миром агент генерирует как Python-скрипты и сопровождает инструкциями. Они выполняются в системной песочнице: sandbox-exec на macOS или bubblewrap на Linux. Используем версии интеграций, сохранение очереди действий и идемпотентные запросы для восстановления после остановок. Это помогло продолжать длинные эксперименты; сложностями стали длительная генерация адаптеров, большой контекст и обработка неполных HTTP-ответов.
+Симулятор тоже разработан нами в рамках хакатона. Его стек — Go, HTTP/JSON API, OpenAPI, SQLite, журнал событий и сжатые zstd-снимки состояния. Интерфейс наблюдения и истории сделан на HTML/CSS/JavaScript. Детерминированная генерация по seed и сохранение событий позволяют повторять сценарии и разбирать причины неудач.
+Для обучения и эвалов используем собственный экспериментальный контур: серии запусков, новые seed для проверки, замороженные инструменты и память, парное сравнение с опытом и без него. Измеряем доступность, игровые расходы, число решений и время работы модели. Главное ограничение текущих результатов — во время разработки менялись и агент, и симулятор, поэтому количественный эффект памяти ещё нужно подтвердить на фиксированной версии всей системы.</div></section><section class="qa"><h2>Если бы у вас была ещё одна неделя, что бы вы сделали в первую очередь и почему именно это?</h2><div class="answer">Если бы у нас была ещё неделя, мы бы в первую очередь замкнули и проверили цикл обучения: от конкретной ошибки до изменения поведения в следующем запуске. Агент уже умеет осваивать интерфейс среды, управлять инфраструктурой и переносить отдельные уроки между запусками. Следующий шаг — добиться устойчивого предотвращения повторных ошибок и измерить пользу памяти.
+Для этого мы бы разобрали причины отклонения новых уроков, проверили их извлечение и применение, затем провели парные эксперименты с памятью и без неё на новых сценариях. Версии симулятора, агента, модели и начальные условия были бы зафиксированы. Помимо доступности и расходов на инфраструктуру, учитывали бы время и стоимость работы модели.
+Этот приоритет позволил бы понять, какие механизмы действительно улучшают результат, и направить дальнейшую разработку на подтверждённые проблемы.</div></section><section class="qa"><h2>Какие решения оправдали себя настолько, что вы бы рекомендовали другим командам их переиспользовать? Например: паттерн реализации, выбор технологии, архитектурное решение, продуктовая идея.</h2><div class="answer">Мы бы рекомендовали переиспользовать несколько решений, которые оказались полезны при разработке и реальных прогонах.
+1. Разделять знание интерфейса и приобретённый опыт. В AK2 документация, адаптеры и инструкции описывают, как взаимодействовать с миром, а память хранит условные выводы о том, какие действия срабатывали и при каких обстоятельствах. Это позволяет обновлять интеграцию независимо от опыта и корректно сравнивать агента с памятью и без неё.
+2. Хранить уроки вместе с доказательствами. У каждого урока есть исходные факты, условия применимости, подтверждения и противоречия. Повторное чтение события не усиливает урок, а изменение его смысла требует нового кандидата. Такая память позволяет разбирать причины решений и замечать необоснованные обобщения. Отдельная проверка моделью полезна как дополнительный фильтр, хотя тоже требует контроля качества.
+3. Различать принятие команды, завершение операции и достижение цели. Успешный ответ API ещё не означает, что проблема решена. Например, после создания сервера нужно дождаться его готовности и проверить восстановление доступности. Этот паттерн особенно полезен для агентов, работающих с асинхронными инструментами.
+4. Сохранять состояние до выполнения действий. Мы сохраняем план, очередь, идентификаторы запросов и подтверждённые результаты. Вместе с идемпотентностью API это позволило продолжать длинные запуски после остановок и исправлений, сохраняя уже выполненную работу.
+5. Использовать воспроизводимый симулятор с подробной историей. Собственная среда с генерацией по seed, версиями сценариев и журналом событий оказалась полезна и для обучения, и для диагностики. По истории можно установить, какое действие привело к простою или перерасходу, и отделить ошибку агента от ограничения самого стенда.
+6. Начать с прозрачной реализации памяти и строгих контрактов. SQLite дала удобное хранение и возможность напрямую исследовать опыт агента. Типизированные ответы модели через Pydantic помогли отделить рассуждение от исполнения и проверять формат действий до обращения к среде. Для экспериментального проекта эта наблюдаемость оказалась особенно ценной.</div></section><section class="qa"><h2>Какие решения оказались неудачными или не дали ожидаемой пользы?</h2><div class="answer">Доверять самооценке модели при накоплении памяти. Модель может убедительно сформулировать урок, который не следует из наблюдений. Сохранение таких выводов закрепляет ошибки. Нам понадобились исходные доказательства, условия применимости, учёт противоречий и отдельная проверка предложений. При этом ещё один вызов LLM тоже не гарантирует правильность.
+
+Делать отдельный вызов модели для каждого небольшого действия. Такой цикл легко реализовать и отлаживать, но на длинных задачах он становится медленным и дорогим. Полезнее давать модели выбирать план, а механические последовательности выполнять инструментом с проверками и понятными условиями остановки.
+
+Ожидать, что более глубокое рассуждение исправит недостатки системы. Повышение reasoning effort не дало автоматического улучшения стратегии. Если агенту не хватает наблюдений, удобных инструментов или проверки результата, дополнительное рассуждение не устраняет эти ограничения.
+
+Недооценивать стоимость автоматически создаваемых инструментов. Генерация интеграции агентом работает, но может занимать несколько минут и требовать повторных исправлений. Её нужно учитывать как отдельный этап с бюджетом, проверками и версионированием, а готовые инструменты — переиспользовать между запусками.
+
+Оценивать обучение по наличию памяти и отдельным удачным примерам. Количество записанных уроков, ссылки на них в решениях и убедительная ретроспектива ещё не показывают, что агент стал решать задачи лучше. Мы подтвердили применение отдельных уроков, но для оценки общего эффекта нужны контрольные запуски с одинаковыми условиями. Одновременные изменения модели, промптов, инструментов и среды сильно затрудняют такой вывод.</div></section><section class="qa"><h2>Пример работы агента до и после обучения</h2><div class="answer">https://github.com/podlodka-ai-club/uptick/blob/main/reports/ak2-learning-report.html</div></section><section class="qa"><h2>Участвуете ли вы в номинации от xmemory?</h2><div class="answer">Нет</div></section></main></body></html></template>
+<template id="report-doc"><!doctype html>
+<html lang="ru">
+<head><base target="_blank">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Uptick: анализ самообучающегося агента</title>
+  <style>
+    body{max-width:1050px;margin:32px auto;padding:0 20px;font:16px/1.55 system-ui,sans-serif;color:#20242a;background:#fafafa}h1,h2,h3{line-height:1.2}h2{margin-top:2.2em;border-bottom:2px solid #ccd3da;padding-bottom:.25em}h3{margin-top:1.7em}a{color:#0759b3}code,pre{background:#eef1f4;border-radius:5px}code{padding:.1em .3em}pre{padding:14px;overflow:auto;border:1px solid #d5dbe1}table{border-collapse:collapse;width:100%}th,td{border:1px solid #cbd2d9;padding:8px;vertical-align:top}th{background:#e8edf2;text-align:left}.meta,.note{background:#eef5ff;border-left:4px solid #3478c7;padding:12px}.answer{font-weight:650}.facts{margin-top:.35em}.limits{background:#fff4df;border-left:4px solid #d28b16;padding:12px}small{color:#56616d}
+  </style>
+</head>
+<body>
+<header>
+  <h1>Uptick: анализ самообучающегося агента</h1>
+  <div class="meta">
+    <div><strong>Репозиторий:</strong> <a href="https://github.com/podlodka-ai-club/uptick">podlodka-ai-club/uptick</a></div>
+    <div><strong>Ветка / commit:</strong> <code>main</code> / <a href="https://github.com/podlodka-ai-club/uptick/tree/4767438d24e281dcf88c590778f2c6705ec1f3ef"><code>4767438d24e281dcf88c590778f2c6705ec1f3ef</code></a></div>
+    <div><strong>Дата анализа:</strong> 9 сентября 2026 года</div>
+  </div>
+  <p class="note"><strong>Область анализа.</strong> Это не один пакет, а репозиторий независимых вариантов: baseline <code>simple_agent</code>, SRE-агент <code>ak-agent</code> и универсальный <code>ak2-agent</code>; это прямо сказано в <a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/README.md">корневом README</a>. Ниже основной объект — наиболее полный универсальный <code>ak2-agent</code>; отличия других реализаций, включая изолированный исследовательский каталог <code>vadim</code>, помечены явно.</p>
+</header>
+
+<main>
+<section>
+  <h2>1. Анализ</h2>
+
+  <h3>1.1. Пошаговый пайплайн</h3>
+  <table>
+    <thead><tr><th>№</th><th>Этап</th><th>Что происходит</th><th>Основание</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Получение задачи</td><td>CLI принимает текст, seed и опции; <code>stream</code> последовательно читает задачи из JSONL.</td><td><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/README.md#поток-задач">AK2 README: поток задач</a></td></tr>
+      <tr><td>2</td><td>Выбор мира</td><td>Мир задаётся через <code>--world</code> либо модель сопоставляет текст задачи с каталогом паспортов <code>worlds/*/AGENTS.md</code>. Неоднозначная задача не запускает случайный мир.</td><td><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/README.md#подключить-неизвестный-мир">подключение мира</a>, <a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/AGENTS.md">каталог миров</a></td></tr>
+      <tr><td>3</td><td>Старт и bootstrap</td><td>Создаются run, checkpoint и стабильный request ID; доверенная bootstrap-команда паспорта выполняется в системной песочнице и возвращает начальный JSON.</td><td><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/src/ak2_agent/agent.py#L41-L111">agent.py: create_run/bootstrap</a></td></tr>
+      <tr><td>4</td><td>Адаптация мира</td><td>Если интеграции ещё нет, LLM итеративно создаёт адаптер, skill и prompt; ядро проверяет синтаксис и реальный <code>observe</code>, затем публикует зафиксированную версию knowledge.</td><td><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/src/ak2_agent/agent.py#L114-L222">agent.py: adapt</a>, <a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/prompts/contract.md">контракт адаптера</a></td></tr>
+      <tr><td>5</td><td>Наблюдение и recall</td><td>Адаптер читает состояние мира; факты и событие записываются в SQLite. По задаче, плану, тегам и наблюдению извлекается до восьми релевантных уроков.</td><td><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/src/ak2_agent/agent.py#L519-L555">цикл наблюдения</a>, <a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/src/ak2_agent/memory.py#L299-L318">ранжирование памяти</a></td></tr>
+      <tr><td>6</td><td>Решение</td><td>Codex получает задачу, knowledge, текущее наблюдение, рабочий план, факты и recall; возвращает типизированную оценку, план, действия и возможные уроки.</td><td><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/src/ak2_agent/agent.py#L542-L578">формирование решения</a>, <a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/src/ak2_agent/brain.py#L130-L236">Codex boundary</a></td></tr>
+      <tr><td>7</td><td>Проверка обучения</td><td>Каждый предложенный урок должен сослаться на реальные факты с согласованным outcome и пройти отдельный LLM-review; дубли доказательств и недостаточные основания отклоняются.</td><td><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/src/ak2_agent/learning.py">learning.py</a></td></tr>
+      <tr><td>8</td><td>Исполнение</td><td>Действия превращаются в сохраняемую очередь с request ID, выполняются адаптером и проверяются наблюдением. Неизвестный результат повторяется только для <code>replay_safe</code>.</td><td><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/src/ak2_agent/agent.py#L286-L339">invoke/execute_queue</a></td></tr>
+      <tr><td>9</td><td>Цикл или остановка</td><td>После результата агент снова наблюдает мир. Завершение даёт <code>finished</code>; лимит, сигнал или дедлайн — <code>paused</code>; временный сбой модели — <code>recovering</code>; прочая ошибка — <code>error</code>.</td><td><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/src/ak2_agent/agent.py#L377-L483">управление состояниями</a></td></tr>
+      <tr><td>10</td><td>Ретроспектива и обслуживание</td><td>После любой остановки отдельный ограниченный разбор читает сохранённый участок, формирует проверяемые уроки и checkpoint. Затем память ослабляет/удаляет слабые записи и чистит старые завершённые run.</td><td><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/src/ak2_agent/retrospective.py">retrospective.py</a>, <a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/src/ak2_agent/memory.py#L325-L380">maintenance/trim</a></td></tr>
+    </tbody>
+  </table>
+
+  <pre class="mermaid">stateDiagram-v2
+    [*] --> TaskReceived
+    TaskReceived --> WorldSelected
+    WorldSelected --> Starting
+    Starting --> Bootstrapping
+    Bootstrapping --> Adapting
+    Adapting --> Running
+    Running --> Observing
+    Observing --> Recalling
+    Recalling --> Deciding
+    Deciding --> VerifyingLessons
+    VerifyingLessons --> QueueingActions
+    QueueingActions --> Executing
+    Executing --> Observing
+    Adapting --> Paused
+    Running --> Paused
+    Executing --> Recovering
+    Deciding --> Recovering
+    Recovering --> Running
+    Running --> Error
+    Executing --> Error
+    Observing --> Finished
+    Paused --> Retrospective
+    Error --> Retrospective
+    Finished --> Retrospective
+    Retrospective --> ReviewPaused
+    ReviewPaused --> Retrospective
+    Retrospective --> Reviewed
+    Reviewed --> [*]
+    Paused --> Running</pre>
+  <small>Диаграмма показывает программные состояния AK2; подписи условий переходов намеренно опущены.</small>
+
+  <h3>1.2. Как воспроизвести</h3>
+  <h4>Минимальный baseline (<code>simple_agent</code>)</h4>
+  <ol>
+    <li>Установить Python 3.12+ и <code>uv</code>.</li>
+    <li><code>cd simple_agent &amp;&amp; uv sync</code>.</li>
+    <li>Скопировать <code>.env.example</code> в <code>.env</code> и задать <code>OPENAI_API_KEY</code>.</li>
+    <li>Запустить <code>uv run uptick-agent run --seed 1</code>. Для локального симулятора добавить <code>--simulator-url http://127.0.0.1:8080</code>.</li>
+    <li>Проверить код: <code>uv run pytest</code> и <code>uv run ruff check .</code>.</li>
+  </ol>
+  <p>Источник: <a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/simple_agent/README.md#быстрый-старт">simple_agent/README.md</a>.</p>
+
+  <h4>Основной универсальный агент (<code>ak2-agent</code>)</h4>
+  <ol>
+    <li>Установить Python 3.12+, <code>uv</code>, Codex CLI/SDK; на macOS нужен <code>sandbox-exec</code>, на Linux — <code>bubblewrap</code> и user namespaces.</li>
+    <li><code>cd ak2-agent</code>, затем <code>./run.sh --login</code> и <code>./run.sh --check-auth</code>. Нужна ChatGPT/Codex subscription-сессия, а не API key.</li>
+    <li>Проверить каталог: <code>./run.sh worlds</code>.</li>
+    <li>Запустить: <code>./run.sh run "Пройди Uptick с целевым uptime и минимальной стоимостью" --seed 42</code>; для явного выбора — <code>./run.sh run --world uptick --seed 43 --max-steps 3</code>.</li>
+    <li>После паузы продолжить: <code>./run.sh resume --world uptick</code>; память посмотреть через <code>./run.sh memory --world uptick</code>.</li>
+    <li>Локальная проверка без LLM/сети: <code>uv run --project . python -m unittest discover -s tests -q</code>. Реальную песочницу включить переменной <code>AK2_SANDBOX_TEST=1</code>.</li>
+    <li>Для автономного учебного мира запустить <code>./.venv/bin/python worlds/pantry/environment/server.py</code>, затем в другом терминале <code>./run.sh run 'Накорми персонажа в учебной кухне' --seed 21</code>.</li>
+  </ol>
+  <p>Источники: <a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/README.md#запуск">запуск AK2</a>, <a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/README.md#проверка-и-демонстрация">проверка и демонстрация</a>, <a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/pyproject.toml">зависимости</a>.</p>
+
+  <h3>1.3. Технический стек</h3>
+  <ul>
+    <li><strong>Агенты:</strong> <code>simple_agent</code>, <code>ak-agent</code>, <code>ak2-agent</code>, экспериментальный <code>vadim</code>.</li>
+    <li><strong>LLM:</strong> Codex SDK / ChatGPT subscription; OpenAI-compatible API в baseline/Vadim; значения по умолчанию AK2 — <code>gpt-5.6-sol</code>, effort <code>low</code>.</li>
+    <li><strong>Внешние интеграции:</strong> Uptick SRE Simulator HTTP API v2, world adapters, Codex CLI/SDK, опциональный xMemory adapter в <code>vadim</code>.</li>
+    <li><strong>Память:</strong> SQLite + WAL, per-world lessons/facts/events/checkpoints; JSONL/RAM baseline; файловые snapshots knowledge; опциональный FastEmbed/xMemory в <code>vadim</code>.</li>
+    <li><strong>Эвалы:</strong> held-out seeds, парные memory/no-memory arms, frozen knowledge/experience, JSON-артефакты, pytest/unittest/Ruff.</li>
+    <li><strong>Фреймворки:</strong> Python 3.12+, Pydantic 2, HTTPX, openai-codex, uv, Hatchling; SGR-паттерн без полного agent framework.</li>
+  </ul>
+  <p>Источники: <a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/pyproject.toml">AK2 pyproject</a>, <a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/simple_agent/pyproject.toml">baseline pyproject</a>, <a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/vadim/README.md">Vadim README</a>.</p>
+</section>
+
+<section>
+  <h2>2. Ответы на вопросы</h2>
+
+  <h3>1. С какими задачами работает агент?</h3>
+  <p class="answer">AK2 работает с задачами миров, описанных паспортами <code>worlds/*/AGENTS.md</code>: сейчас это, в частности, Uptick SRE и учебный Pantry. Задачу передаёт человек через CLI/JSONL; мир выбирается явно либо маршрутизируется моделью по тексту.</p>
+  <ul class="facts"><li><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/README.md#подключить-неизвестный-мир">Паспорт и выбор мира</a>.</li><li><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/README.md#поток-задач">JSONL stream</a>.</li><li><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak-agent/README.md#как-устроен-код">AK-агент специализирован на SRE API v2</a>.</li></ul>
+
+  <h3>2. Как агент выбирает, что сохранить в память?</h3>
+  <p class="answer">Предложение LLM записывается как урок только с существующими evidence ID нужного outcome и после отдельной проверки <code>verify_lesson</code>; отсутствие, несоответствие, слабость или повтор доказательства закрывают запись. Долговременным уроком/навыком кандидат становится после минимум трёх подтверждений при доверии не ниже 75%.</p>
+  <ul class="facts"><li><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/src/ak2_agent/learning.py">Fail-closed проверка урока</a>.</li><li><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/src/ak2_agent/memory.py#L235-L311">дедупликация, confidence и уровни</a>.</li><li><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/README.md#как-формируется-опыт">таблица формирования опыта</a>.</li></ul>
+
+  <h3>3. Как организована память между рестартами агента?</h3>
+  <p class="answer">AK2 использует отдельную SQLite/WAL-базу каждого мира (<code>worlds/&lt;world&gt;/.local/experience.sqlite3</code>) и файловые каталоги run с pinned knowledge, I/O и checkpoint. В базе раздельно лежат состояния run, события, факты, запросы, уроки, подтверждения и журнал изменений; <code>resume</code> продолжает сохранённую очередь.</p>
+  <ul class="facts"><li><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/README.md#два-разных-вида-памяти">структура per-world данных</a>.</li><li><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/src/ak2_agent/memory.py#L20-L53">SQLite-схема и WAL</a>.</li><li>Baseline отдельно предлагает постоянный <a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/simple_agent/README.md#память">JSONL backend</a>.</li></ul>
+
+  <h3>4. Как агент обучается и меняет поведение?</h3>
+  <p class="answer">Веса LLM не обучаются: агент превращает наблюдаемые исходы и ретроспективу в проверенные условные уроки/процедуры, а затем добавляет релевантные записи в контекст следующих решений. Отдельно AK2 способен адаптировать knowledge неизвестного мира, но прошлый опыт намеренно не подмешивается в базовые world skills.</p>
+  <ul class="facts"><li><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/src/ak2_agent/agent.py#L537-L609">recall → решение → обучение → действие</a>.</li><li><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/src/ak2_agent/retrospective.py">послезапусковая ретроспектива</a>.</li><li><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak-agent/README.md#обучение-и-эксперименты">явное указание: обучение внешней памяти без изменения весов</a>.</li></ul>
+
+  <h3>5. Как память обновляется?</h3>
+  <p class="answer">Подтверждения усиливают урок, противоречия снижают confidence, а отсутствие новых подтверждений экспоненциально уменьшает strength. AK2 удаляет слабые неважные уроки при strength &lt; 0,12, держит максимум 80 уроков и 100 завершённых разобранных run; удаление аудируется.</p>
+  <ul class="facts"><li><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/src/ak2_agent/memory.py#L299-L380">decay, capacity, deletion и trim</a>.</li><li><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/README.md#журнал-изменений-памяти">неудаляемый журнал added/reinforced/contradicted/rejected/deleted</a>.</li><li>Автоматический пересмотр всех старых подкреплений после изменения мира <strong>не описан</strong>; README прямо отмечает, что ранее записанные подкрепления автоматически не пересматриваются.</li></ul>
+
+  <h3>6. Как работают эвалы?</h3>
+  <p class="answer"><code>evaluate</code> требует held-out seeds, фиксирует одну версию knowledge и создаёт для каждого seed/model две изолированные группы: с замороженным опытом и без него; обучение выключено в обеих. Сравниваются метрики мира, завершённость, решения и LLM-время, но одинаковый seed не устраняет стохастику модели и реального времени.</p>
+  <ul class="facts"><li><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/src/ak2_agent/experiments.py">создание парных arms и results.json</a>.</li><li><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/README.md#L284-L300">ограничения парного evaluate</a>.</li><li>Baseline также сохраняет <a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/simple_agent/README.md#ab-прогоны"><code>trace.jsonl</code> и <code>summary.json</code></a>.</li></ul>
+
+  <h3>7. Как работает human in the loop?</h3>
+  <p class="answer">Человек задаёт паспорт/доверенный bootstrap нового мира, текст задачи, seed, опции и при необходимости явно выбирает мир; он может остановить, возобновить и инспектировать память/отчёт. Пооперационного согласования действий нет: после старта агент действует автономно, а sandbox и типизированные контракты — технические границы, не human approval.</p>
+  <ul class="facts"><li><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/README.md#подключить-неизвестный-мир">человек задаёт описание и bootstrap</a>.</li><li><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/README.md#команды-из-ak-agent">run/resume/memory/ask/report</a>.</li><li>Недельный пример сопровождался исправлениями и возобновлениями, поэтому автономность неизменной версии <a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/README.md#L7-L10">ещё не доказана серией полных запусков</a>.</li></ul>
+
+  <h3>8. Используется ли xmemory?</h3>
+  <p class="answer">В основном AK2 — нет: у него собственная SQLite-память. В изолированном варианте <code>vadim</code> есть опциональный экспериментальный адаптер HU-xiaobai/xMemory только для training: hybrid search даёт untrusted context, переходы пишутся через <code>add_messages</code>, finalize вызывает <code>flush</code>/<code>wait_for_semantic</code>.</p>
+  <ul class="facts"><li><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/vadim/docs/XMEMORY_INTEGRATION.md">полный контракт интеграции</a>.</li><li><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/vadim/src/uptick_agent/integrations/xmemory/adapter.py">реализация адаптера</a>.</li><li>xMemory не добавлен как dependency; immutable snapshot для eval отсутствует, а полный upstream embedding/Chroma/BM25 pipeline и влияние на качество <a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/vadim/docs/XMEMORY_INTEGRATION.md#verification-performed">не проверены</a>.</li></ul>
+
+  <h3>9. Сбои во время выполнения задачи</h3>
+  <p class="answer">Состояние, очередь и request ID сначала фиксируются в SQLite; временные ошибки Codex переводят run в <code>recovering</code>, пересоздают соединение и продолжают с backoff из checkpoint. Потерянное действие повторяется только с прежним ID и только при <code>replay_safe</code>; небезопасный неоднозначный эффект сохраняется для ручного разбора/возобновления.</p>
+  <ul class="facts"><li><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/src/ak2_agent/agent.py#L427-L483">recovery loop</a>.</li><li><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/src/ak2_agent/agent.py#L286-L320">безопасность повторов действий</a>.</li><li><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/README.md#L451-L468">backoff, восстановимые ответы и границы механизма</a>.</li><li>После Ctrl+C/SIGTERM checkpoint разбирается сразу; после SIGKILL следующий <code>resume</code> сначала завершает отложенную ретроспективу — <a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/README.md#саморефлексия-после-каждой-остановки">описание остановок</a>.</li></ul>
+
+  <h3>10. Мониторинг</h3>
+  <p class="answer">Есть структурированный JSONL-вывод событий и постоянный SQLite-аудит: наблюдения, решения, действия/ответы, request ID, факты, LLM usage, ошибки восстановления, версии runtime и изменения уроков. Для новых run по этим данным можно восстановить последовательность действий и заявленное использование памяти; внутреннее chain-of-thought модели не сохраняется и не восстанавливается.</p>
+  <ul class="facts"><li><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/src/ak2_agent/agent.py#L519-L615">события state/brain_usage/decision/action/completed</a>.</li><li><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/src/ak2_agent/memory.py#L28-L52">таблицы events/facts/requests/lesson_changes</a>.</li><li><a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/README.md#журнал-изменений-памяти">аудит до/после и причины изменений</a>.</li><li>Для старых мигрированных run полнота ограничена: <a href="https://github.com/podlodka-ai-club/uptick/blob/4767438d24e281dcf88c590778f2c6705ec1f3ef/ak2-agent/src/ak2_agent/memory.py#L110-L125">удалённые ранее события не реконструируются</a>.</li></ul>
+</section>
+
+<section class="limits">
+  <h2>Ограничения анализа</h2>
+  <ul>
+    <li>Анализ статический: реальные LLM-вызовы и полный внешний Uptick simulator не запускались.</li>
+    <li>Репозиторий содержит независимые и частично экспериментальные реализации; корневой README перечисляет три основных агента, а <code>vadim</code> имеет собственную нормативную документацию. Единого production entrypoint для всех вариантов <strong>в репозитории не найдено</strong>.</li>
+    <li>Не описано формальное доказательство причинности «память → улучшение»: парные эвалы уменьшают смешение факторов, но не устраняют вариативность LLM и времени.</li>
+    <li>Для xMemory не измерено качество задач и не выполнен полный upstream pipeline; безопасный immutable eval snapshot <strong>в репозитории не найден</strong>.</li>
+    <li>Нельзя восстановить скрытое рассуждение LLM; доступны только входной контекст, структурированный результат и операционный журнал.</li>
+  </ul>
+</section>
+</main>
+</body>
+</html>
+</template>
+<noscript><p class="nojs">Для переключения вкладок нужен JavaScript.</p></noscript>
+<script>
+for (const name of ['questionnaire','report']) {
+  document.querySelector('#'+name+' iframe').srcdoc = document.getElementById(name+'-doc').innerHTML;
+}
+for (const button of document.querySelectorAll('.tab')) {
+  button.addEventListener('click', () => {
+    for (const other of document.querySelectorAll('.tab')) other.setAttribute('aria-selected', String(other === button));
+    for (const panel of document.querySelectorAll('.panel')) panel.hidden = panel.id !== button.dataset.panel;
+  });
+}
+</script>
+</body></html>

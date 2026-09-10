@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="ru">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Level Up — анкета и анализ агента</title><style>
+:root{color-scheme:light dark;--bg:#f5f5f7;--fg:#1d1d1f;--panel:#fff;--line:#d2d2d7;--accent:#ff5a1f;--muted:#6e6e73}
+@media(prefers-color-scheme:dark){:root{--bg:#141416;--fg:#f5f5f7;--panel:#1f2024;--line:#3a3b40;--muted:#aaa}}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+body{display:flex;flex-direction:column}.top{padding:16px 18px 0;background:var(--panel);border-bottom:1px solid var(--line)}
+h1{font-size:22px;line-height:1.2;margin:0 0 12px}.tabs{display:flex;gap:6px}.tab{appearance:none;border:1px solid var(--line);border-bottom:0;background:var(--bg);color:var(--fg);padding:10px 15px;border-radius:9px 9px 0 0;font:600 14px system-ui;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:#fff}.panels{position:relative;flex:1;min-height:0}.panel{position:absolute;inset:0}.panel[hidden]{display:none}.panel iframe{border:0;width:100%;height:100%;background:#fff}.nojs{padding:12px 18px;color:var(--muted)}
+</style></head>
+<body>
+<header class="top"><h1>Level Up — анкета и анализ агента</h1><nav class="tabs" aria-label="Материалы команды">
+<button class="tab" type="button" id="tab-questionnaire" data-panel="questionnaire" role="tab" aria-selected="true" aria-controls="questionnaire">Анкета команды</button>
+<button class="tab" type="button" id="tab-report" data-panel="report" role="tab" aria-selected="false" aria-controls="report">Анализ агента</button>
+</nav></header>
+<main class="panels">
+<section class="panel" id="questionnaire" role="tabpanel" aria-labelledby="tab-questionnaire"><iframe title="Анкета команды"></iframe></section>
+<section class="panel" id="report" role="tabpanel" aria-labelledby="tab-report" hidden><iframe title="Анализ агента"></iframe></section>
+</main>
+<template id="questionnaire-doc"><!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Level Up — анкета команды</title><style>
+:root{color-scheme:light dark;--bg:#fafafa;--fg:#202124;--muted:#666;--card:#fff;--line:#d8dadd;--link:#1558d6;--accent:#ff5a1f}
+@media(prefers-color-scheme:dark){:root{--bg:#17181a;--fg:#e7e8ea;--muted:#aaa;--card:#202226;--line:#3b3e44;--link:#8ab4ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}main{max-width:980px;margin:auto;padding:28px 20px 56px}h1{font-size:28px;margin:0 0 8px}.meta{color:var(--muted);margin-bottom:26px}.meta a,a{color:var(--link)}.qa{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:17px 19px;margin:14px 0}.qa h2{font-size:17px;line-height:1.35;margin:0 0 9px}.answer{white-space:pre-wrap;overflow-wrap:anywhere}.badge{display:inline-block;padding:3px 8px;border-radius:999px;background:var(--accent);color:white;font-size:12px;font-weight:700;margin-left:7px}
+</style></head><body><main><h1>Level Up — анкета команды <span class="badge">xmemory</span></h1><div class="meta">Репозиторий: <a href="https://github.com/podlodka-ai-club/level-up" target="_blank" rel="noopener">https://github.com/podlodka-ai-club/level-up</a> · ответ отправлен 07.09.2026 20:40:17</div><section class="qa"><h2>Представьте, что вы делаете лендинг для вашего проекта или поднимаете инвестиции. Как бы вы описали его одной фразой, чтобы он выделялся среди всех остальных?</h2><div class="answer">Образование - как туалетная бумага: нужно всем и всегда. Только мы сделали так, чтобы дети сами хотели им пользоваться</div></section><section class="qa"><h2>Что и как делает ваш агент?</h2><div class="answer">«Памагочи» — голосовой ИИ-учитель для младших школьников. Ребёнок общается с живым персонажем, решает игровые задания, получает подсказки вместо готовых ответов, а система запоминает, что уже освоено, где он ошибается и как ему удобнее учиться. Учитель видит прогресс, назначает задания и контролирует сгенерированный контент.
+Внешний цикл
+1. Ребёнок выбирает занятие и разговаривает с персонажем голосом или текстом.
+2. Памагочи объясняет одну небольшую тему и даёт конкретное задание.
+3. Ребёнок отвечает, система сразу проверяет результат.
+4. При ошибке агент не выдаёт ответ, а упрощает объяснение или даёт подсказку.
+5. Результат меняет карту знаний: что освоено, что требует практики и что можно открыть дальше.
+6. На следующем занятии агент продолжает с того места, где ребёнок остановился.
+Учитель при этом может видеть трудности ребёнка, составлять учебный план и публиковать новые наборы заданий.
+Внутренний цикл агента
+Перед занятием агент загружает педагогические правила, программу, профиль ребёнка, локальный прогресс и краткую выжимку из долговременной памяти. Во время занятия речь распознаёт Deepgram, DeepSeek выбирает объяснение и при необходимости вызывает инструменты памяти и прогресса, ElevenLabs озвучивает ответ, а LiveKit связывает браузер и голосового агента.
+После каждого содержательного ответа система фиксирует конкретный навык и результат: correct или needs_practice. В конце занятия сохраняется краткий итог — что получилось, где возникла трудность, каким было настроение и с чего лучше начать в следующий раз.
+Как устроена память
+У памяти два слоя:
+- Локальная структурированная память — точный источник истины. В ней находятся результаты заданий, число попыток, статусы тем, освоенные навыки и история занятий. По ней строится карта знаний.
+- xmemory — долговременный смысловой контекст: интересы ребёнка, предпочтительный способ объяснения, устойчивые ошибки, наблюдения, итоги уроков и назначения учителя.
+Полные аудиозаписи и транскрипты в учебную память не складываются. Данные разделяются по идентификатору ученика, а учитель может посмотреть и адресно удалить конкретные записи.
+
+агент пока не переобучает сам себя и не изменяет собственный код или модель. Под автоулучшением у нас понимается автоматическая адаптация учебного процесса.
+Система накапливает результаты ребёнка, выделяет проблемные микронавыки, возвращается к устойчивым ошибкам, меняет сложность и форму объяснения, использует интересы ребёнка в примерах и не заставляет повторять уже освоенное. То есть улучшается не базовая модель, а персональная стратегия обучения конкретного ребёнка.
+
+Полноценных образовательных эвалов у проекта сейчас нет.</div></section><section class="qa"><h2>Про технический и AI стек</h2><div class="answer">Движок памяти
+Мы выбрали xmemory, но используем его вместе с локальной структурированной памятью.
+- Локальный JSON хранит точные результаты: задания, попытки, статусы тем и освоенные навыки.
+- xmemory хранит долговременный контекст: интересы ребёнка, устойчивые ошибки, итоги занятий, назначения учителя и динамику по навыкам.
+Что понравилось: типизированные объекты и связи вместо бесконтрольного текстового RAG, возможность обновить или удалить конкретный факт, построить персональный бриф перед уроком и сохранить историю изменений.
+Что не понравилось: внешний сервис добавляет задержки, сетевые ошибки и ограничения по запросам. Кроме того, два слоя памяти приходится синхронизировать. Поэтому xmemory работает в режиме best effort: если оно недоступно, урок продолжается на локальных данных. Сам локальный JSON удобен для MVP, но для production потребуется транзакционная база данных.
+Модели
+- LLM — DeepSeek Chat. Семейство модели open-weight, но в проекте она используется через внешний API.
+- STT — Deepgram Nova-3 для потокового распознавания русской речи.
+- TTS — ElevenLabs Flash v2.5 для озвучивания ответов.
+У DeepSeek мы намеренно отключили reasoning/thinking: в голосовом продукте ребёнку важнее получить короткий ответ быстро, чем ждать длинного внутреннего рассуждения. Модель ограничена короткими репликами и вызывает инструменты для записи прогресса и памяти.
+
+Остальные компоненты
+- LiveKit Agents — голосовая сессия, аудио, текст, транскрипция и события между интерфейсом и агентом.
+- Next.js 15, React 19 и TypeScript — веб-приложение ученика, панели учителя и администратора.
+- Rive — анимированный персонаж и его состояния: слушает, думает, говорит, радуется.
+- Zod — проверка конфигурации, инструментов агента и сгенерированных заданий.
+- Vitest, ESLint, TypeScript и production build — технические проверки проекта.</div></section><section class="qa"><h2>Если бы у вас была ещё одна неделя, что бы вы сделали в первую очередь и почему именно это?</h2><div class="answer">Проработал бы лучше историю с памятью! Сейчас она слабовата, нет уверенности, что агент сохранит ее, нет уверенности, что будет получено то что надо.</div></section><section class="qa"><h2>Какие решения оправдали себя настолько, что вы бы рекомендовали другим командам их переиспользовать? Например: паттерн реализации, выбор технологии, архитектурное решение, продуктовая идея.</h2><div class="answer">Наверное только аватар от Rive. Остальное мне кажется технически еще далеко до совершенства! </div></section><section class="qa"><h2>Какие решения оказались неудачными или не дали ожидаемой пользы?</h2><div class="answer">Elevenlabs по прежнему плохо работает с числами, и когда происходят действия с умножениями, просто может уйти в цикл!</div></section><section class="qa"><h2>Пример работы агента до и после обучения</h2><div class="answer">Есть подробное описание в github. Видео могу приложить в чат.</div></section><section class="qa"><h2>Участвуете ли вы в номинации от xmemory?</h2><div class="answer">Да</div></section></main></body></html></template>
+<template id="report-doc"><!doctype html>
+<html lang="ru">
+<head><base target="_blank">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Level Up: анализ самообучающегося агента</title>
+  <style>
+    :root{color-scheme:light;--ink:#172033;--muted:#5e687a;--line:#dce2ea;--bg:#f5f7fa;--card:#fff;--accent:#5b45c7;--soft:#f0edff}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}main{max-width:1040px;margin:auto;padding:32px 22px 60px}h1{font-size:2rem;line-height:1.15;margin:0 0 14px}h2{margin:40px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--accent)}h3{margin:28px 0 8px}p,ul,ol{margin:8px 0 12px}.meta,.note,.answer{padding:14px 16px;border-radius:10px;background:var(--card);border:1px solid var(--line)}.answer{border-left:4px solid var(--accent)}.muted{color:var(--muted)}a{color:#4935ae;text-decoration-thickness:1px;text-underline-offset:2px}table{width:100%;border-collapse:collapse;background:var(--card);font-size:.94rem}th,td{padding:10px 12px;border:1px solid var(--line);text-align:left;vertical-align:top}th{background:var(--soft)}code{background:#eceff4;border-radius:4px;padding:.1em .35em;font-size:.9em}pre{overflow:auto;padding:16px;border-radius:10px;background:#1d2330;color:#eef2ff;line-height:1.4}.sources{color:var(--muted);font-size:.93rem}.sources strong{color:var(--ink)}.tag{display:inline-block;padding:2px 7px;border-radius:999px;background:var(--soft);color:#4935ae;font-size:.82rem;font-weight:700}.warning{border-left:4px solid #c57a12}@media(max-width:700px){main{padding:22px 12px}table{display:block;overflow-x:auto}h1{font-size:1.65rem}}
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Level Up: анализ самообучающегося агента</h1>
+    <div class="meta">
+      <div><strong>Репозиторий:</strong> <a href="https://github.com/podlodka-ai-club/level-up">podlodka-ai-club/level-up</a></div>
+      <div><strong>Состояние:</strong> detached HEAD, commit <a href="https://github.com/podlodka-ai-club/level-up/commit/92bee22744457ec494db848cd6ade261259f7861"><code>92bee22744457ec494db848cd6ade261259f7861</code></a> (соответствует <code>origin/master</code> в исследованной копии)</div>
+      <div><strong>Дата анализа:</strong> 9 сентября 2026, 19:25 UTC</div>
+    </div>
+    <p class="note warning"><strong>Главный вывод:</strong> это адаптивный голосовой репетитор, а не агент, который дообучает веса модели. Его «обучение» — накопление структурированного опыта об ученике и подмешивание этого опыта в следующие инструкции.</p>
+  </header>
+
+  <section>
+    <h2>1. Анализ</h2>
+
+    <h3>1.1. Пошаговый пайплайн</h3>
+    <table>
+      <thead><tr><th>Шаг</th><th>Что происходит</th><th>Результат / состояние</th><th>Основание</th></tr></thead>
+      <tbody>
+        <tr><td>1. Подготовка задания</td><td>Учитель создаёт набор вручную или через DeepSeek, проверяет его, публикует и назначает классу либо конкретному ученику.</td><td><code>draft → published → assigned</code></td><td><a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/app/api/teacher/task-sets/generate/route.ts">generate/route.ts</a>, <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/app/api/teacher/plans/route.ts">plans/route.ts</a></td></tr>
+        <tr><td>2. Выбор работы</td><td>Система объединяет план класса и персональные переопределения, отбрасывает скрытые и неопубликованные наборы и берёт первый набор с нерешённой задачей.</td><td>Выбран следующий незавершённый набор.</td><td><a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/lib/classroom.ts#L119-L145">lib/classroom.ts</a></td></tr>
+        <tr><td>3. Восстановление прогресса</td><td>UI читает точное локальное состояние ученика: факты, темы, результаты задач, попытки и последние сессии.</td><td>Задача имеет локальное состояние: нет результата, <code>needs_practice</code> или <code>correct</code>.</td><td><a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/app/api/learning/route.ts">app/api/learning/route.ts</a>, <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/lib/local-learning.ts">lib/local-learning.ts</a></td></tr>
+        <tr><td>4. Старт голосовой сессии</td><td>LiveKit worker подключается к комнате; отдельно загружаются быстрая карточка ученика, полный XMemory-бриф и, при продолжении разговора, последние реплики.</td><td>Контекст сессии собран; недоступность XMemory не блокирует урок.</td><td><a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/agent/src/main.ts">agent/src/main.ts</a>, <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/agent/src/dialogue-recap.ts">dialogue-recap.ts</a></td></tr>
+        <tr><td>5. Сборка поведения</td><td>В system prompt соединяются <code>SOUL.md</code>, профиль, curriculum, локальный прогресс, XMemory-бриф и recap прошлого диалога.</td><td>DeepSeek получает актуальные инструкции и персональный контекст.</td><td><a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/agent/src/prompt.ts">agent/src/prompt.ts</a>, <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/SOUL.md">SOUL.md</a></td></tr>
+        <tr><td>6. Выполнение</td><td>Ребёнок отвечает голосом, текстом или в экранном упражнении. Экранный ответ проверяется детерминированно; агент отвечает голосом через STT → LLM → TTS.</td><td>Получен учебный результат либо новый личный факт.</td><td><a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/components/interactive-practice.tsx">interactive-practice.tsx</a>, <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/agent/src/providers.ts">providers.ts</a></td></tr>
+        <tr><td>7. Фиксация опыта</td><td>Результат экранной задачи сначала атомарно сохраняется локально. Полезный опыт ставится в очередь XMemory: агрегат навыка обновляется всегда, отдельное наблюдение создаётся для ошибки, заблуждения или ответа с подсказкой.</td><td><code>correct</code> либо <code>needs_practice</code>; обновлён <code>KnowledgeState</code>.</td><td><a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/docs/xmemory.md#L115-L133">docs/xmemory.md</a>, <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/agent/src/tools.ts">agent/src/tools.ts</a></td></tr>
+        <tr><td>8. Адаптация</td><td>Три верных ответа подряд переводят навык в <code>mastered</code>; ошибка сбрасывает серию и назначает повторение на следующий день. Следующая сессия получает обновлённый бриф.</td><td>Меняются подсказки, темы для повторения и первый ход репетитора.</td><td><a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/agent/src/memory/mutations.ts#L81-L140">memory/mutations.ts</a>, <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/lib/curriculum.ts">lib/curriculum.ts</a></td></tr>
+        <tr><td>9. Завершение</td><td>При закрытии worker ограниченно дожидается очереди памяти; техническая история сессии остаётся в JSONL.</td><td>Сессию можно диагностировать и частично продолжить.</td><td><a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/agent/src/main.ts">agent/src/main.ts</a>, <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/agent/src/dialogue-log.ts">dialogue-log.ts</a></td></tr>
+      </tbody>
+    </table>
+
+    <p class="muted">Диаграмма отражает составные состояния задачи и её набора; в коде нет единого enum со всеми этими значениями.</p>
+    <pre class="mermaid">stateDiagram-v2
+    [*] --> Черновик_набора
+    Черновик_набора --> Опубликована
+    Опубликована --> Назначена
+    Назначена --> Выбрана_как_следующая
+    Выбрана_как_следующая --> Показана
+    Показана --> Ответ_получен
+    Ответ_получен --> Проверена
+    Проверена --> Нужна_практика
+    Нужна_практика --> Показана
+    Проверена --> Решена
+    Решена --> Следующая_задача
+    Следующая_задача --> Показана
+    Решена --> Набор_завершён
+    Набор_завершён --> [*]</pre>
+
+    <h3>1.2. Как воспроизвести</h3>
+    <ol>
+      <li>Нужны Node.js 22+, pnpm 9+ и аккаунты LiveKit Cloud, Deepgram, DeepSeek и ElevenLabs.</li>
+      <li>Выполнить <code>pnpm install</code>.</li>
+      <li>Скопировать <code>.env.example</code> в <code>.env.local</code> и заполнить серверные ключи провайдеров и <code>ELEVENLABS_VOICE_ID</code>. Для долгосрочной памяти дополнительно задать <code>XMEM_API_KEY</code> и <code>XMEM_INSTANCE_ID</code>.</li>
+      <li>Для XMemory сначала посмотреть план <code>pnpm memory:schema</code>, затем применить <code>pnpm memory:schema -- --apply</code> и загрузить curriculum командой <code>pnpm memory:curriculum</code>.</li>
+      <li>Запустить web и voice worker одной командой <code>pnpm dev:all</code>, открыть <code>http://localhost:3000</code>, разрешить микрофон и начать урок.</li>
+      <li>Для проверки выполнить <code>pnpm test</code> и <code>pnpm typecheck</code>; живой XMemory проверяется отдельно командой <code>pnpm test:xmemory</code>.</li>
+    </ol>
+    <p class="sources"><strong>Источники:</strong> <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/README.md">README.md</a>, <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/.env.example">.env.example</a>, <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/docs/xmemory.md#L45-L87">docs/xmemory.md</a>, <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/package.json">package.json</a>. В исследованной копии реально прошли 148/148 unit-тестов (22 файла) и обе TypeScript-проверки; live E2E с внешними сервисами не запускался.</p>
+
+    <h3>1.3. Технический стек</h3>
+    <ul>
+      <li><strong>Агенты:</strong> LiveKit Agents voice worker; один репетитор «Пама» с вариантами поведения <code>strict</code>/<code>lenient</code>.</li>
+      <li><strong>LLM:</strong> DeepSeek через OpenAI-compatible LiveKit plugin; <code>deepseek-chat</code> по умолчанию; thinking отключён.</li>
+      <li><strong>Внешние интеграции:</strong> LiveKit Cloud, Deepgram STT, ElevenLabs TTS, DeepSeek API, XMemory.</li>
+      <li><strong>Память:</strong> локальные атомарные JSON-файлы + удалённый структурированный XMemory instance на класс; JSONL-история диалогов.</li>
+      <li><strong>Эвалы:</strong> Vitest unit/integration tests и отдельный live XMemory E2E; продольной оценки качества обучения нет.</li>
+      <li><strong>Фреймворки:</strong> Next.js 16, React 19, TypeScript, Zod, Tailwind CSS 4, Motion, Rive, pnpm.</li>
+    </ul>
+    <p class="sources"><strong>Источники:</strong> <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/package.json">package.json</a>, <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/agent/package.json">agent/package.json</a>, <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/agent/src/providers.ts">agent/src/providers.ts</a>, <a href="https://github.com/podlodka-ai-club/level-up/tree/92bee22744457ec494db848cd6ade261259f7861/xmemory">xmemory/</a>.</p>
+  </section>
+
+  <section>
+    <h2>2. Ответы на вопросы</h2>
+
+    <h3>1. С какими задачами работает агент?</h3>
+    <p class="answer">Агент ведёт младшего школьника по учебным темам curriculum, проверяет экранные и разговорные ответы и запоминает личный контекст. Основной путь выбора — первый незавершённый опубликованный набор из плана учителя; вне него prompt предлагает темы с закрытыми пререквизитами и навыки для повторения.</p>
+    <ul class="sources"><li><strong>Факт:</strong> назначения бывают для класса или ученика, с порядком, сроком и флагом скрытия — <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/lib/classroom.ts#L33-L45">lib/classroom.ts</a>.</li><li><strong>Факт:</strong> <code>nextIncompleteAssignment</code> берёт первый набор, где есть задача без результата <code>correct</code> — <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/lib/classroom.ts#L119-L145">lib/classroom.ts</a>.</li></ul>
+
+    <h3>2. Как агент выбирает, что сохранить в память?</h3>
+    <p class="answer">Prompt требует сохранять новый или изменившийся личный факт и каждый учебный ответ, включая ошибку; обычная болтовня и уже известный неизменившийся факт не записываются. В XMemory отдельное наблюдение создаётся только для полезного сигнала: ошибки, заблуждения или ответа с подсказкой.</p>
+    <ul class="sources"><li><strong>Критерии:</strong> интересы, цели, страхи, предпочтения и жизненные события идут через <code>remember_facts</code>; учебный ответ — через ровно один из <code>record_lesson_task</code>/<code>record_progress</code> — <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/agent/src/prompt.ts#L129-L134">agent/src/prompt.ts</a>.</li><li><strong>Фильтр шума:</strong> обычные правильные примеры не создают <code>LearningObservation</code> — <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/docs/xmemory.md#L115-L128">docs/xmemory.md</a>.</li></ul>
+
+    <h3>3. Как организована память между рестартами агента?</h3>
+    <p class="answer">Память двухслойная: точный прогресс хранится локально в атомарном JSON, а долгосрочный смысловой контекст — в удалённом XMemory. Один XMemory instance обслуживает класс, а записи изолируются стабильным <code>student_external_id</code>.</p>
+    <ul class="sources"><li><strong>Локально:</strong> <code>.data/students/&lt;studentId&gt;/learning-state.json</code> хранит факты, темы, задачи и сессии — <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/docs/xmemory.md#L9-L17">docs/xmemory.md</a>.</li><li><strong>XMemory:</strong> схема содержит <code>Student</code>, <code>KnowledgeState</code>, <code>LearningObservation</code>, <code>LessonSession</code>, <code>PersonalMemory</code> и <code>TeacherAssignment</code> — <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/xmemory/classroom-schema.yml">xmemory/classroom-schema.yml</a>.</li></ul>
+
+    <h3>4. Как агент обучается и меняет поведение?</h3>
+    <p class="answer">Он не дообучает LLM и не меняет код: поведение адаптируется через обновлённый <code>KnowledgeState</code>, интервалы повторения, назначения и личные факты, которые заново входят в system prompt. Порог освоения детерминирован: три правильных ответа подряд дают <code>mastered</code>, ошибка возвращает навык к практике.</p>
+    <ul class="sources"><li><strong>Алгоритм:</strong> статусы, streak, confidence и review ladder <code>[1,2,4,7,14,30]</code> рассчитываются без LLM — <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/agent/src/memory/mutations.ts#L81-L140">memory/mutations.ts</a>.</li><li><strong>Применение:</strong> бриф памяти помещается в конец инструкций и определяет первый ход репетитора — <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/agent/src/prompt.ts#L42-L55">agent/src/prompt.ts</a>.</li></ul>
+
+    <h3>5. Как память обновляется?</h3>
+    <p class="answer">Агрегат навыка обновляется на каждой попытке, а доказательства обучения сохраняются append-only выборочно. Новая версия личного факта помечает старую как <code>superseded</code>; автоматического TTL или забывания по возрасту не описано.</p>
+    <ul class="sources"><li><strong>Устаревание:</strong> superseded-запись остаётся для аудита, но исключается из рабочего брифа — <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/agent/src/memory/mutations.ts#L305-L312">memory/mutations.ts</a>.</li><li><strong>Очистка:</strong> есть dry-run/apply-компактация старых фактов и ручные операции учителя «забыть выбранное», wipe XMemory и reset everywhere — <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/scripts/xmemory-compaction.ts">xmemory-compaction.ts</a>, <a href="https://github.com/podlodka-ai-club/level-up/tree/92bee22744457ec494db848cd6ade261259f7861/app/api/teacher/students/%5BstudentId%5D/memory">memory API</a>.</li></ul>
+
+    <h3>6. Как работают эвалы?</h3>
+    <p class="answer"><strong>Продольные эвалы улучшения агента в репозитории не найдены.</strong> Есть автоматические тесты правил, prompt, памяти и отказоустойчивости, а также отдельный live E2E XMemory, но они проверяют корректность реализации, не рост качества обучения со временем.</p>
+    <ul class="sources"><li><strong>Локально:</strong> <code>pnpm test</code> запускает Vitest; на исследованном commit прошли 148/148 тестов — <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/package.json">package.json</a>, <a href="https://github.com/podlodka-ai-club/level-up/tree/92bee22744457ec494db848cd6ade261259f7861/agent/src">agent/src/*test.ts</a>.</li><li><strong>Live:</strong> <code>pnpm test:xmemory</code> создаёт временного ученика и проверяет lookup, связи, агрегацию, смену состояния и cleanup — <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/scripts/xmemory-edu-test.ts">xmemory-edu-test.ts</a>.</li></ul>
+
+    <h3>7. Как работает human in the loop?</h3>
+    <p class="answer">Человек подключён в двух ролях: ребёнок даёт ответы и личные вводные, а учитель контролирует программу и память. Учитель создаёт/редактирует/публикует/назначает задания, добавляет заметки и может исправлять или удалять записи памяти.</p>
+    <ul class="sources"><li><strong>Контроль заданий:</strong> сгенерированный DeepSeek набор сохраняется только как <code>draft</code> и публикуется отдельным действием — <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/app/api/teacher/task-sets/generate/route.ts">generate/route.ts</a>, <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/app/api/teacher/task-sets/%5BtaskSetId%5D/publish/route.ts">publish/route.ts</a>.</li><li><strong>Контроль памяти:</strong> teacher API пишет профиль/заметку и журналирует результат как <code>complete</code>, <code>partial</code> или <code>failed</code> — <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/app/api/teacher/students/%5BstudentId%5D/memory/route.ts">memory/route.ts</a>.</li></ul>
+
+    <h3>8. Используется ли xmemory?</h3>
+    <p class="answer">Да. XMemory хранит долгосрочный профиль ученика, агрегированное владение навыками, значимые наблюдения, итоги уроков, личные факты и назначения; при старте из него строится lesson brief.</p>
+    <ul class="sources"><li><strong>Подключение:</strong> слой включается только при наличии обеих переменных <code>XMEM_API_KEY</code> и <code>XMEM_INSTANCE_ID</code>, иначе система работает локально — <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/.env.example#L43-L49">.env.example</a>.</li><li><strong>Сценарии:</strong> чтение перед уроком, асинхронные структурные записи после ответов, recall по запросу, teacher notes и адресное удаление — <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/docs/xmemory.md">docs/xmemory.md</a>, <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/agent/src/xmemory.ts">agent/src/xmemory.ts</a>.</li></ul>
+
+    <h3>9. Сбои во время выполнения задачи</h3>
+    <p class="answer">Критический прогресс экранного урока сохраняется локально, поэтому отказ XMemory не останавливает ответ ребёнку. Ошибки памяти логируются; rate limit повторяется с backoff, конфликты create/update «лечатся» сменой мутации, а исчерпанная квота не ретраится.</p>
+    <ul class="sources"><li><strong>Retry:</strong> максимум два повтора 429 с учётом <code>Retry-After</code>, общий цикл — до шести попыток — <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/agent/src/memory/write-retry.ts">write-retry.ts</a>.</li><li><strong>Деградация:</strong> при недоступном брифе агент продолжает с локальным состоянием; при завершении ограниченно дренирует очередь — <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/agent/src/main.ts">main.ts</a>, <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/docs/xmemory.md#L88-L107">docs/xmemory.md</a>.</li></ul>
+
+    <h3>10. Мониторинг</h3>
+    <p class="answer">Есть подробное локальное JSONL-логирование каждой голосовой сессии, но внешняя observability-платформа или алерты не описаны. По логам можно восстановить транскрипты, ответы, переходы состояния, вызовы инструментов с аргументами/результатами и ошибками; внутреннюю цепочку рассуждений LLM восстановить нельзя.</p>
+    <ul class="sources"><li><strong>События:</strong> tool calls, transcripts, replies, metrics, usage, agent state и errors записываются в <code>.data/dialogues/&lt;studentId&gt;/*.jsonl</code> — <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/agent/src/dialogue-log.ts">dialogue-log.ts</a>.</li><li><strong>Аналитика:</strong> <code>scripts/dialogue-stats.ts</code> считает median/p90/max загрузки XMemory-брифа и карточки, а также долю промахов/таймаутов — <a href="https://github.com/podlodka-ai-club/level-up/blob/92bee22744457ec494db848cd6ade261259f7861/scripts/dialogue-stats.ts">dialogue-stats.ts</a>.</li></ul>
+  </section>
+
+  <section>
+    <h2>Ограничения анализа</h2>
+    <div class="note">
+      <ul>
+        <li>В репозитории не найдено измерение того, что педагогическое качество или успешность ученика улучшаются от версии к версии.</li>
+        <li>Не описаны production-развёртывание, внешние алерты, SLO и централизованный tracing.</li>
+        <li>Live-интеграции Deepgram, DeepSeek, ElevenLabs, LiveKit и XMemory не проверялись без credentials; выводы о них сделаны по коду, конфигурации и документации.</li>
+        <li>Mermaid оставлена как исходный блок <code>&lt;pre class="mermaid"&gt;</code>, как требовалось; внешний renderer намеренно не подключён, чтобы HTML оставался одним файлом без зависимостей.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+</body>
+</html>
+</template>
+<noscript><p class="nojs">Для переключения вкладок нужен JavaScript.</p></noscript>
+<script>
+for (const name of ['questionnaire','report']) {
+  document.querySelector('#'+name+' iframe').srcdoc = document.getElementById(name+'-doc').innerHTML;
+}
+for (const button of document.querySelectorAll('.tab')) {
+  button.addEventListener('click', () => {
+    for (const other of document.querySelectorAll('.tab')) other.setAttribute('aria-selected', String(other === button));
+    for (const panel of document.querySelectorAll('.panel')) panel.hidden = panel.id !== button.dataset.panel;
+  });
+}
+</script>
+</body></html>

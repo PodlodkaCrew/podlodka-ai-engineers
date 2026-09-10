@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="ru">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Marginal Gain — анкета и анализ агента</title><style>
+:root{color-scheme:light dark;--bg:#f5f5f7;--fg:#1d1d1f;--panel:#fff;--line:#d2d2d7;--accent:#ff5a1f;--muted:#6e6e73}
+@media(prefers-color-scheme:dark){:root{--bg:#141416;--fg:#f5f5f7;--panel:#1f2024;--line:#3a3b40;--muted:#aaa}}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+body{display:flex;flex-direction:column}.top{padding:16px 18px 0;background:var(--panel);border-bottom:1px solid var(--line)}
+h1{font-size:22px;line-height:1.2;margin:0 0 12px}.tabs{display:flex;gap:6px}.tab{appearance:none;border:1px solid var(--line);border-bottom:0;background:var(--bg);color:var(--fg);padding:10px 15px;border-radius:9px 9px 0 0;font:600 14px system-ui;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:#fff}.panels{position:relative;flex:1;min-height:0}.panel{position:absolute;inset:0}.panel[hidden]{display:none}.panel iframe{border:0;width:100%;height:100%;background:#fff}.nojs{padding:12px 18px;color:var(--muted)}
+</style></head>
+<body>
+<header class="top"><h1>Marginal Gain — анкета и анализ агента</h1><nav class="tabs" aria-label="Материалы команды">
+<button class="tab" type="button" id="tab-questionnaire" data-panel="questionnaire" role="tab" aria-selected="true" aria-controls="questionnaire">Анкета команды</button>
+<button class="tab" type="button" id="tab-report" data-panel="report" role="tab" aria-selected="false" aria-controls="report">Анализ агента</button>
+</nav></header>
+<main class="panels">
+<section class="panel" id="questionnaire" role="tabpanel" aria-labelledby="tab-questionnaire"><iframe title="Анкета команды"></iframe></section>
+<section class="panel" id="report" role="tabpanel" aria-labelledby="tab-report" hidden><iframe title="Анализ агента"></iframe></section>
+</main>
+<template id="questionnaire-doc"><!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Marginal Gain — анкета команды</title><style>
+:root{color-scheme:light dark;--bg:#fafafa;--fg:#202124;--muted:#666;--card:#fff;--line:#d8dadd;--link:#1558d6;--accent:#ff5a1f}
+@media(prefers-color-scheme:dark){:root{--bg:#17181a;--fg:#e7e8ea;--muted:#aaa;--card:#202226;--line:#3b3e44;--link:#8ab4ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}main{max-width:980px;margin:auto;padding:28px 20px 56px}h1{font-size:28px;margin:0 0 8px}.meta{color:var(--muted);margin-bottom:26px}.meta a,a{color:var(--link)}.qa{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:17px 19px;margin:14px 0}.qa h2{font-size:17px;line-height:1.35;margin:0 0 9px}.answer{white-space:pre-wrap;overflow-wrap:anywhere}.badge{display:inline-block;padding:3px 8px;border-radius:999px;background:var(--accent);color:white;font-size:12px;font-weight:700;margin-left:7px}
+</style></head><body><main><h1>Marginal Gain — анкета команды </h1><div class="meta">Репозиторий: <a href="https://github.com/podlodka-ai-club/marginal-gain" target="_blank" rel="noopener">https://github.com/podlodka-ai-club/marginal-gain</a> · ответ отправлен 08.09.2026 8:01:18</div><section class="qa"><h2>Представьте, что вы делаете лендинг для вашего проекта или поднимаете инвестиции. Как бы вы описали его одной фразой, чтобы он выделялся среди всех остальных?</h2><div class="answer">Детерминированная память агента: от разметки до забывания.</div></section><section class="qa"><h2>Что и как делает ваш агент?</h2><div class="answer">Это слой памяти, который подключается к кодовому агенту через хуки.
+Задача: сохранять важные факты между сессиями и подставлять их только тогда, когда они реально меняют правильный ответ. Главный акцент — не на количестве воспоминаний, а на умении не засорять контекст.
+Внешний цикл:
+1.  Пользователь пишет сообщение → система ищет релевантные факты и (если прошли порог) добавляет их к запросу.
+2.  Агент отвечает + размечает новые факты в конце ответа.
+3.  После ответа факты сохраняются, связываются и получают срок жизни.
+Внутренний цикл:
+•  Разметку фактов делает LLM.
+•  Всё остальное (связывание в граф, взвешивание полезности и уместности, отбор, забывание) — полностью детерминированные правила и формулы.
+Память: эпизоды + факты + граф связей + механизм устаревания. Факты не удаляются, а перекладываются в отложенные, когда выходит срок.
+Обучение: факт запоминается, применяется в новой сессии и меняет результат — это и есть обучение. Срок жизни востребованных фактов продлевается, учитывается реальная польза каждой подсказки.
+Данные и эвал: готовых бенчмарков под нашу постановку нет. Набор пар сессий собрали сами</div></section><section class="qa"><h2>Про технический и AI стек</h2><div class="answer">Движок памяти
+Собственный, написан на Python.
+По умолчанию — локальный SQLite (файл рядом с проектом). Есть единый порт (storage/port.py), через который можно подключить и другие бэкенды (сетевой сервис, CLI).
+Понравилось: полностью контролируемый, без внешних зависимостей в горячем пути, прозрачный, легко тестируется, работает без ключей и сети.
+Не понравилось: пришлось самим реализовывать граф связей, сроки жизни и отбор — готовых движков с нужной семантикой не нашлось.
+Модели
+Закрытые (Claude, в основном Haiku для прогонов).
+Модель используется только в двух местах:
+1.  Разметка фактов в конце своего ответа.
+2.  Сам ответ агента.
+Всё остальное (поиск, взвешивание, связывание, отбор, забывание) — чистый код и формулы, без второй модели-судьи и без эмбеддингов.
+Понравилось: детерминизм и предсказуемость отбора.
+Не понравилось: зависимость от качества разметки конкретной модели и её «желания» поставить служебный блок.
+Остальные компоненты
+•  Хуки агента (перехват сообщения и конца хода).
+•  Собственный eval-стенд с парными сессиями (live-прогон).
+•  Ledger обращений (показ / польза / молчание).
+•  Набор правил связывания и формула полезности + уместности.
+Готовых бенчмарков под нашу постановку («факт изменил правильный ответ») не было — собирали пары сами. </div></section><section class="qa"><h2>Если бы у вас была ещё одна неделя, что бы вы сделали в первую очередь и почему именно это?</h2><div class="answer">Если бы была ещё одна неделя, в первую очередь занялись бы наполнением бенчмарков данными и постановкой непрерывных прогонов.
+Модулей, которые влияют на итоговый результат, довольно много: связывание в граф, формула полезности, эвристики уместности, механизм забывания. Чтобы проверять гипотезы по ним, нужны и объём, и глубина. Сейчас архив небольшой — из-за этого графы получаются мелкими, а некоторые правила связывания и признаки важности просто не набирают статистику.
+Непрерывный прогон позволил бы:
+        •        нарастить данные и построить более глубокие графы;
+        •        проверить гипотезы по забыванию;
+        •        откалибровать эвристики важности и уместности на реальном объёме.
+Значительная часть времени ушла на создание самого модуля эвала (парные сессии, live-прогон, контроль «изменился ли ответ»). С готовым стендом следующая неделя ушла бы уже на содержание, а не на инфраструктуру измерения.
+</div></section><section class="qa"><h2>Какие решения оправдали себя настолько, что вы бы рекомендовали другим командам их переиспользовать? Например: паттерн реализации, выбор технологии, архитектурное решение, продуктовая идея.</h2><div class="answer">Какие решения оправдали себя
+Главное решение, которое мы бы рекомендовали другим командам — максимально детерминированные механизмы поверх LLM.
+Разметку фактов можно отдать модели, но отбор, связывание, взвешивание важности, уместность и забывание лучше делать правилами и формулами. Это даёт стабильный, воспроизводимый результат и не позволяет утонуть в деталях «как бы ещё одна модель лучше отранжировала».
+Особенно хорошо себя показал механизм забывания: без него выдача быстро засоряется, актуальные и устаревшие факты начинают весить одинаково. Срок жизни + перекладка просроченных записей заметно чистят первую выдачу.
+Мы опирались на то, что до массового внедрения нейросетей уже существовали серьёзные наработки по анализу и представлению содержания текстов и построению связей. В том числе:
+        •        работы по Knowledge Graphs (Hogan et al., Nickel et al.);
+        •        исследования по извлечению и связыванию тем (Salatino, Osborne, Motta и др.);
+        •        математические основы представления содержания посланий интеллектуальных агентов (В.А. Фомичёв).
+Эти подходы хорошо сочетаются с современными LLM: модель помогает извлекать факты, а классические детерминированные механизмы отвечают за структуру, отбор и жизненный цикл. В итоге получается предсказуемая система, которую можно отлаживать и улучшать по частям, а не «ещё одним промптом».
+</div></section><section class="qa"><h2>Какие решения оказались неудачными или не дали ожидаемой пользы?</h2><div class="answer">Какие решения оказались неудачными или не дали ожидаемой пользы
+Мы рассчитывали найти готовые детерминированные инструменты для разметки и понимания фактов. Таких инструментов practically нет.
+Существующие системы либо опираются на эмбеддинги и семантический поиск, либо полностью отдают разметку и отбор второй модели. Чистых rule-based или классических NLP-решений, которые умели бы стабильно выделять отдельные факты, строить по ним структуру и понимать их без эмбеддингов, мы не обнаружили.
+В итоге разметку пришлось оставить за LLM, а всю последующую логику (связывание, взвешивание, отбор, забывание) писать самим.
+Мы также пробовали использовать xmemory как внешнее хранилище, но быстро упирались в лимиты (частота запросов и объём записей за один ход), поэтому перешли на локальный SQLite.
+Отдельно сильно повлияло отсутствие готовых бенчмарков под наш сценарий («факт из прошлой сессии меняет правильный ответ в новой»). Пришлось собирать пары и строить eval-стенд с нуля — это заметно замедлило итерации и отняло время, которое можно было бы потратить на сами механизмы памяти.
+</div></section><section class="qa"><h2>Пример работы агента до и после обучения</h2><div class="answer">Отчёт (HTML, удобно открывать):
+https://github.com/podlodka-ai-club/marginal-gain/blob/main/results/otchyot.html
+Отчёт (Markdown):
+https://github.com/podlodka-ai-club/marginal-gain/blob/main/results/otchyot.md
+Цифры прогонов:
+https://github.com/podlodka-ai-club/marginal-gain/blob/main/results/cifry-progonov.md
+Вся папка results:
+https://github.com/podlodka-ai-club/marginal-gain/tree/main/results</div></section><section class="qa"><h2>Участвуете ли вы в номинации от xmemory?</h2><div class="answer">Нет</div></section></main></body></html></template>
+<template id="report-doc"><!doctype html>
+<html lang="ru">
+<head><base target="_blank">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Marginal Gain: анализ самообучающегося агента</title>
+<style>
+body{font:15px/1.5 system-ui,sans-serif;max-width:1100px;margin:32px auto;padding:0 18px;color:#202124}h1,h2,h3{line-height:1.2}h2{border-bottom:2px solid #333;padding-bottom:.3em}table{border-collapse:collapse;width:100%;margin:1em 0}th,td{border:1px solid #bbb;padding:.55em;vertical-align:top;text-align:left}th{background:#eee}pre,code{background:#f4f4f4}pre{padding:12px;overflow:auto;white-space:pre-wrap}code{padding:.1em .25em}a{color:#0755a5}.meta,.note{background:#f4f4f4;padding:12px}.answer{font-weight:650}.facts{margin-top:.3em}.warn{border-left:4px solid #a65b00;padding-left:10px}article{margin:1.4em 0}
+</style>
+</head>
+<body>
+<h1>Marginal Gain: анализ самообучающегося агента</h1>
+<div class="meta">
+<strong>Repository:</strong> <a href="https://github.com/podlodka-ai-club/marginal-gain">https://github.com/podlodka-ai-club/marginal-gain.git</a><br>
+<strong>Branch / commit:</strong> main / <code>68bdb3e57fa30559de1a7dc5da700209b7a2e590</code><br>
+<strong>Дата анализа:</strong> <time datetime="2026-09-09T19:39:17+00:00">2026-09-09T19:39:17+00:00</time>
+</div>
+<p class="warn"><strong>Ключевая оговорка:</strong> здесь нет обучения весов LLM. «Самообучение» — это self-learning memory loop: агент извлекает факты из завершённых ходов, сохраняет и переоценивает их, а при следующих запросах подмешивает отобранную память в контекст.</p>
+
+<h2>1. Анализ</h2>
+<h3>1.1. Пошаговый пайплайн</h3>
+<table>
+<thead><tr><th>Шаг</th><th>Состояние task/request</th><th>Состояние памяти и фактическая реализация</th></tr></thead>
+<tbody>
+<tr><td>0. Gate</td><td>Новый запрос ещё не обработан.</td><td><code>common.sh</code> загружает окружение и разрешает работу только для явно включённого каталога; live-hooks по умолчанию используют локальный backend. См. <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/hooks/common.sh#L31">hooks/common.sh</a>, <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/hooks/common.sh#L65">hooks/common.sh</a>.</td></tr>
+<tr><td>1. UserPromptSubmit: queue</td><td>Запрос принят Claude Code.</td><td><code>on_prompt_queue.sh</code> передаёт JSON в <code>on_prompt.py</code>; тот редактирует секреты и append-only пишет <code>user_message</code> с session/cwd/project/branch/time в <code>queue.jsonl</code>. Хук всегда завершает работу с кодом 0. См. <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/hooks/on_prompt_queue.sh#L1">hooks/on_prompt_queue.sh</a>, <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/hooks/on_prompt.py#L25">hooks/on_prompt.py</a>.</td></tr>
+<tr><td>2. UserPromptSubmit: read</td><td>Запрос обогащается до ответа агента.</td><td><code>on_prompt_read.sh</code> вызывает <code>pipeline.suggest --hook</code>: поиск, отсев ложных совпадений, порог <code>score × context-fit ≥ 0.5</code>, максимум 5 фрагментов / 1200 символов и один graph hop. При успехе создаются MemoryInjection, audit/ledger и текст «Из памяти…»; при сбое запрос не блокируется, память молчит с причиной. См. <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/hooks/on_prompt_read.sh#L1">hooks/on_prompt_read.sh</a>, <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/pipeline/suggest.py#L56">pipeline/suggest.py</a>, <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/pipeline/suggest.py#L790">pipeline/suggest.py</a>.</td></tr>
+<tr><td>3. Ответ и разметка</td><td>Агент выполняет пользовательскую задачу.</td><td>В запрос также добавляется инструкция вернуть служебный блок фактов; <code>MessageDisplay</code> скрывает его от человека, не меняя транскрипт. Допустимы источники <code>stated</code>/<code>observed</code>, confidence не ниже 0.5. См. <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/domain/marks.py#L105">domain/marks.py</a>, <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/domain/marks.py#L141">domain/marks.py</a>, <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/hooks/on_message_display.sh#L1">hooks/on_message_display.sh</a>.</td></tr>
+<tr><td>4. Stop: запуск цепочки</td><td>Ход завершён; фактический исход ещё предстоит вывести из транскрипта.</td><td><code>on_stop.sh</code> под общим lock запускает последовательность <code>drain → understand → associate → settle → uses → forget → consolidate</code>; обычно в фоне, с <code>XMEM_SYNC=1</code> синхронно. См. <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/hooks/on_stop.sh#L48">hooks/on_stop.sh</a>.</td></tr>
+<tr><td>5. drain</td><td>Сырой request/response становится событиями сессии.</td><td>Очередь атомарно переименовывается в <code>.taken</code>, из уникальных transcript paths извлекаются Session/Event, затем удачные элементы удаляются; незавершённые возвращаются в очередь. См. <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/pipeline/drain.py#L34">pipeline/drain.py</a>, <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/pipeline/drain.py#L74">pipeline/drain.py</a>.</td></tr>
+<tr><td>6. understand</td><td>Эпизод получает <code>done</code>, <code>blocked</code> или <code>abandoned</code>: ошибки → blocked; ответы/файлы/команды → done; иначе abandoned.</td><td>Из разметки и детерминированных extractors строятся Episode/Fact. Факты взвешиваются по repeat/spread/fresh и истории использования; прямое <code>stated</code> имеет floor 0.9. Прошедшие порог факты пишутся с TTL. См. <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/pipeline/understand.py#L295">pipeline/understand.py</a>, <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/pipeline/understand.py#L694">pipeline/understand.py</a>, <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/domain/measure.py#L20">domain/measure.py</a>, <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/domain/measure.py#L70">domain/measure.py</a>.</td></tr>
+<tr><td>7. associate</td><td>Завершённые/заблокированные эпизоды становятся контекстом причинных подсказок.</td><td>Строятся Association только по проверенным cues <code>same_episode</code> и направленному <code>error_then_fix</code>; <code>same_project</code> отвергнут, другие cues отложены. См. <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/pipeline/associate.py#L1">pipeline/associate.py</a>, <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/pipeline/associate.py#L139">pipeline/associate.py</a>.</td></tr>
+<tr><td>8. settle</td><td>Исход эпизода связывается с ранее сделанной вставкой памяти.</td><td><code>done → helped=yes</code>, <code>blocked → no</code>, <code>abandoned</code>/нет эпизода → unknown; это прокси «ход дошёл до конца», а не доказательство причинной пользы памяти. См. <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/pipeline/suggest.py#L869">pipeline/suggest.py</a>.</td></tr>
+<tr><td>9. uses</td><td>Фиксируется ответ агента о применении конкретной вставки.</td><td><code>--uses</code> читает inline-verdict по выданному ключу, пишет его отдельным источником в ledger; код прямо предупреждает о склонности агента соглашаться. См. <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/pipeline/suggest.py#L967">pipeline/suggest.py</a>, <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/domain/ledger.py#L47">domain/ledger.py</a>.</td></tr>
+<tr><td>10. forget</td><td>Текущая задача уже завершена; меняется доступность опыта будущим задачам.</td><td>TTL — 7/30/180 дней. Просроченные Fact не удаляются, а переезжают в LapsedFact; обычный retrieval их не видит, <code>--recall</code>/deep read видит. См. <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/domain/lifespan.py#L23">domain/lifespan.py</a>, <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/pipeline/forget.py#L1">pipeline/forget.py</a>, <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/storage/local.py#L208">storage/local.py</a>.</td></tr>
+<tr><td>11. consolidate</td><td>Опыт готов к следующему запросу.</td><td>Только точные дубли одного типа/scope/project (нормализация регистра, пробелов и хвостовой пунктуации) сворачиваются; источники уходят в LapsedFact с <code>merged_into</code>, операция обратима через <code>--undo</code>. Семантического merge нет. См. <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/domain/folding.py#L8">domain/folding.py</a>, <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/pipeline/consolidate.py#L9">pipeline/consolidate.py</a>.</td></tr>
+</tbody>
+</table>
+
+<p>Mermaid source (намеренно без JS/CDN; это исходник диаграммы, а не встроенный renderer):</p>
+<pre class="mermaid">flowchart TD
+  A[UserPromptSubmit: request received] --> G{directory enabled?}
+  G -- no --> Z[silent: request continues without memory]
+  G -- yes --> Q[queue append: user_message]
+  G -- yes --> R[read / suggest]
+  R --> S[search candidates]
+  S --> F[score x context fit >= 0.5]
+  F --> H[one graph hop]
+  H --> B[max 5 items / 1200 chars]
+  B --> I[inject memory + ledger/audit]
+  I --> T[agent executes task]
+  T --> M[MEMORY-FACTS markup; hidden only on display]
+  M --> O[Stop]
+  O --> D[drain queue to Session/Event]
+  D --> U[understand to Episode + Fact]
+  U --> X{episode outcome}
+  X -->|errors| XB[blocked]
+  X -->|reply/files/commands| XD[done]
+  X -->|otherwise| XA[abandoned]
+  U --> A1[associate: same_episode / error_then_fix]
+  A1 --> S1[settle injection outcome]
+  S1 --> U1[uses: inline verdict]
+  U1 --> F1[forget expired Fact to LapsedFact]
+  F1 --> C1[consolidate exact duplicates; reversible]
+  C1 --> R
+</pre>
+
+<h3>1.2. Как воспроизвести</h3>
+<ol>
+<li><strong>Клон и изоляция.</strong> Документация требует Python 3.11 и git; venv явно не описан, но для воспроизводимости его стоит добавить:
+<pre>git clone https://github.com/podlodka-ai-club/marginal-gain.git
+cd marginal-gain
+python3 -m venv .venv
+. .venv/bin/activate
+python3 -m pip install -U pip
+python3 -m pip install -r requirements.txt -r requirements-dev.txt</pre>
+<small>Замечание: <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/SETUP.md#L25">SETUP.md</a> говорит, что runtime сторонних пакетов не имеет и ставит только dev requirements, но фактический <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/requirements.txt#L1">requirements.txt</a> содержит <code>snowballstemmer&gt;=2.2</code>; <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/requirements-dev.txt#L1">requirements-dev.txt</a> — pytest, hypothesis, numpy.</small></li>
+<li><strong>Окружение и storage.</strong>
+<pre>cp .env.example .env
+# Для живых hooks безопасное локальное значение:
+# XMEM_BACKEND=local
+# Для api/sdk дополнительно нужны XMEM_INSTANCE_ID и XMEM_API_KEY.
+python3 -m storage.db migrate</pre>
+Параметры и локальный путь по умолчанию документированы в <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/.env.example#L1">.env.example</a>. Важно: <code>.env</code> читает hook-обвязка; ручные команды требуют <code>set -a; source .env; set +a</code> или явных export — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/README.md#L171">README.md</a>.</li>
+<li><strong>Разрешить каталог.</strong>
+<pre>./bin/xmem here add
+./bin/xmem</pre>
+Без enable-list hooks намеренно молчат. См. <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/SETUP.md#L42">SETUP.md</a>.</li>
+<li><strong>Установить hooks.</strong> В <code>~/.claude/settings.json</code> добавить, не стирая существующие группы: UserPromptSubmit → <code>hooks/on_prompt_queue.sh</code> и <code>hooks/on_prompt_read.sh</code>; Stop → <code>hooks/on_stop.sh</code>; MessageDisplay → <code>hooks/on_message_display.sh</code>. После правки перезапустить агента. Готовый JSON и правила — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/SETUP.md#L61">SETUP.md</a>.</li>
+<li><strong>Smoke.</strong> Создать тестовый Fact ровно через <code>storage.db.Repository</code> (полный snippet — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/SETUP.md#L118">SETUP.md</a>), затем проверить реальный read-hook:
+<pre>echo '{"prompt":"какие файлы правились в проекте demo"}' | ./hooks/on_prompt_read.sh</pre>
+Ожидаются инструкция разметки и блок «Из памяти прошлых разговоров». См. <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/SETUP.md#L137">SETUP.md</a>.</li>
+<li><strong>Ручные smoke-команды pipeline.</strong>
+<pre>export XMEM_BACKEND=local
+python3 -m pipeline.save                  # dry-run
+python3 -m pipeline.save --send
+python3 -m pipeline.understand --send
+python3 -m storage.db counts
+python3 -m storage.db search "вопрос"</pre>
+Точки входа запускаются как модули; без <code>--send</code> mutating pipelines — dry-run. См. <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/README.md#L880">README.md</a>.</li>
+<li><strong>Tests/evals.</strong>
+<pre>python3 -m pytest -q
+python3 -m pytest tests/test_live_wiring.py -q
+XMEM_SLOW=1 python3 -m pytest -q -m slow
+python3 -m eval.evaluate
+python3 -m eval.live --player replay
+python3 -m eval.live --arms both --wait 120
+# Настоящий недетерминированный и платный прогон:
+python3 -m eval.live --player claude --arms both --wait 120</pre>
+Replay проверяет harness/delivery, но не годится как метрика применения агентом; это прямо оговорено в <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/eval/live.py#L66">eval/live.py</a>. Команды README — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/README.md#L896">README.md</a>.</li>
+</ol>
+
+<h3>1.3. Технический стек</h3>
+<ul>
+<li><strong>Agents:</strong> Claude Code с hooks; в E2E — Claude CLI или детерминированный replay. Собственного task-planner/orchestrator в репозитории нет.</li>
+<li><strong>LLM:</strong> модель основного Claude-агента генерирует ответ и служебную разметку; отдельного обучения/дообучения модели нет.</li>
+<li><strong>Integrations:</strong> Claude hooks UserPromptSubmit, Stop, MessageDisplay; xmemory через CLI, HTTP API или Python SDK.</li>
+<li><strong>Memory:</strong> локальная SQLite по умолчанию для live-hooks; JSONL queue/ledger/telemetry; Claude transcript archive; внешнее xmemory опционально.</li>
+<li><strong>Evals:</strong> unit/property tests, offline evaluate, E2E paired sessions, A/B memory-vs-bare, audit report и журнал прогонов.</li>
+<li><strong>Frameworks/libraries:</strong> Python 3.11 и преимущественно stdlib; runtime <code>snowballstemmer</code>; dev <code>pytest</code>, <code>hypothesis</code>, <code>numpy</code>. Agent framework в коде не найден.</li>
+</ul>
+
+<h2>2. Ответы на вопросы</h2>
+
+<article><h3>1. С какими задачами работает агент?</h3>
+<p class="answer">Он не выбирает задачи автономно: получает очередной запрос пользователя через Claude Code и обогащает его памятью. Внутри памяти «задача» представлена эпизодом с исходом done/blocked/abandoned; планировщика, backlog или стратегии выбора следующей задачи в репозитории не найдено.</p>
+<p class="facts"><strong>Факты/примеры:</strong> hooks привязаны к сообщению человека и концу хода — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/SETUP.md#L107">SETUP.md</a>; правило исхода эпизода — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/pipeline/understand.py#L295">pipeline/understand.py</a>; допустимые состояния схемы — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/domain/models.py#L24">domain/models.py</a>.</p></article>
+
+<article><h3>2. Как агент выбирает, что сохранить в память?</h3>
+<p class="answer">Для LLM-разметки принимаются только факты с source <code>stated</code>/<code>observed</code> и confidence ≥ 0.5; затем запись проходит mapper и порог итогового веса. Вес сочетает repeat/spread/fresh и usage, а прямое stated-указание имеет floor 0.9.</p>
+<p class="facts"><strong>Факты/примеры:</strong> входной фильтр — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/domain/marks.py#L141">domain/marks.py</a>; формула repeat/spread/fresh — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/domain/measure.py#L20">domain/measure.py</a>; usage и stated floor — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/domain/measure.py#L45">domain/measure.py</a>; запись/отклонение каждого кандидата аудируется — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/pipeline/understand.py#L694">pipeline/understand.py</a>; тест сквозного write path — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/tests/test_write_path.py#L266">tests/test_write_path.py</a>.</p></article>
+
+<article><h3>3. Как организована память между рестартами агента?</h3>
+<p class="answer">Да: live-контур хранит факты и аудит в SQLite, а queue, ledger и progress markers — на диске в state directory; перезапуск процесса их не очищает. Для api/sdk/cli персистентность делегирована внешнему xmemory.</p>
+<p class="facts"><strong>Факты/примеры:</strong> путь локальной базы по умолчанию — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/.env.example#L20">.env.example</a>; backend local — SQLite — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/storage/port.py#L14">storage/port.py</a>; state-dir hooks — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/hooks/common.sh#L6">hooks/common.sh</a>; локальный repository — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/storage/local.py#L39">storage/local.py</a>.</p></article>
+
+<article><h3>4. Как агент обучается и меняет поведение?</h3>
+<p class="answer">Весов LLM проект не обучает: поведение меняется через контекст — новые факты, оценки использования, TTL, ассоциации и context-fit меняют то, что будет подмешано в следующий prompt. Поэтому корректный термин здесь — self-learning memory loop, не model training.</p>
+<p class="facts"><strong>Факты/примеры:</strong> порог score × fit и лимиты выдачи — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/pipeline/suggest.py#L56">pipeline/suggest.py</a>; история показов/пользы — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/domain/ledger.py#L1">domain/ledger.py</a>; вес с usage — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/domain/measure.py#L45">domain/measure.py</a>; prompt injection — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/pipeline/suggest.py#L818">pipeline/suggest.py</a>.</p></article>
+
+<article><h3>5. Как память обновляется?</h3>
+<p class="answer">TTL задаётся режимом 7/30/180 дней; просроченное переносится в LapsedFact и доступно только глубокому recall, а использование может продлить срок. Точные дубли консолидируются обратимо, но разрешения противоречий и автоматической коррекции ошибочного содержания не описано.</p>
+<p class="facts"><strong>Факты/примеры:</strong> сроки — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/domain/lifespan.py#L23">domain/lifespan.py</a>; LapsedFact/deep recall — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/pipeline/forget.py#L1">pipeline/forget.py</a>, <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/storage/local.py#L208">storage/local.py</a>; reversible exact-duplicate merge — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/pipeline/consolidate.py#L9">pipeline/consolidate.py</a>, <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/domain/folding.py#L40">domain/folding.py</a>; отсутствие conflict resolution — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/README.md#L907">README.md</a>; тест глубокого чтения LapsedFact — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/tests/test_forgetting.py#L215">tests/test_forgetting.py</a>.</p></article>
+
+<article><h3>6. Как работают эвалы?</h3>
+<p class="answer">Есть unit/property battery, offline evaluation и E2E paired sessions: первая сессия сообщает факт, чистая вторая должна его применить. E2E поддерживает Claude CLI/replay, изолированное состояние и руки memory-vs-bare; apply и avoid проходят отдельные пороги 70%.</p>
+<p class="facts"><strong>Факты/примеры:</strong> paired-session flow — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/eval/live.py#L1">eval/live.py</a>; sandbox — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/eval/live.py#L270">eval/live.py</a>; Claude/replay и arms — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/eval/live.py#L66">eval/live.py</a>, <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/eval/live.py#L1711">eval/live.py</a>; threshold 0.7 отдельно по apply/avoid — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/eval/live.py#L1125">eval/live.py</a>; команды тестов — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/README.md#L896">README.md</a>; end-to-end hook invariant — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/tests/test_full_run.py#L1">tests/test_full_run.py</a>.</p></article>
+
+<article><h3>7. Как работает human in the loop?</h3>
+<p class="answer">Человек задаёт исходные задачи, явно включает рабочие каталоги и может отключить весь live-контур, но поштучного human approval перед записью каждого факта нет. Оценка «помогло» снимается автоматически из transcript outcome или inline-ответа агента, причём код признаёт ограничения обоих прокси.</p>
+<p class="facts"><strong>Факты/примеры:</strong> явное enable/disable — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/SETUP.md#L14">SETUP.md</a>, <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/SETUP.md#L42">SETUP.md</a>; automatic settle и его семантика — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/pipeline/suggest.py#L869">pipeline/suggest.py</a>; inline self-report caveat — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/pipeline/suggest.py#L973">pipeline/suggest.py</a>. Ручное подтверждение каждого Fact: <strong>в репозитории не найдено</strong>.</p></article>
+
+<article><h3>8. Используется ли xmemory?</h3>
+<p class="answer">Единый storage port поддерживает четыре backend: xmemcli, HTTP API, официальный Python SDK и local SQLite; живые hooks по умолчанию принудительно выбирают local. CLI умеет только текст, api/sdk/local — структурные mutations; graph hop доступен через адаптеры.</p>
+<p class="facts"><strong>Факты/примеры:</strong> контракт и выбор backend — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/storage/port.py#L1">storage/port.py</a>; xmemcli — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/storage/port.py#L79">storage/port.py</a>; HTTP — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/storage/api.py#L1">storage/api.py</a>; SDK — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/storage/sdk.py#L1">storage/sdk.py</a>; local adapter — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/storage/local.py#L1">storage/local.py</a>; live local default — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/hooks/common.sh#L16">hooks/common.sh</a>.</p></article>
+
+<article><h3>9. Сбои во время выполнения задачи</h3>
+<p class="answer">Memory hooks fail-open: они не должны сорвать пользовательский ход, а ошибки чтения превращаются в именованное молчание; Stop-проход защищён lock. Queue переименовывается атомарно, неуспешные/незавершённые элементы возвращаются для следующего запуска, но общий rollback внешних действий агента не реализован.</p>
+<p class="facts"><strong>Факты/примеры:</strong> prompt hook всегда exit 0 — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/hooks/on_prompt.py#L67">hooks/on_prompt.py</a>; классификация backend/pipeline/timeout failures — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/pipeline/suggest.py#L797">pipeline/suggest.py</a>; queue recovery — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/pipeline/drain.py#L74">pipeline/drain.py</a>; Stop lock и последовательность — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/hooks/on_stop.sh#L48">hooks/on_stop.sh</a>; тест сохранения queue после failed write — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/tests/test_write_path.py#L302">tests/test_write_path.py</a>.</p></article>
+
+<article><h3>10. Мониторинг</h3>
+<p class="answer">Каждый pipeline step пишет обязательную audit-строку в SQLite (вход, выход, ok, session/run), а опциональная telemetry пишет scrubbed JSONL с длительностями и счётчиками; есть operational logs и ledger причин молчания. По ним можно восстановить ход memory-pipeline и повторить очередь/разбор, но полного event-sourcing для воспроизведения всех действий агента нет; отдельно обратима только consolidation.</p>
+<p class="facts"><strong>Факты/примеры:</strong> audit table/semantics — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/storage/audit.py#L1">storage/audit.py</a>, <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/storage/db.py#L190">storage/db.py</a>; audit report — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/eval/audit_report.py#L1">eval/audit_report.py</a>; optional JSONL telemetry и scrub — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/infra/telemetry.py#L1">infra/telemetry.py</a>, <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/infra/scrub.py#L14">infra/scrub.py</a>; журналы и ledger — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/SETUP.md#L169">SETUP.md</a>, <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/domain/ledger.py#L30">domain/ledger.py</a>; undo consolidation — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/pipeline/consolidate.py#L29">pipeline/consolidate.py</a>; audit non-interference tests — <a href="https://github.com/podlodka-ai-club/marginal-gain/blob/68bdb3e57fa30559de1a7dc5da700209b7a2e590/tests/test_audit.py#L1">tests/test_audit.py</a>.</p></article>
+
+<h3>Ограничения анализа</h3>
+<ul>
+<li>Выводы относятся к зафиксированному commit и статическому чтению кода/документации; сетевые xmemory backend и платный Claude E2E не запускались.</li>
+<li>README сообщает собственные результаты benchmark, но внешнего benchmark и доказанной переносимости нет; сам README это признаёт.</li>
+<li>Replay проверяет wiring и delivery, а не причинное применение знания моделью; живой Claude-run недетерминирован.</li>
+<li><code>settle</code> трактует успешное завершение хода как proxy пользы, а inline verdict — self-report модели; это не строгая causal attribution.</li>
+<li>SETUP.md устарел относительно requirements.txt в утверждении «runtime без сторонних пакетов».</li>
+<li>Разрешение конфликтующих фактов, семантическое объединение дублей, автоматическая верификация истинности и полное восстановление внешних действий <strong>не описаны / в репозитории не найдены</strong>.</li>
+</ul>
+</body>
+</html>
+</template>
+<noscript><p class="nojs">Для переключения вкладок нужен JavaScript.</p></noscript>
+<script>
+for (const name of ['questionnaire','report']) {
+  document.querySelector('#'+name+' iframe').srcdoc = document.getElementById(name+'-doc').innerHTML;
+}
+for (const button of document.querySelectorAll('.tab')) {
+  button.addEventListener('click', () => {
+    for (const other of document.querySelectorAll('.tab')) other.setAttribute('aria-selected', String(other === button));
+    for (const panel of document.querySelectorAll('.panel')) panel.hidden = panel.id !== button.dataset.panel;
+  });
+}
+</script>
+</body></html>

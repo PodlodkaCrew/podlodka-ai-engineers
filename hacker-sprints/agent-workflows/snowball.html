@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="ru">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Snowball — анкета и анализ агента</title><style>
+:root{color-scheme:light dark;--bg:#f5f5f7;--fg:#1d1d1f;--panel:#fff;--line:#d2d2d7;--accent:#ff5a1f;--muted:#6e6e73}
+@media(prefers-color-scheme:dark){:root{--bg:#141416;--fg:#f5f5f7;--panel:#1f2024;--line:#3a3b40;--muted:#aaa}}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+body{display:flex;flex-direction:column}.top{padding:16px 18px 0;background:var(--panel);border-bottom:1px solid var(--line)}
+h1{font-size:22px;line-height:1.2;margin:0 0 12px}.tabs{display:flex;gap:6px}.tab{appearance:none;border:1px solid var(--line);border-bottom:0;background:var(--bg);color:var(--fg);padding:10px 15px;border-radius:9px 9px 0 0;font:600 14px system-ui;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:#fff}.panels{position:relative;flex:1;min-height:0}.panel{position:absolute;inset:0}.panel[hidden]{display:none}.panel iframe{border:0;width:100%;height:100%;background:#fff}.nojs{padding:12px 18px;color:var(--muted)}
+</style></head>
+<body>
+<header class="top"><h1>Snowball — анкета и анализ агента</h1><nav class="tabs" aria-label="Материалы команды">
+<button class="tab" type="button" id="tab-questionnaire" data-panel="questionnaire" role="tab" aria-selected="true" aria-controls="questionnaire">Анкета команды</button>
+<button class="tab" type="button" id="tab-report" data-panel="report" role="tab" aria-selected="false" aria-controls="report">Анализ агента</button>
+</nav></header>
+<main class="panels">
+<section class="panel" id="questionnaire" role="tabpanel" aria-labelledby="tab-questionnaire"><iframe title="Анкета команды"></iframe></section>
+<section class="panel" id="report" role="tabpanel" aria-labelledby="tab-report" hidden><iframe title="Анализ агента"></iframe></section>
+</main>
+<template id="questionnaire-doc"><!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Snowball — анкета команды</title><style>
+:root{color-scheme:light dark;--bg:#fafafa;--fg:#202124;--muted:#666;--card:#fff;--line:#d8dadd;--link:#1558d6;--accent:#ff5a1f}
+@media(prefers-color-scheme:dark){:root{--bg:#17181a;--fg:#e7e8ea;--muted:#aaa;--card:#202226;--line:#3b3e44;--link:#8ab4ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}main{max-width:980px;margin:auto;padding:28px 20px 56px}h1{font-size:28px;margin:0 0 8px}.meta{color:var(--muted);margin-bottom:26px}.meta a,a{color:var(--link)}.qa{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:17px 19px;margin:14px 0}.qa h2{font-size:17px;line-height:1.35;margin:0 0 9px}.answer{white-space:pre-wrap;overflow-wrap:anywhere}.badge{display:inline-block;padding:3px 8px;border-radius:999px;background:var(--accent);color:white;font-size:12px;font-weight:700;margin-left:7px}
+</style></head><body><main><h1>Snowball — анкета команды <span class="badge">xmemory</span></h1><div class="meta">Репозиторий: <a href="https://github.com/podlodka-ai-club/snowball" target="_blank" rel="noopener">https://github.com/podlodka-ai-club/snowball</a> · ответ отправлен 08.09.2026 8:05:44</div><section class="qa"><h2>Представьте, что вы делаете лендинг для вашего проекта или поднимаете инвестиции. Как бы вы описали его одной фразой, чтобы он выделялся среди всех остальных?</h2><div class="answer">Новинка сезона: агент с памятью! Продает ваши товары быстрее и выгоднее - ставит верную скидку в 80 случаях из 100, а человек только в 44. Также в комплекте: честный контроль и три эксперимента, которые вы можете провести сами и которые точно не сработают!</div></section><section class="qa"><h2>Что и как делает ваш агент?</h2><div class="answer">Что делает. Snowball - промо-агент FMCG: на дату, магазин и товар выбирает скидку из четырёх (0, 10, 20, 30 процентов) так, чтобы валовая прибыль была ближе к максимальной. Сценарии однотипные, поэтому опыт переносится между акциями.
+
+Внутренний цикл. Генератор публикует сценарий по JSON-контракту. Агент строит ключ из наблюдаемых условий (товар, тип дня, погода, остаток), забирает из xmemory уроки по нему, кладёт в промпт до трёх лучших и получает от модели одно действие. Сценарий решается один раз, отказ модели помечается как fallback.
+
+Внешний цикл. Скрытый детерминированный симулятор отрабатывает акцию. Оценщик проигрывает все четыре действия на одном рыночном шоке (шум зависит от id сценария, но от скидки нет) и считает regret. Learner пересчитывает урок по ключу из всех привязанных кейсов и пишет его в память. Агент симулятор не видит ни через API, ни через логи, ни через память.
+
+Память. xmemory: три объекта (SKU, PromotionCase, Lesson), связь lesson_evidence от урока к кейсам-уликам. Ключ допускает незаданные условия, чтение идёт каскадом от строгого к общему по шести уровням в двух масштабах (товар, категория). Противоречия решаются обновлением урока на месте, повторный прогон улики не удваивает.
+
+Автоулучшение. Каждое решение добавляет улику, урок переагрегируется. Изменения конструкции памяти проверялись как мутации baseline: каскад вошёл в сдачу (потери 12.17 -&gt; 7.18), уточнение ключа, дробление по разногласию улик и эволюция схемы через миграцию дали ноль или минус, обучение без оракула хуже отсутствия памяти. Отрицательные результаты опубликованы.
+
+Данные. dunnhumby &quot;Breakfast at the Frat&quot;: 250 обучающих и 50 отложенных дней-товаров, разделение по времени. Обучение на живой модели (muse-glimmer-30b-q3, temperature 0). Замер в двух руках с разными инстансами памяти: без памяти 44% оптимальных и потери 44.04, с памятью 80% и 7.18, p = 8.8e-4.</div></section><section class="qa"><h2>Про технический и AI стек</h2><div class="answer">Движок памяти: 
+
+xmemory. Тут без вариантов - спонсора надо поддержать! =) 
+
+Понравилось: схема с объектами и связями, поэтому урок ссылается на кейсы-улики и его можно пересчитать; structured_mutations пишут без участия модели, дёшево и атомарно батчами по 50; режим raw-tables отдаёт строки дословно; эволюция схемы через dry-run миграции с отказом на неаддитивных изменениях. 
+
+Что мешало: полная документация инструментов лежит внутри GET /instances/&lt;id&gt;, и пока ее не обнаружили пришлось играть в угадывание формата по текстам ошибок; scope сужает выборку, обход связи работает только unscoped; режим xresponse отрисовывает формулировку запроса, а не содержимое; запись подтверждается раньше, чем становится читаемой по ключу (лаг до пары минут под нагрузкой, повторная перезапись объекта сбрасывает видимость); дубликат и отсутствие записи приходят разными формулировками HTTP 400/409; чтения тарифицируются токенами через модель, один цикл обучения плюс бенчмарк съедает около четверти дневной квоты.
+
+Модель. 
+Открытая muse-glimmer-30b-q3 на локальном инференс-сервере через OpenAI-совместимый API, с блоком рассуждений, temperature 0. Плюсы: нулевая стоимость 300 живых вызовов и полный контроль. Минусы: наблюдается недетерминизм даже при temperature 0, при малом лимите токенов рассуждения съедают бюджет.
+
+Остальное. 
+Kotlin 2.4 на JVM 21, Gradle, Jackson в строгой конфигурации и networknt JSON Schema: три версионированных контракта между компонентами проверяются в тестах. Эвал свой: детерминированный симулятор рынка с шумом от id сценария, оракул проигрывает все четыре действия, метрика regret в деньгах, две руки бенчмарка в физически разных инстансах памяти, точный биномиальный парный тест. 
+
+Особенно окупилась воспроизводимость симулятора: все эксперименты с ключом и обучением вслепую считались офлайн за ноль квоты, а офлайн-прогноз каскад сошёлся с живым замером. 
+
+Не понравилось в собственном стеке: тесты сначала писались против выдуманного стаба xmemory и были зелёными при адаптере, который не мог прочитать ни одного поля; стаб переписали на записанные ответы сервиса.</div></section><section class="qa"><h2>Если бы у вас была ещё одна неделя, что бы вы сделали в первую очередь и почему именно это?</h2><div class="answer">Обучение в более жестких условиях. Сейчас learner получает от оценщика прибыль всех четырёх скидок и учится на полной картине. В магазине известен только результат выбранной акции, и следующий шаг - научить память работать с этим: логировать вероятность выбора каждого действия, оценивать невыбранные через inverse propensity или doubly robust, вести исследование с учётом его стоимости.
+
+Почему это. Каскад ключей и остальные эксперименты показали, что качество памяти теперь упирается в объём и природу опыта, а не в устройство ключа или схемы. Этот шаг единственный, который меняет сам результат: с ним дельту от памяти можно показать ритейлеру на его собственных данных, а не на симуляторе. Возобновляемые прогоны, забывание и observability стоят в очереди следом.</div></section><section class="qa"><h2>Какие решения оправдали себя настолько, что вы бы рекомендовали другим командам их переиспользовать? Например: паттерн реализации, выбор технологии, архитектурное решение, продуктовая идея.</h2><div class="answer">Воспроизводимый симулятор рынка. Для каждой акции симулятор считает, сколько принесла бы каждая из четырёх скидок при одних и тех же условиях, и разница между выбранной и лучшей - это потерянные деньги. 
+
+Две ветки бенчмарка в разных инстансах памяти. Разделение выборки по времени, обучение на замере выключено и закреплено тестом. 
+
+Каскад ключей с уроками, ссылающимися на улики. Чтение от строгого ключа к общему до первого попадания подняло покрытие с 44 до 50 из 50; связь урок -&gt; кейсы даёт пересчёт, разрешение противоречий на месте и идемпотентную запись.</div></section><section class="qa"><h2>Какие решения оказались неудачными или не дали ожидаемой пользы?</h2><div class="answer">Уточнение ключа памяти. Три способа сделать урок точнее - условие руками, дробление бакетов по разногласию улик, новое измерение через миграцию схемы - дали ноль или минус. На 250 сценариях каждое дробление режет улики тоньше, чем разделяет ситуации. Сработало обратное: огрубление ключа при промахе.
+
+Обучение только на выбранном действии. Learner, видящий один результат за акцию, дал память хуже её отсутствия: уроки самоподкрепляются на том, что сам же попробовал. Для переноса в магазин нужна off-policy оценка.
+
+Тесты против выдуманного стаба xmemory. Формат ответов сочинили сами, тесты были зелёными при адаптере, который не читал назад ни одного поля. Переписали на записанные ответы сервиса.</div></section><section class="qa"><h2>Пример работы агента до и после обучения</h2><div class="answer">Три прогона на одних и тех же 50 отложенных сценариях, обучение на замере выключено. Без памяти: 44% оптимальных решений, потерянная прибыль 44.04. Обученная память со строгим ключом: 76% и 12.17. Обученная память с каскадом ключей: 80% и 7.18. Попарно: с памятью лучше на 25 сценариях, хуже на 6, поровну на 19. Ошибок 10 вместо 28, средняя цена ошибки 0.72 вместо 1.57. Кривая обучения внутри тренировочного прогона по полусотням: 52% -&gt; 74% -&gt; 78%.
+
+Один сценарий целиком. Мороженое ICE500, 25 ноября 2011, жаркий будний день, полный склад.
+
+Без памяти модель дала 10%: прибыль 35.34, недобор 4.70.
+
+В памяти лежали четыре обучающих кейса с теми же условиями (июнь и август). Learner пересчитал из них урок: ключ sku:ICE500|store:any|weekday|hot|event:any|stock:high, рекомендация 20%, четыре улики, уверенность 0.88.
+
+Замер шёл отдельным запуском после рестарта. Агент прошёл по ключам от точного к общему, нашёл урок на первом, в промпт попала строка &quot;For sku:ICE500 on hot weekday high stock, 20% has the highest mean gross profit across 4 evaluated cases&quot;. Шаблон промпта в обеих руках одинаковый, меняется только блок уроков.
+
+С памятью модель дала 20%: прибыль 40.04, недобор 0. Оракул, которого агент не видит: 0% -&gt; 31.61, 10% -&gt; 35.34, 20% -&gt; 40.04, 30% -&gt; 35.38.
+
+Контрпример: тот же товар 18 декабря, память советует 20%, лучше было 10%, недобор 3.76. Урок обобщает несколько наблюдений и не знает шум конкретного дня.
+
+Подробности и сырые логи:
+отчёт &quot;до и после&quot; с трассой урока: https://github.com/podlodka-ai-club/snowball/blob/main/runs/2026-09-04/demo-before-after.html
+логи двух рук: https://github.com/podlodka-ai-club/snowball/blob/main/runs/2026-09-04/benchmark-clean.log и https://github.com/podlodka-ai-club/snowball/blob/main/runs/2026-09-04/benchmark-trained-cascade.log
+обучающий прогон: https://github.com/podlodka-ai-club/snowball/blob/main/runs/2026-09-04/training-250.log
+ShowPrompt &lt;scenario_id&gt; печатает промпт обеих рук для любого сценария.</div></section><section class="qa"><h2>Участвуете ли вы в номинации от xmemory?</h2><div class="answer">Да</div></section></main></body></html></template>
+<template id="report-doc"><!doctype html>
+<html lang="ru">
+<head><base target="_blank">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Snowball: анализ самообучающегося агента</title>
+  <style>
+    body{max-width:980px;margin:32px auto;padding:0 18px;color:#20242a;background:#fafafa;font:16px/1.55 system-ui,sans-serif}h1,h2,h3{line-height:1.2}h1{margin-bottom:.35rem}h2{margin-top:2.2rem;border-bottom:2px solid #333;padding-bottom:.3rem}h3{margin-top:1.7rem}a{color:#075aaa}code,pre{background:#eef1f4;border-radius:5px}code{padding:.1rem .25rem}pre{padding:1rem;overflow:auto;white-space:pre-wrap}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #c9ced4;padding:.55rem;vertical-align:top;text-align:left}th{background:#e8edf2}.meta,.note{background:#eef3f8;padding:.8rem 1rem;border-left:4px solid #54708a}.answer{font-weight:650}.warn{background:#fff3d6;border-left-color:#c78300}.facts{margin-top:.35rem}.muted{color:#59636e;font-size:.93rem}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Snowball: анализ самообучающегося агента</h1>
+    <div class="meta">
+      <div><strong>Репозиторий:</strong> <a href="https://github.com/podlodka-ai-club/snowball">podlodka-ai-club/snowball</a> · локально <code>repos/snowball</code></div>
+      <div><strong>Ветка / commit:</strong> <code>main</code> / <code>b055f34b781def1400bf05845b91118c4fa36e4d</code>; рабочее дерево чистое относительно <code>origin/main</code></div>
+      <div><strong>Дата анализа:</strong> 9 сентября 2026, 20:03 UTC</div>
+    </div>
+    <p class="note warn"><strong>Как читать источники.</strong> <a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/README.md">README.md</a> прямо предупреждает: документы и диаграммы в <code>docs/</code> отражают первоначальный дизайн. При расхождении ниже приоритет отдан исполняемому коду и разделу «Architecture as built» в README.</p>
+  </header>
+
+  <main>
+    <h2>1. Анализ</h2>
+
+    <h3>1.1. Пошаговый пайплайн</h3>
+    <table>
+      <thead><tr><th>Шаг</th><th>Что происходит</th><th>Результат / источник</th></tr></thead>
+      <tbody>
+        <tr><td>1. Получение задач</td><td>Генератор читает CSV-фикстуру, выбирает <code>training</code> или <code>benchmark</code>, нормализует строку и детерминированно добавляет день, погоду и событие.</td><td>Валидированный <code>PromotionScenarioEvent</code>. <a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/application/ScenarioGenerationService.kt">ScenarioGenerationService.kt</a>, <a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/test/resources/fixtures/baseline.csv">baseline.csv</a></td></tr>
+        <tr><td>2. Проверка и дедупликация</td><td>Агент сначала валидирует контракт, затем ищет <code>scenario_id</code> в журнале. Уже завершённая задача не вызывает память и модель повторно.</td><td>Новая задача либо ранее записанное решение. <a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/application/PromotionDecisionService.kt">PromotionDecisionService.kt</a></td></tr>
+        <tr><td>3. Извлечение памяти</td><td>Для SKU и категории перебираются три уровня ключей: точный контекст, без погоды, общий. В каждом scope поиск прекращается на первом найденном уровне; итоговый ранжировщик оставляет максимум три Lesson.</td><td><code>USED</code>, <code>EMPTY</code> или <code>UNAVAILABLE</code>. <a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/domain/LessonKey.kt">LessonKey.kt</a>, <a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/application/LessonRanker.kt">LessonRanker.kt</a></td></tr>
+        <tr><td>4. Решение</td><td>Сценарий и Lessons попадают в стабильный prompt. OpenAI-совместимая модель выбирает только <code>0/10/20/30%</code> при <code>temperature=0</code>; после двух неудачных ответов используется <code>0%</code>.</td><td>Валидированное решение и источник <code>MODEL</code> либо <code>FALLBACK</code>. <a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/adapter/model/PromptBuilder.kt">PromptBuilder.kt</a>, <a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/adapter/model/OpenAiCompatibleDecisionModel.kt">OpenAiCompatibleDecisionModel.kt</a></td></tr>
+        <tr><td>5. Фиксация и исполнение</td><td>Решение записывается в журнал до передачи симулятору. Симулятор применяет выбранную скидку и выдаёт продажи и gross profit.</td><td><code>PromotionDecisionEvent</code> → <code>PromotionOutcomeEvent</code>. <a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/application/SimulationService.kt">SimulationService.kt</a></td></tr>
+        <tr><td>6. Объективная оценка</td><td>Evaluator повторно проигрывает все четыре скидки на том же детерминированном рынке, проверяет совпадение фактического исхода, выбирает oracle-best и считает regret.</td><td>Один <code>PromotionCase</code> с полной матрицей прибылей. <a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/application/PromotionEvaluator.kt">PromotionEvaluator.kt</a></td></tr>
+        <tr><td>7. Обучение</td><td>При включённом learning кейс сохраняется и связывается с шестью бакетами: три уровня обобщения × SKU/категория. Каждый Lesson пересчитывается по всем уникальным связанным кейсам.</td><td>Обновлённые <code>Lesson</code>: рекомендация, число примеров, преимущество, confidence и rationale. <a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/domain/Lesson.kt">Lesson.kt</a></td></tr>
+        <tr><td>8. Следующая задача</td><td>Новый процесс или следующий сценарий читает обновлённые Lessons из xmemory; меняется контекст следующего вызова LLM, но веса LLM не меняются.</td><td>Замкнутый цикл. <a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/adapter/memory/XmemoryLearningMemory.kt">XmemoryLearningMemory.kt</a></td></tr>
+      </tbody>
+    </table>
+
+    <pre class="mermaid">stateDiagram-v2
+    [*] --> Получена
+    Получена --> Валидирована
+    Валидирована --> Проверена_в_журнале
+    Проверена_в_журнале --> Память_прочитана
+    Память_прочитана --> Решение_модели
+    Решение_модели --> Решение_записано
+    Решение_записано --> Симулирована
+    Симулирована --> Исход_проверен
+    Исход_проверен --> Case_сохранён
+    Case_сохранён --> Lessons_пересчитаны
+    Lessons_пересчитаны --> Завершена
+    Завершена --> [*]</pre>
+    <p class="muted">Это исходник Mermaid, намеренно без внешнего JS: отчёт остаётся одним самостоятельным файлом без CDN.</p>
+
+    <h3>1.2. Как воспроизвести</h3>
+    <ol>
+      <li>Установить JDK 21: версия закреплена через <code>jvmToolchain(21)</code> в <a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/build.gradle.kts">build.gradle.kts</a>.</li>
+      <li>В корне репозитория выполнить <code>./gradlew spotlessCheck build</code>, затем <code>./gradlew classes</code>. Это команды из <a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/README.md">README.md</a>.</li>
+      <li>Скопировать <a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/.env.example">.env.example</a> в <code>.env</code>; задать <code>XMEM_API_KEY</code>, <code>XMEM_INSTANCE_ID_CLEAN</code>, <code>XMEM_INSTANCE_ID_TRAINED</code>, при необходимости <code>XMEM_BASE_URL</code>, а также <code>DECISION_MODEL</code> и <code>DECISION_MODEL_BASE_URL</code> для OpenAI-совместимого сервера. Загружать переменные в shell нужно отдельно: код сам <code>.env</code> не читает.</li>
+      <li>Собрать classpath ровно как в README: <code>CP="build/classes/kotlin/main:build/resources/main:$(find ~/.gradle/caches/modules-2 -name '*.jar' | tr '\n' ':')"</code>.</li>
+      <li>Обучить trained-memory: <code>java -cp "$CP" club.podlodka.snowball.adapter.cli.RunExperiment --split=training --arm=trained</code>.</li>
+      <li>Проверить обе руки без дообучения: выполнить <code>RunExperiment --split=benchmark --no-learning --arm=clean</code>, затем ту же команду с <code>--arm=trained</code>. Сравнить <code>mean regret</code>, <code>optimal rate</code> и <code>fallbacks</code>.</li>
+      <li>Для быстрого локального smoke-test без xmemory использовать <code>--memory=memory --limit=5</code>; модельный endpoint всё равно нужен. Интеграционный <a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/test/kotlin/club/podlodka/snowball/agent/LiveModelRunTest.kt">LiveModelRunTest.kt</a> сам пропускается, если endpoint недоступен.</li>
+    </ol>
+    <p class="note warn"><strong>Проверка в среде анализа:</strong> <code>./gradlew test</code> запустить не удалось — на хосте нет <code>java</code> и не задан <code>JAVA_HOME</code>. Это ограничение окружения, не результат тестов проекта.</p>
+
+    <h3>1.3. Технический стек</h3>
+    <ul>
+      <li><strong>Агенты:</strong> один Promotion Agent (<code>PromotionDecisionService</code>); Scenario Generator, Simulator, Evaluator/Learner.</li>
+      <li><strong>LLM:</strong> OpenAI-compatible Chat Completions; default <code>muse-glimmer-30b-q3</code>; <code>temperature=0</code>.</li>
+      <li><strong>Интеграции:</strong> xmemory REST API; CSV-фикстура; OpenAI-compatible model server; in-process ports; Kafka отсутствует в реализации.</li>
+      <li><strong>Память:</strong> xmemory — SKU, PromotionCase, Lesson и relations; <code>structured_mutations</code>/<code>raw-tables</code>; локальный evidence cache; журнал решений in-memory.</li>
+      <li><strong>Эвалы:</strong> deterministic simulator; replay четырёх действий; oracle, regret, optimal rate; time-split 250/50; clean/trained A/B.</li>
+      <li><strong>Фреймворки:</strong> Kotlin 2.4.10, JVM 21, Gradle; без Spring и agent framework; Jackson, NetworkNT JSON Schema; JUnit 5, AssertJ, MockK.</li>
+    </ul>
+    <p class="muted">Источники: <a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/build.gradle.kts">build.gradle.kts</a>, <a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/gradle/libs.versions.toml">gradle/libs.versions.toml</a>, <a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/adapter/cli/RunLoop.kt">RunLoop.kt</a>.</p>
+
+    <h2>2. Ответы на вопросы</h2>
+
+    <h3>1. С какими задачами работает агент?</h3>
+    <p class="answer">Агент решает узкую задачу: выбрать скидку <code>0/10/20/30%</code> для товара в заданном магазине и дневном контексте, максимизируя gross profit. Сам он задачи не ищет: Scenario Generator последовательно превращает строки фиксированного датасета в события и передаёт их агенту.</p>
+    <ul class="facts">
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/README.md">README.md</a>: 300 product-days, 250 training и 50 held-out, разделённых по времени.</li>
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/application/ScenarioGenerationService.kt">ScenarioGenerationService.kt</a>: фильтрация по split, детерминированный <code>scenario_id</code>, валидация и публикация.</li>
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/adapter/cli/RunExperiment.kt">RunExperiment.kt</a>: CLI выбирает <code>training | benchmark | all</code> и необязательный limit.</li>
+    </ul>
+
+    <h3>2. Как агент выбирает, что сохранить в память?</h3>
+    <p class="answer">Он не ранжирует события по «важности»: при включённом обучении сохраняется каждый валидный завершённый исход, для которого успешно воспроизведены все четыре действия и проверена целостность. Confidence влияет на последующее ранжирование Lessons, но не на решение писать кейс.</p>
+    <ul class="facts">
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/application/PromotionEvaluator.kt">PromotionEvaluator.kt</a>: сначала четыре replay и integrity check, затем <code>saveCase</code>; при <code>learningEnabled=false</code> запись полностью отключена.</li>
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/domain/LessonKey.kt">LessonKey.kt</a>: один кейс поддерживает шесть ключей — по три для SKU и категории.</li>
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/test/kotlin/club/podlodka/snowball/memory/DurableLearningTest.kt">DurableLearningTest.kt</a>: тест ожидает один PromotionCase, шесть Lessons и шесть evidence links.</li>
+    </ul>
+
+    <h3>3. Как организована память между рестартами агента?</h3>
+    <p class="answer">Долгосрочная память хранится во внешнем xmemory как типизированные объекты SKU, PromotionCase, Lesson и связи между кейсами и уроками; новый процесс с тем же instance ID читает накопленные Lessons обратно. Операционный DecisionJournal — только in-memory и рестарт не переживает.</p>
+    <ul class="facts">
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/adapter/memory/XmemoryLearningMemory.kt">XmemoryLearningMemory.kt</a>: durable adapter, детерминированные structured writes и <code>raw-tables</code> reads.</li>
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/docs/xmemory/schema.xmd.yaml">docs/xmemory/schema.xmd.yaml</a>: схема объектов и relations.</li>
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/test/kotlin/club/podlodka/snowball/memory/DurableLearningTest.kt">DurableLearningTest.kt</a>: свежий HTTP-клиент над тем же store читает Lesson, записанный предыдущим клиентом.</li>
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/adapter/memory/InMemoryDecisionJournal.kt">InMemoryDecisionJournal.kt</a>: прямо указано, что журнал не переживает рестарт.</li>
+    </ul>
+
+    <h3>4. Как агент обучается и меняет поведение?</h3>
+    <p class="answer">Evaluator строит полную обратную связь через oracle-replay, а Learner детерминированно пересчитывает рекомендации по совокупной прибыли всех уникальных кейсов; следующий prompt получает эти Lessons и поэтому LLM может выбрать другую скидку. Fine-tuning модели или изменение её весов отсутствуют.</p>
+    <ul class="facts">
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/domain/Lesson.kt">Lesson.kt</a>: выбирается действие с максимальной суммарной прибылью; confidence = 60% объём evidence + 25% согласие + 15% преимущество.</li>
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/adapter/model/PromptBuilder.kt">PromptBuilder.kt</a>: Lessons включаются в prompt с rationale и confidence.</li>
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/runs/2026-09-04/README.md">runs/2026-09-04</a>: oracle-trained cascade повысил optimal rate с 44% до 80% и снизил total regret с 44.04 до 7.18.</li>
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/runs/2026-09-06/README.md">runs/2026-09-06</a>: важная оговорка — вариант без oracle, видевший только выбранное действие, дал 52% и regret 59.89, то есть оказался хуже базовой модели по деньгам. Доказанное улучшение текущего цикла зависит от доступа Evaluator к контрфактическому симулятору.</li>
+    </ul>
+
+    <h3>5. Как память обновляется?</h3>
+    <p class="answer">Новый кейс идемпотентно добавляется как evidence, после чего соответствующий Lesson полностью пересчитывается по всем уникальным связанным кейсам — новая рекомендация может заменить старую. Удаления, TTL, decay, взвешивания по давности и автоматического исправления уже записанного ошибочного кейса в текущей реализации нет.</p>
+    <ul class="facts">
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/domain/Lesson.kt">Lesson.kt</a>: <code>distinctBy(caseId)</code> защищает от двойного счёта и затем заново агрегирует все действия.</li>
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/adapter/memory/XmemoryLearningMemory.kt">XmemoryLearningMemory.kt</a>: upsert Lessons и идемпотентные relations; API удаления не реализован.</li>
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/openspec/changes/implement-evaluator-learner/design.md">implement-evaluator-learner/design.md</a>: forgetting/time decay явно обозначены как non-goal v1.</li>
+      <li>Защита от нового плохого evidence есть: несогласованный replay вызывает <code>IntegrityError</code> до любой записи в память (<a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/application/PromotionEvaluator.kt">PromotionEvaluator.kt</a>).</li>
+    </ul>
+
+    <h3>6. Как работают эвалы?</h3>
+    <p class="answer">Одинаковые 50 held-out сценариев запускаются против чистой и обученной xmemory при неизменных модели, prompt и simulator version; в обеих руках learning отключён. Считаются optimal action rate, total/mean regret, gross profit, fallbacks и парные различия.</p>
+    <ul class="facts">
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/docs/benchmark/README.md">docs/benchmark/README.md</a>: протокол clean/trained, отдельные instance и <code>LEARNING_ENABLED=false</code>.</li>
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/adapter/cli/RunLoop.kt">RunLoop.kt</a>: формирование summary — число сценариев, regret, optimal choices и fallbacks.</li>
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/runs/2026-09-04/README.md">runs/2026-09-04</a>: реальные результаты, логи, p-values и оговорки; oracle cascade: 80% optimal и 7.18 total regret против 44% и 44.04 без памяти.</li>
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/test/kotlin/club/podlodka/snowball/learning/LearningLoopTest.kt">LearningLoopTest.kt</a> и <a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/test/kotlin/club/podlodka/snowball/memory/DurableLearningTest.kt">DurableLearningTest.kt</a>: loop closure, отсутствие записей в benchmark mode и память между клиентами.</li>
+    </ul>
+
+    <h3>7. Как работает human in the loop?</h3>
+    <p class="answer">В runtime-цикле human in the loop отсутствует: решения, симуляция, оценка и запись Lessons выполняются без подтверждения человека. Человек участвует только вне цикла — готовит fixture, настраивает instances/model и ревьюит код или результаты.</p>
+    <ul class="facts">
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/openspec/changes/implement-evaluator-learner/design.md">implement-evaluator-learner/design.md</a>: human validation — non-goal.</li>
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/docs/promotion-agent/README.md">docs/promotion-agent/README.md</a>: human approval workflow включён в MVP non-goals.</li>
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/AGENTS.md">AGENTS.md</a>: человек обязан владеть и полностью прочитать diff перед merge — это контроль разработки, не решений агента.</li>
+    </ul>
+
+    <h3>8. Используется ли xmemory? Если используется — сценарии и механизм.</h3>
+    <p class="answer">Да, xmemory используется по умолчанию как долговременная память в обучающих и benchmark-запусках; локальная in-memory реализация включается только явным <code>--memory=memory</code>. В xmemory сохраняются кейсы, Lessons и связи между ними, а следующие задачи получают оттуда до трёх подходящих Lessons через каскад точный контекст → без погоды → общий.</p>
+    <ul class="facts">
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/adapter/cli/RunExperiment.kt">RunExperiment.kt</a>: default <code>--memory=xmemory</code>, выбор clean/trained instance, проверка доступности instance до первого сценария и отдельный локальный режим.</li>
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/adapter/memory/XmemoryLearningMemory.kt">XmemoryLearningMemory.kt</a>: типизированные записи выполняются через <code>structured_mutations</code>, чтение — через <code>raw-tables</code>; адаптер сохраняет PromotionCase/Lesson и relations <code>lesson_evidence</code>/<code>lesson_sku_scope</code>.</li>
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/application/PromotionDecisionService.kt">PromotionDecisionService.kt</a>: поиск идёт по бакетам SKU и категории, после чего <code>LessonRanker</code> фильтрует кандидатов и ключи использованных Lessons фиксируются в результате и логе.</li>
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/docs/xmemory/schema.xmd.yaml">docs/xmemory/schema.xmd.yaml</a>: схема объектов SKU, PromotionCase, Lesson и их связей.</li>
+    </ul>
+
+    <h3>9. Сбои во время выполнения задачи.</h3>
+    <p class="answer">Сбой чтения памяти не останавливает задачу: агент помечает память как <code>UNAVAILABLE</code> и решает без Lessons; модель вызывается дважды, после чего применяется детерминированный fallback <code>0%</code>. Ошибки публикации, симуляции, проверки целостности и неретраебельные ошибки записи xmemory не маскируются и прерывают текущий запуск.</p>
+    <ul class="facts">
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/application/PromotionDecisionService.kt">PromotionDecisionService.kt</a>: исключения чтения memory перехватываются, обе неудачи модели дают <code>DecisionSource.FALLBACK</code>; решение записывается в журнал до передачи следующему компоненту.</li>
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/adapter/model/OpenAiCompatibleDecisionModel.kt">OpenAiCompatibleDecisionModel.kt</a>: недоступность endpoint, non-2xx, повреждённый/пустой или неразбираемый ответ возвращают неуспех для повторной попытки.</li>
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/adapter/memory/XmemoryLearningMemory.kt">XmemoryLearningMemory.kt</a> и <a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/adapter/memory/XmemoryHttp.kt">XmemoryHttp.kt</a>: задержка видимости relation/update ретраится с ожиданием, а остальные ошибки, включая исчерпание квоты, пробрасываются.</li>
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/application/PromotionEvaluator.kt">PromotionEvaluator.kt</a>: несовпадение replay с фактическим outcome вызывает <code>IntegrityError</code> до записи кейса и Lessons.</li>
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/application/ScenarioGenerationService.kt">ScenarioGenerationService.kt</a>: плохие строки оформляются как rejection, но ошибка publisher считается сбоем всего цикла и не поглощается.</li>
+    </ul>
+
+    <h3>10. Мониторинг: логирование/tracing и можно ли восстановить действия агента.</h3>
+    <p class="answer">Есть событийное логирование через <code>java.util.logging</code> и итоговые CLI-метрики, но полноценного tracing, метрик-бэкенда и trace/span ID в исполняемом коде нет. По сохранённому stdout/stderr можно частично восстановить цепочку scenario → decision → simulation → evaluation и использованные Lesson keys, однако полный аудит после рестарта невозможен: raw prompt/ответ модели не журналируются, а DecisionJournal живёт только в памяти процесса.</p>
+    <ul class="facts">
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/application/PromotionDecisionService.kt">PromotionDecisionService.kt</a>: INFO-запись содержит <code>scenario_id</code>, <code>decision_id</code>, скидку, source, memory status, Lesson keys и model ID; WARNING фиксирует отказы памяти и попыток модели.</li>
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/application/PromotionEvaluator.kt">PromotionEvaluator.kt</a> и <a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/application/SimulationService.kt">SimulationService.kt</a>: по тому же <code>scenario_id</code> логируются outcome, прибыль, выбранное и лучшее действие, regret и число Lessons.</li>
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/adapter/cli/RunExperiment.kt">RunExperiment.kt</a>: после прохода печатаются scenarios, mean regret, optimal rate, fallbacks и длительность; пример сохранённого вывода есть в <a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/runs/2026-09-04/benchmark-clean.log">runs/2026-09-04/benchmark-clean.log</a>.</li>
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/src/main/kotlin/club/podlodka/snowball/adapter/memory/InMemoryDecisionJournal.kt">InMemoryDecisionJournal.kt</a>: журнал обеспечивает идемпотентность только внутри процесса и явно не переживает рестарт.</li>
+      <li><a href="https://github.com/podlodka-ai-club/snowball/blob/b055f34b781def1400bf05845b91118c4fa36e4d/build.gradle.kts">build.gradle.kts</a>: среди runtime-зависимостей нет tracing/metrics SDK или экспортера.</li>
+    </ul>
+
+    <h2>Ограничения анализа</h2>
+    <ul>
+      <li>Из репозитория нельзя установить фактическую доступность, содержимое, retention и настройки доступа внешних xmemory instances.</li>
+      <li>Нельзя подтвердить доступность и точную runtime-версию внешней LLM, а также воспроизвести исторические ответы модели без соответствующего endpoint и окружения.</li>
+      <li>Нет production-конфигурации хранения логов, tracing и алертинга, поэтому нельзя восстановить реальный инцидент или оценить операционные SLO.</li>
+      <li>Нельзя установить поведение после рестарта production-процесса: исполняемый путь использует in-memory journal, а описанные в раннем дизайне Kafka/H2 не реализованы.</li>
+      <li>Нельзя доказать эффективность в реальном рынке: оценка основана на детерминированном симуляторе с oracle-replay всех действий, недоступном для обычного боевого решения.</li>
+      <li>Нельзя установить политику забывания и исправления ошибочной памяти: TTL/decay, удаление кейсов и разрешение конфликтов по давности в реализации отсутствуют.</li>
+    </ul>
+  </main>
+</body>
+</html>
+</template>
+<noscript><p class="nojs">Для переключения вкладок нужен JavaScript.</p></noscript>
+<script>
+for (const name of ['questionnaire','report']) {
+  document.querySelector('#'+name+' iframe').srcdoc = document.getElementById(name+'-doc').innerHTML;
+}
+for (const button of document.querySelectorAll('.tab')) {
+  button.addEventListener('click', () => {
+    for (const other of document.querySelectorAll('.tab')) other.setAttribute('aria-selected', String(other === button));
+    for (const panel of document.querySelectorAll('.panel')) panel.hidden = panel.id !== button.dataset.panel;
+  });
+}
+</script>
+</body></html>

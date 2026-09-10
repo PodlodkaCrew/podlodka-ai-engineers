@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="ru">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kata — анкета и анализ агента</title><style>
+:root{color-scheme:light dark;--bg:#f5f5f7;--fg:#1d1d1f;--panel:#fff;--line:#d2d2d7;--accent:#ff5a1f;--muted:#6e6e73}
+@media(prefers-color-scheme:dark){:root{--bg:#141416;--fg:#f5f5f7;--panel:#1f2024;--line:#3a3b40;--muted:#aaa}}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+body{display:flex;flex-direction:column}.top{padding:16px 18px 0;background:var(--panel);border-bottom:1px solid var(--line)}
+h1{font-size:22px;line-height:1.2;margin:0 0 12px}.tabs{display:flex;gap:6px}.tab{appearance:none;border:1px solid var(--line);border-bottom:0;background:var(--bg);color:var(--fg);padding:10px 15px;border-radius:9px 9px 0 0;font:600 14px system-ui;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:#fff}.panels{position:relative;flex:1;min-height:0}.panel{position:absolute;inset:0}.panel[hidden]{display:none}.panel iframe{border:0;width:100%;height:100%;background:#fff}.nojs{padding:12px 18px;color:var(--muted)}
+</style></head>
+<body>
+<header class="top"><h1>Kata — анкета и анализ агента</h1><nav class="tabs" aria-label="Материалы команды">
+<button class="tab" type="button" id="tab-questionnaire" data-panel="questionnaire" role="tab" aria-selected="true" aria-controls="questionnaire">Анкета команды</button>
+<button class="tab" type="button" id="tab-report" data-panel="report" role="tab" aria-selected="false" aria-controls="report">Анализ агента</button>
+</nav></header>
+<main class="panels">
+<section class="panel" id="questionnaire" role="tabpanel" aria-labelledby="tab-questionnaire"><iframe title="Анкета команды"></iframe></section>
+<section class="panel" id="report" role="tabpanel" aria-labelledby="tab-report" hidden><iframe title="Анализ агента"></iframe></section>
+</main>
+<template id="questionnaire-doc"><!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kata — анкета команды</title><style>
+:root{color-scheme:light dark;--bg:#fafafa;--fg:#202124;--muted:#666;--card:#fff;--line:#d8dadd;--link:#1558d6;--accent:#ff5a1f}
+@media(prefers-color-scheme:dark){:root{--bg:#17181a;--fg:#e7e8ea;--muted:#aaa;--card:#202226;--line:#3b3e44;--link:#8ab4ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}main{max-width:980px;margin:auto;padding:28px 20px 56px}h1{font-size:28px;margin:0 0 8px}.meta{color:var(--muted);margin-bottom:26px}.meta a,a{color:var(--link)}.qa{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:17px 19px;margin:14px 0}.qa h2{font-size:17px;line-height:1.35;margin:0 0 9px}.answer{white-space:pre-wrap;overflow-wrap:anywhere}.badge{display:inline-block;padding:3px 8px;border-radius:999px;background:var(--accent);color:white;font-size:12px;font-weight:700;margin-left:7px}
+</style></head><body><main><h1>Kata — анкета команды <span class="badge">xmemory</span></h1><div class="meta">Репозиторий: <a href="https://github.com/podlodka-ai-club/kata" target="_blank" rel="noopener">https://github.com/podlodka-ai-club/kata</a> · ответ отправлен 07.09.2026 5:45:54</div><section class="qa"><h2>Представьте, что вы делаете лендинг для вашего проекта или поднимаете инвестиции. Как бы вы описали его одной фразой, чтобы он выделялся среди всех остальных?</h2><div class="answer">Системный дизайн проекта как долговременная память кодингового агента: агент сам извлекает архитектурные факты из кода, человек только выбирает срезы и ревьюит спорное, и каждая новая сессия начинает с известных правил, а не с нуля.</div></section><section class="qa"><h2>Что и как делает ваш агент?</h2><div class="answer">Один раз строит базу фактов о проекте: скилл tech-facts разведывает репозиторий, человек в локальном UI выбирает срезы, агент проектирует схему в xmemory и извлекает факты с evidence. Затем решает задачи рядом с этой базой: перед задачей хук инжектит релевантные факты, после задачи агент сверяет память с кодом и дописывает уроки, а сессия-куратор между задачами чистит дубли и противоречия.
+
+Подробнее
+
+Задачи. Шесть реальных задач из Mealie, восстановленных из настоящих PR, в двух кластерах переноса.
+
+Внутренний цикл. Чтение фактов перед задачей, правило «код прав» при расхождении, после задачи гейт новизны и один батч структурированных мутаций плюс объект Task со связями.
+
+Внешний цикл. Каждая задача новая сессия и чистая копия кода, память клонируется в новый инстанс xmemory, после третьей или четвёртой задачи изолированный куратор без доступа к коду.
+
+Память. Реляционная схема, тип объекта на срез, факты с evidence файл:строка, статусами candidate → active → stale, ничего не удаляется. Старт с 19 фактов.
+
+Автоулучшение. Наблюдения из диффа, gotcha-факты из собственных граблей, куратор, предложения схемы из read-трафика.
+
+Данные. Обучения не было. Скрытые тесты из реальных PR, проверенные на дискриминацию: четыре из 23 кандидатов отбраковали.</div></section><section class="qa"><h2>Про технический и AI стек</h2><div class="answer">xmemory. Плюс: типизированная схема и клоны инстансов, состояние реально переживает сессии. Минус: текстовая запись выдумывала структуру, отбор под задачу и учёт стоимости пришлось писать самим.
+
+Модели. Закрытая Claude Sonnet 5, effort medium. Разброс между повторами сопоставим с эффектом памяти.
+
+Эвал. Собственный раннер: три режима, защита тестов от правок, гейты fake/null/oracle перед платными прогонами, canary перед полной матрицей.</div></section><section class="qa"><h2>Если бы у вас была ещё одна неделя, что бы вы сделали в первую очередь и почему именно это?</h2><div class="answer">попробовал бы другую память, а не xmemory</div></section><section class="qa"><h2>Какие решения оправдали себя настолько, что вы бы рекомендовали другим командам их переиспользовать? Например: паттерн реализации, выбор технологии, архитектурное решение, продуктовая идея.</h2><div class="answer">Дешёвые гейты и canary до платных прогонов.
+Валидация скрытых тестов на родительском и эталонном коммитах.</div></section><section class="qa"><h2>Какие решения оказались неудачными или не дали ожидаемой пользы?</h2><div class="answer">Реляционная память для этой задачи: обслуживание схемы стало отдельной работой, выигрыша в качестве нет.
+
+Куратор: состояние обслуживал, следующие задачи не улучшил, режим на 7% дороже.
+
+Перенос уроков: новые факты почти не попадали в выдачу, единственный дошедший агент не использовал.</div></section><section class="qa"><h2>Пример работы агента до и после обучения</h2><div class="answer">Презентация в канале: https://t.me/c/4326664247/156</div></section><section class="qa"><h2>Участвуете ли вы в номинации от xmemory?</h2><div class="answer">Да</div></section></main></body></html></template>
+<template id="report-doc"><!doctype html>
+<html lang="ru">
+<head><base target="_blank">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kata: анализ самообучающегося агента</title>
+<style>
+:root{color-scheme:light dark;--bg:#fafafa;--fg:#202124;--muted:#666;--card:#fff;--line:#d8dadd;--link:#1558d6;--ok:#176b3a;--warn:#9a5b00} @media(prefers-color-scheme:dark){:root{--bg:#17181a;--fg:#e7e8ea;--muted:#aaa;--card:#202226;--line:#3b3e44;--link:#8ab4ff;--ok:#71d89a;--warn:#ffc266}} *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 system-ui,-apple-system,Segoe UI,sans-serif} main{max-width:1080px;margin:auto;padding:28px 20px 56px} h1{font-size:28px;margin:0 0 8px} h2{margin-top:38px;border-bottom:2px solid var(--line);padding-bottom:6px} h3{margin-top:26px} h4{margin:0 0 6px} a{color:var(--link)} .meta,.note,.answer{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px}.meta{display:flex;gap:10px 24px;flex-wrap:wrap}.muted{color:var(--muted)} table{width:100%;border-collapse:collapse;display:block;overflow-x:auto} th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top} th{background:var(--card)} code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace} pre{background:var(--card);border:1px solid var(--line);border-radius:7px;padding:12px;overflow:auto;white-space:pre-wrap} .status{font-weight:700}.ready{color:var(--ok)}.described,.plan{color:var(--warn)} .qa{margin:18px 0}.qa ul{margin-top:6px}.answer{margin:7px 0}.compact li{margin:3px 0}
+</style>
+</head>
+<body><main>
+<h1>Kata: анализ самообучающегося агента</h1>
+<div class="meta">
+  <span><b>Репозиторий:</b> <a href="https://github.com/podlodka-ai-club/kata">kata</a></span>
+  <span><b>Ветка / commit:</b> <code>main</code> / <code>605240fc4486d1a13b19996d629052e3963b1d5a</code></span>
+  <span><b>Дата анализа:</b> <time datetime="2026-09-09">2026-09-09</time></span>
+</div>
+<p class="muted">Основание: реализация раннера, хуков, backend памяти, тестов и зафиксированные результаты; <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/README.md">README</a> использован только как карта.</p>
+
+<h2>1. Анализ</h2>
+
+<h3>1.1 Пошаговый пайплайн</h3>
+<p>Система состоит из одноразового построения базы B1–B7 и повторяемого цикла задачи U1–U3; в эксперименте этот цикл исполняют <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/run.py">run.py</a> и <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/sweep.py">sweep.py</a>, а не один бесконечно живущий агент.</p>
+<table>
+<thead><tr><th>Этап</th><th>Что происходит</th><th>Статус</th><th>Опора в репозитории</th></tr></thead>
+<tbody>
+<tr><td>0. Построение базы B1–B7</td><td>Разведка репозитория → выбор до трёх срезов → проектирование типизированной схемы → параллельное извлечение → review → проверка ключей → UI-эксплорер.</td><td><span class="status ready">Готово</span> для UI/полевого сценария; типизированная схема дополнительно покрыта тестами.</td><td><a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/skills/tech-facts/SKILL.md">SKILL.md</a>, <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/skills/tech-facts/memory-protocol.md">memory-protocol.md</a>, <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/tests/test_memory_backend.py">test_memory_backend.py</a></td></tr>
+<tr><td>1. Выбор задачи</td><td><code>sweep.py</code> читает список <code>tasks</code>, сохраняет канонический порядок и запускает каждую ячейку mode/seed; отдельный запуск принимает <code>--task</code>.</td><td><span class="status ready">Готово</span></td><td><a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/tasks.yaml">tasks.yaml</a>, <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/sweep.py">sweep.py</a></td></tr>
+<tr><td>2. Дешёвая валидация</td><td>Проверяются base/solution commits, родительство и наличие hidden tests; затем обязательны fake state-machine, physical test-protection, null/oracle и cloud durability gates.</td><td><span class="status ready">Готово</span></td><td><a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/run.py">run.py</a>, <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/cloud_preflight.py">cloud_preflight.py</a>, <a href="https://github.com/podlodka-ai-club/kata/tree/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/tests/">runner/tests/</a></td></tr>
+<tr><td>3. Граница рестарта памяти</td><td>Для каждой coding/curator-сессии создаётся новый xmemory child: первый от неизменяемого C0, следующий от предыдущего child; manifest сверяется по SHA-256.</td><td><span class="status ready">Готово</span>, проверено cloud-прогонами</td><td><a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/memory_backend.py">memory_backend.py</a>, <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/evals/results/2026-09-02-sonnet5-xmemory-full-r2.md">full r2</a></td></tr>
+<tr><td>4. U1: чтение</td><td>Из <code>active</code> выбираются релевантные C0 facts и максимум один валидированный learned fact того же transfer cluster; threshold/top-k применяются до provider read, ответ не может добавить чужой ID.</td><td><span class="status ready">Готово</span></td><td><a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/memory_backend.py">precision_select/read</a>, <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/config.example.toml">config.example.toml</a></td></tr>
+<tr><td>5. Изолированный workspace</td><td>Base commit архивируется без будущей git-истории, удаляются чужие <code>AGENTS.md</code>/<code>CLAUDE.md</code>; tests защищаются manifest, правами, immutable flags, sandbox и PreToolUse guard.</td><td><span class="status ready">Готово</span></td><td><a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/run.py">run.py</a>, <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/hooks/pre_tool_use.py">pre_tool_use.py</a>, <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/test_protection.py">test_protection.py</a></td></tr>
+<tr><td>6. Инъекция и coding</td><td>SessionStart кладёт exact prepared context в prompt и артефакт; Claude Code реализует задачу в одноразовой сессии.</td><td><span class="status ready">Готово</span></td><td><a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/hooks/session_start.sh">session_start.sh</a>, <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/hooks/settings.memory-on.json">settings.memory-on.json</a>, <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/config.example.toml">agent config</a></td></tr>
+<tr><td>7. U3: кандидат урока</td><td>Stop-hook один раз возвращает агента в работу. Агент пишет JSON с <code>create/update/stale/noop</code>, Task.used/produced и решениями, привязанными к фактическим diff paths.</td><td><span class="status ready">Готово</span> в eval-runner; общий продуктовый контракт — <span class="status described">описан</span></td><td><a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/hooks/stop.py">stop.py</a>, <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/skills/tech-facts/usage-contract.md">usage-contract.md</a></td></tr>
+<tr><td>8. Проверка результата</td><td>До записи памяти доказывается pristine tests; затем на восстановленном дереве запускаются regression и hidden suites, отдельно проверяется архитектурное размещение.</td><td><span class="status ready">Готово</span></td><td><a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/run.py">run.py</a>, <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/evals/README.md">eval protocol</a></td></tr>
+<tr><td>9. Подтверждение и запись</td><td>В precision-v1 новый факт становится <code>active</code> только при evidence в изменённом product source и зелёных pristine/regression/hidden/architecture; иначе остаётся <code>candidate</code>. Батч и cloud manifest записываются и перечитываются.</td><td><span class="status ready">Готово</span></td><td><a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/run.py">prepare_precision_batch</a>, <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/memory_backend.py">apply/verification</a></td></tr>
+<tr><td>10. E: curator checkpoint</td><td>В третьем stream отдельный агент видит только накопленную память и schema suggestions: дедуплицирует, update/stale/supersede learned facts, но не создаёт solution facts.</td><td><span class="status ready">Готово</span></td><td><a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/evolve.py">evolve.py</a>, <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/memory_backend.py">evolve backend</a></td></tr>
+<tr><td>11. Метрики, eligibility, cleanup</td><td>Пишутся diff/JUnit/context/read/write/attribution/metrics; primary допускает только полностью paired valid+eligible тройки. После verified clone удаляется прежний child, после stream — tail, receipts остаются локально.</td><td><span class="status ready">Готово</span>; причинное улучшение <span class="status plan">не доказано</span></td><td><a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/sweep.py">sweep.py</a>, <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/harness/README.md">harness</a>, <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/evals/results/2026-09-02-sonnet5-xmemory-precision-v1-canary.md">precision canary</a></td></tr>
+</tbody>
+</table>
+
+<p><b>Переход одной задачи через основные состояния</b> (исходник Mermaid намеренно не рендерится и не содержит условий):</p>
+<pre class="mermaid">stateDiagram-v2
+    [*] --&gt; Объявлена_в_tasks_yaml
+    Объявлена_в_tasks_yaml --&gt; Валидирована
+    Валидирована --&gt; Контекст_режима_подготовлен
+    Контекст_режима_подготовлен --&gt; Одноразовый_workspace
+    Одноразовый_workspace --&gt; Tests_защищены
+    Tests_защищены --&gt; SessionStart_инъекция
+    SessionStart_инъекция --&gt; Coding_session
+    Coding_session --&gt; Stop_U3
+    Stop_U3 --&gt; Mutation_batch
+    Mutation_batch --&gt; Pristine_proof
+    Pristine_proof --&gt; Regression_eval
+    Regression_eval --&gt; Hidden_eval
+    Hidden_eval --&gt; Architecture_eval
+    Architecture_eval --&gt; Candidate_или_Active
+    Candidate_или_Active --&gt; State_write_verify
+    State_write_verify --&gt; Attribution_и_metrics
+    Attribution_и_metrics --&gt; Eligibility
+    Eligibility --&gt; Cleanup_workspace_и_tail
+    Cleanup_workspace_и_tail --&gt; [*]</pre>
+
+<h3>1.2 Как воспроизвести</h3>
+<h4>UI demo</h4>
+<p><b>Prerequisites:</b> Node.js; браузер — только для просмотра localhost. Сборка и внешние сервисы не нужны: сервер zero-dependency, данные уже лежат в demo workdir (<a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/skills/tech-facts/scripts/server.mjs">server.mjs</a>, <a href="https://github.com/podlodka-ai-club/kata/tree/605240fc4486d1a13b19996d629052e3963b1d5a/skills/tech-facts/examples/demo-workdir/">demo-workdir/</a>).</p>
+<pre><code>cd /path/to/kata
+node skills/tech-facts/scripts/server.mjs serve \
+  --workdir skills/tech-facts/examples/demo-workdir
+# открыть http://localhost:4747</code></pre>
+
+<h4>Экспериментальный прогон</h4>
+<p><b>Prerequisites:</b> Python 3.11+ (команды документации используют 3.12), <code>uv</code>, PyYAML, Git, подготовленный локальный clone Mealie с pinned commits, Claude Code CLI и доступ к pinned Claude Sonnet 5, <code>xmemcli</code>, xmemory account/quota и C0 template. Точные параметры находятся в <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/README.md">runner/README.md</a> и <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/config.example.toml">config.example.toml</a>.</p>
+<pre><code>cd /path/to/kata
+cp dataset/runner/config.example.toml dataset/runner/config.toml
+
+# Бесплатная state-machine проверка
+uv run --python 3.12 --with pyyaml python dataset/runner/sweep.py \
+  --memory-selftest
+
+# Физическая защита tests
+uv run --python 3.12 --with pyyaml python dataset/runner/sweep.py \
+  --test-protection-selftest --out runs/precision-v1-canary
+
+# null/oracle: датасет обязан отличать пустое решение от эталонного
+uv run --python 3.12 --with pyyaml python dataset/runner/sweep.py \
+  --selftest --skip-setup --config dataset/runner/config.toml
+
+# Один раз: авторизация и неизменяемый C0 template
+xmemcli auth status
+uv run --python 3.12 python dataset/runner/provision_xmemory.py provision \
+  --name kata-c0-template --snapshot dataset/facts/snapshot-c0.md
+# вставить выданный instance_id в memory.c0_instance_id config.toml
+
+# Реальный cloud durability gate
+uv run --python 3.12 --with pyyaml python dataset/runner/cloud_preflight.py \
+  --config dataset/runner/config.toml \
+  --out runs/precision-v1-cloud-preflight
+
+# Precision canary
+uv run --python 3.12 --with pyyaml python dataset/runner/sweep.py \
+  --config dataset/runner/config.toml \
+  --tasks a1 a4 a6 \
+  --modes memory-off memory-on memory-on+evolve \
+  --seeds 1 --skip-setup --fail-fast \
+  --curator-after a4 --canary-gate \
+  --out runs/precision-v1-canary</code></pre>
+<p class="note"><b>Ограничения запуска.</b> <code>xmemcli auth login</code> требует браузерного подтверждения; <code>.xmemrc.json</code> содержит секрет открытым текстом и должен лежать вне пользовательского репозитория. Прогон обращается к xmemory cloud и Claude, расходует quota/tokens и требует сети. Согласно текущему протоколу full matrix запускается только после зелёного canary; зафиксированный precision canary завершился <b>FAIL</b>, поэтому новый full не разрешён (<a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/evals/results/2026-09-02-sonnet5-xmemory-precision-v1-canary.md">результат</a>). Для physical protection документация отдельно требует macOS/Seatbelt (<a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/README.md">ограничение host</a>).</p>
+
+<h3>1.3 Технический стек</h3>
+<ul class="compact">
+<li><b>Агенты:</b> Claude Code coding-agent; Claude Code curator; null; oracle.</li>
+<li><b>LLM:</b> Claude Sonnet 5, effort medium.</li>
+<li><b>Внешние интеграции:</b> xmemory cloud; xmemcli; Git; GitHub/Mealie reference repository.</li>
+<li><b>Память:</b> typed xmemory objects/relations; chunked digest-checked MemoryState; file JSON fallback.</li>
+<li><b>Эвалы:</b> pytest; JUnit XML; hidden/regression suites; null/oracle; feature_lift; architecture gates; paired eligibility.</li>
+<li><b>Фреймворки:</b> Python 3.11/3.12; PyYAML; uv; Node.js; vanilla HTML/CSS/JS; Mermaid source/vendor.</li>
+</ul>
+<p class="muted">Источники списка: <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/config.example.toml">config</a>, <a href="https://github.com/podlodka-ai-club/kata/tree/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/">runner/</a>, <a href="https://github.com/podlodka-ai-club/kata/tree/605240fc4486d1a13b19996d629052e3963b1d5a/skills/tech-facts/ui/">UI</a>, <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/evals/README.md">evals</a>.</p>
+
+<h2>2. Ответы на вопросы</h2>
+
+<section class="qa" id="q1"><h3>1. С какими задачами работает агент? Как получает/выбирает задачу.</h3>
+<div class="answer"><b>Ответ.</b> Агент решает шесть coding-задач, воспроизводящих реальные исторические PR Mealie: API/auth/config, data/repository и invariants. Сам он источник не выбирает: <code>run.py --task</code> получает ID, а <code>sweep.py</code> последовательно берёт объявленный набор.</div>
+<ul><li>Формулировки, base/solution commits, hidden tests, slices и transfer clusters: <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/tasks.yaml">dataset/tasks.yaml</a>.</li><li>Загрузка только ключа <code>tasks</code> и запуск в каноническом порядке: <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/run.py">run.py</a>, <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/sweep.py">sweep.py</a>.</li><li>Интеграция с очередью issue/трекером: <b>В репозитории не найдено</b>; источник — статический YAML.</li></ul></section>
+
+<section class="qa" id="q2"><h3>2. Как выбирает, что сохранить в память? Критерии.</h3>
+<div class="answer"><b>Ответ.</b> Порог — урок должен пережить следующую задачу и иметь evidence; в precision-v1 автоматически активируется только проверенный product-architecture факт с evidence в реальном source diff и зелёными pristine/regression/hidden/architecture. Всё непроверенное остаётся <code>candidate</code>, совпадение становится <code>noop</code>, tooling/gotcha не допускается в transfer.</div>
+<ul><li>Новизна, evidence и критерий долговечности: <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/skills/tech-facts/usage-contract.md">usage-contract.md</a>.</li><li>Общий auto-confirm: high + declared/observed + code evidence; inferred/medium/low/gotcha/question не подтверждаются автоматически: <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/skills/tech-facts/memory-protocol.md">memory-protocol.md</a>.</li><li>Более строгая экспериментальная promotion: <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/run.py">prepare_precision_batch в run.py</a>.</li></ul></section>
+
+<section class="qa" id="q3"><h3>3. Как организована память между рестартами? Технология и подход.</h3>
+<div class="answer"><b>Ответ.</b> Состояние переносится только через xmemory: новая сессия получает fresh cloud child от предыдущего child и проверяет canonical MemoryState по digest. Локально сохраняются лишь lineage IDs, hashes и delete receipts, не сами facts.</div>
+<ul><li>Typed facts/Task relations плюс chunked manifest: <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/memory_backend.py">XMemoryBackend</a>.</li><li>C0 неизменяем, прежний child удаляется только после verified clone, tail — после stream: <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/README.md">runner protocol</a>.</li><li>Cloud full r2 реально создал и удалил 26 children: <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/evals/results/2026-09-02-sonnet5-xmemory-full-r2.md">full r2</a>.</li></ul></section>
+
+<section class="qa" id="q4"><h3>4. Как обучается и меняет поведение?</h3>
+<div class="answer"><b>Ответ.</b> Это не дообучение весов: после задачи агент формирует уроки, runner валидирует/продвигает их, а следующая новая сессия получает релевантный active context; curator отдельно чистит learned state и предложения схемы. Доказанного улучшения поведения пока нет.</div>
+<ul><li>Цикл U1–U3 и отдельная эволюция E: <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/skills/tech-facts/usage-contract.md">usage-contract.md</a>.</li><li>Precision retrieval разрешает максимум один validated learned fact того же cluster: <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/memory_backend.py">precision_select</a>.</li><li>Canary дал одинаковый paired macro 0.800, а learned-transfer effect не установлен: <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/evals/results/2026-09-02-sonnet5-xmemory-precision-v1-canary.md">precision canary</a>.</li></ul></section>
+
+<section class="qa" id="q5"><h3>5. Как память обновляется? Устаревание/ошибки.</h3>
+<div class="answer"><b>Ответ.</b> Используются <code>create/update/stale/noop</code>; факты не удаляются, устаревший получает <code>status_reason</code> и при замене <code>superseded_by</code>, а читаются только <code>active</code>. Автоматического TTL/временного decay <b>не описано</b>.</div>
+<ul><li>State transition и журнал версии: <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/memory_backend.py">apply_batch_to_state</a>.</li><li>Правило «код прав», stale/superseded и human escalation: <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/skills/tech-facts/memory-protocol.md">memory-protocol.md</a>.</li><li>В precision-v1 C0 неизменяем; противоречие с ним создаёт отдельный learned candidate, curator может менять только learned facts: <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/hooks/stop.py">stop.py</a>, <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/evolve.py">evolve.py</a>.</li></ul></section>
+
+<section class="qa" id="q6"><h3>6. Как работают эвалы? Проверка улучшения со временем.</h3>
+<div class="answer"><b>Ответ.</b> Сравниваются три хронологических stream: off, read/write on и on+evolve; качество — normalized <code>feature_lift</code> между null и oracle, плюс hidden, regression и архитектурные gates. Primary сравнение допускает только полностью paired valid+eligible task/seed, поэтому текущие данные улучшения не доказывают.</div>
+<ul><li>Методика трёх stream и scoring: <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/evals/README.md">evals/README.md</a>.</li><li>Eligibility и canary gate реализованы в <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/sweep.py">sweep.py</a>; оси метрик — в <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/harness/README.md">harness/README.md</a>.</li><li>Full r2: 36/36 valid, но ни одной полностью paired eligible тройки; precision canary: 9/9 valid, gate FAIL из-за a6/on+evolve regression: <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/evals/results/2026-09-02-sonnet5-xmemory-full-r2.md">full r2</a>, <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/evals/results/2026-09-02-sonnet5-xmemory-precision-v1-canary.md">canary</a>.</li></ul></section>
+
+<section class="qa" id="q7"><h3>7. Human in the loop: где и как.</h3>
+<div class="answer"><b>Ответ.</b> Человек участвует при первичном picker срезов и review сомнительных карточек, может отозвать auto-approval и оставляет <code>human_notes</code>; coding-прогоны намеренно автономны. Крупные schema changes должны идти через отдельную evolution/review границу.</div>
+<ul><li>Picker, progressive review и действия approve/reject/unapprove/comment: <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/skills/tech-facts/SKILL.md">SKILL.md</a>, <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/skills/tech-facts/ui-protocol.md">ui-protocol.md</a>.</li><li>В автономной задаче вопросы сохраняются как candidates, а не задаются человеку: <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/skills/tech-facts/usage-contract.md">usage-contract.md</a>.</li><li>Обязательный человеческий workflow для destructive schema preview как отдельная UI-функция: <b>В репозитории не найдено</b>; backend требует флаг подтверждения: <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/memory_backend.py">memory_backend.py</a>.</li></ul></section>
+
+<section class="qa" id="q8"><h3>8. Используется ли xmemory? Сценарии и механизм.</h3>
+<div class="answer"><b>Ответ.</b> Да, xmemory — обязательный backend официальных memory-прогонов и источник typed facts, Task relations и durable MemoryState; чтение scoped, запись — детерминированными <code>structured_mutations</code>. File backend оставлен только для бесплатных selftests/debug и помечается fallback.</div>
+<ul><li>Запрет официального memory sweep без xmemory: <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/run.py">run.py</a>, <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/config.example.toml">config</a>.</li><li>Clone/read/write/verify и трансляция Task relations: <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/memory_backend.py">memory_backend.py</a>.</li><li>Provision C0 и typed schema: <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/provision_xmemory.py">provision_xmemory.py</a>.</li></ul></section>
+
+<section class="qa" id="q9"><h3>9. Сбои во время выполнения задачи.</h3>
+<div class="answer"><b>Ответ.</b> Критические ошибки памяти, leakage, test protection и проверки manifest закрывают прогон до расходов или до записи; технический сбой memory stream обрывает все последующие хронологические ячейки. Один retry разрешён только для распознанной provider/network ошибки при пустом source diff.</div>
+<ul><li>Retry markers и запрет unsafe retry после изменений: <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/run.py">transient_agent_error/run_agent</a>.</li><li>Stop-hook имеет hard loop guard и две попытки исправить batch; окончательно невалидный batch отклоняет runner: <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/hooks/stop.py">stop.py</a>.</li><li><code>finally</code> снимает защиту и удаляет workspace; tail cleanup пишет scoped receipt. Resume принимает valid off-cell или целый доказанный memory stream, но отвергает частичный: <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/run.py">run.py cleanup</a>, <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/sweep.py">sweep.py resume/cleanup</a>.</li></ul></section>
+
+<section class="qa" id="q10"><h3>10. Мониторинг, logging/tracing и возможность восстановить действия.</h3>
+<div class="answer"><b>Ответ.</b> Runner сохраняет prompt, stdout/stderr, exact injected context, diff, JUnit, read/write/promotion, metrics, attribution и cloud lineage, чего хватает для аудита решений и состояния. Полной трассы tool calls нет: если CLI её не отдаёт, <code>files_read</code> и time-to-first-file остаются <code>null</code>; частичный memory stream не восстанавливается продолжением.</div>
+<ul><li>Полный список task/stream artifacts: <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/README.md">runner/README.md</a>.</li><li>Fact → read → Task decision/diff path → outcomes: <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/run.py">attribution в run.py</a>; hardening проверяет claimed-used trace в <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/sweep.py">sweep.py</a>.</li><li>xmemory CLI не предоставляет историю чтений/записей, поэтому инфраструктурную трассу ведёт runner: <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/skills/tech-facts/memory-protocol.md">memory-protocol.md</a>.</li></ul></section>
+
+<h3>Ограничения анализа</h3>
+<div class="note">
+<ul class="compact">
+<li>Анализ source-level и не запускал платные Claude/xmemory прогоны: секреты, quota и доступность внешних сервисов из репозитория не выводятся.</li>
+<li>Последний precision canary — отрицательный: full заблокирован; причинное улучшение качества или стоимости <b>не установлено</b> (<a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/evals/results/2026-09-02-sonnet5-xmemory-precision-v1-canary.md">canary</a>).</li>
+<li>Cloud full r2 подтверждает durability/lineage, но не эффект памяти: после eligibility нет ни одной полной paired тройки (<a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/evals/results/2026-09-02-sonnet5-xmemory-full-r2.md">full r2</a>).</li>
+<li>Общий skill описывает продуктовый цикл шире eval-runner; часть observability и eval конкретного урока остаётся «описано/план/пробел», что прямо отмечено в <a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/README.md">README</a>.</li>
+<li><a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/harness/README.md">harness/README.md</a> содержит устаревшую форму canary <code>a3→a6</code>; актуальные код, runner docs и результаты используют <code>a1→a4→a6</code> (<a href="https://github.com/podlodka-ai-club/kata/blob/605240fc4486d1a13b19996d629052e3963b1d5a/dataset/runner/sweep.py">sweep.py</a>).</li>
+<li>Долговременная политика TTL/автоматического забывания и полноценное восстановление частичного memory stream: <b>Не описано / не реализовано</b>; вместо этого используются stale и fail-closed restart в новом output directory.</li>
+</ul>
+</div>
+</main></body>
+</html>
+</template>
+<noscript><p class="nojs">Для переключения вкладок нужен JavaScript.</p></noscript>
+<script>
+for (const name of ['questionnaire','report']) {
+  document.querySelector('#'+name+' iframe').srcdoc = document.getElementById(name+'-doc').innerHTML;
+}
+for (const button of document.querySelectorAll('.tab')) {
+  button.addEventListener('click', () => {
+    for (const other of document.querySelectorAll('.tab')) other.setAttribute('aria-selected', String(other === button));
+    for (const panel of document.querySelectorAll('.panel')) panel.hidden = panel.id !== button.dataset.panel;
+  });
+}
+</script>
+</body></html>

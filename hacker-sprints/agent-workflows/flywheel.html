@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="ru">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Flywheel — анкета и анализ агента</title><style>
+:root{color-scheme:light dark;--bg:#f5f5f7;--fg:#1d1d1f;--panel:#fff;--line:#d2d2d7;--accent:#ff5a1f;--muted:#6e6e73}
+@media(prefers-color-scheme:dark){:root{--bg:#141416;--fg:#f5f5f7;--panel:#1f2024;--line:#3a3b40;--muted:#aaa}}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+body{display:flex;flex-direction:column}.top{padding:16px 18px 0;background:var(--panel);border-bottom:1px solid var(--line)}
+h1{font-size:22px;line-height:1.2;margin:0 0 12px}.tabs{display:flex;gap:6px}.tab{appearance:none;border:1px solid var(--line);border-bottom:0;background:var(--bg);color:var(--fg);padding:10px 15px;border-radius:9px 9px 0 0;font:600 14px system-ui;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:#fff}.panels{position:relative;flex:1;min-height:0}.panel{position:absolute;inset:0}.panel[hidden]{display:none}.panel iframe{border:0;width:100%;height:100%;background:#fff}.nojs{padding:12px 18px;color:var(--muted)}
+</style></head>
+<body>
+<header class="top"><h1>Flywheel — анкета и анализ агента</h1><nav class="tabs" aria-label="Материалы команды">
+<button class="tab" type="button" id="tab-questionnaire" data-panel="questionnaire" role="tab" aria-selected="true" aria-controls="questionnaire">Анкета команды</button>
+<button class="tab" type="button" id="tab-report" data-panel="report" role="tab" aria-selected="false" aria-controls="report">Анализ агента</button>
+</nav></header>
+<main class="panels">
+<section class="panel" id="questionnaire" role="tabpanel" aria-labelledby="tab-questionnaire"><iframe title="Анкета команды"></iframe></section>
+<section class="panel" id="report" role="tabpanel" aria-labelledby="tab-report" hidden><iframe title="Анализ агента"></iframe></section>
+</main>
+<template id="questionnaire-doc"><!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Flywheel — анкета команды</title><style>
+:root{color-scheme:light dark;--bg:#fafafa;--fg:#202124;--muted:#666;--card:#fff;--line:#d8dadd;--link:#1558d6;--accent:#ff5a1f}
+@media(prefers-color-scheme:dark){:root{--bg:#17181a;--fg:#e7e8ea;--muted:#aaa;--card:#202226;--line:#3b3e44;--link:#8ab4ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}main{max-width:980px;margin:auto;padding:28px 20px 56px}h1{font-size:28px;margin:0 0 8px}.meta{color:var(--muted);margin-bottom:26px}.meta a,a{color:var(--link)}.qa{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:17px 19px;margin:14px 0}.qa h2{font-size:17px;line-height:1.35;margin:0 0 9px}.answer{white-space:pre-wrap;overflow-wrap:anywhere}.badge{display:inline-block;padding:3px 8px;border-radius:999px;background:var(--accent);color:white;font-size:12px;font-weight:700;margin-left:7px}
+</style></head><body><main><h1>Flywheel — анкета команды <span class="badge">xmemory</span></h1><div class="meta">Репозиторий: <a href="https://github.com/podlodka-ai-club/flywheel" target="_blank" rel="noopener">https://github.com/podlodka-ai-club/flywheel</a> · ответ отправлен 07.09.2026 20:14:02</div><section class="qa"><h2>Представьте, что вы делаете лендинг для вашего проекта или поднимаете инвестиции. Как бы вы описали его одной фразой, чтобы он выделялся среди всех остальных?</h2><div class="answer">Весь опыт вашей команды в одном агенте поддержки</div></section><section class="qa"><h2>Что и как делает ваш агент?</h2><div class="answer">Наш агент поддержки учится на опыте команды через ответы в тикетах: отвечает по wiki и памяти, а сложные случаи передаёт инженеру. Ответы инженера и обучающие заметки пополняют знания для следующих обращений.
+Внешний цикл — обращение, ответ или эскалация, решение инженера и сохранение опыта. Внутренний — получение релевантной памяти, чтение wiki, запись новых фактов и выбор действия.
+Память разделена по клиентам и общей области. Записи различаются по типу и предмету знания, сохраняют источник, дату и срок актуальности. Общие правила агент предлагает добавить в wiki через PR; после проверки человеком они становятся доступны всем клиентам. Так происходит автоулучшение без переобучения модели.
+Для проверки подходов используем синтетические сценарии поддержки с заданными ожиданиями. Эвалы сравнивают notes, mem0, xmemory, ограниченную историю и отсутствие памяти, а также разные способы записи. Проверяем полезность памяти, точность, изоляцию клиентов, актуальность, стоимость и скорость.</div></section><section class="qa"><h2>Про технический и AI стек</h2><div class="answer">Проведено сравнение нескольких движков памяти, соответственно под каждый есть конфигурация и адаптер: mem0, xmemory, два велосипеда в in-memory базе (один сохраняет весь контекст, второй структурированный факты).
+Модели использовались относительные топовые, в данном эксперименте не ставилась задача по оптимизации модели. Отвечал gpt5.6-terra, проверял на этапе evals sonnet-5
+Основа проекта многошаговые evals описывающее в yaml сценарии обращений пользователей к агенту и какие факты агент должен по задумке сохранять в память на каждом этапе. На заключительном шаге проверка, что агент ответил используя нужные факты или наоборот отверг и забыл неактуальные.</div></section><section class="qa"><h2>Если бы у вас была ещё одна неделя, что бы вы сделали в первую очередь и почему именно это?</h2><div class="answer">Попробовал бы для агента использование максимально дешевых и быстрых моделей, чтобы проверить гипотезу, что качественный движок памяти играет бОльшую роль при слабой модели.</div></section><section class="qa"><h2>Какие решения оправдали себя настолько, что вы бы рекомендовали другим командам их переиспользовать? Например: паттерн реализации, выбор технологии, архитектурное решение, продуктовая идея.</h2><div class="answer">Не зря говорят, что начинать надо с евалов. Пусть сначала не понятно как их вообще писать и что они будут делать, но потом они экономят массу времени и отбивают любые затраты.</div></section><section class="qa"><h2>Какие решения оказались неудачными или не дали ожидаемой пользы?</h2><div class="answer">Разве что потеряли много времени пока тратились на классические девтулы вместо евалов, при агентской разработке гораздо проще сделать запрос в модель, чем искать что-то в интерфейсе или там же накликивать свой эксперимент</div></section><section class="qa"><h2>Пример работы агента до и после обучения</h2><div class="answer">https://docs.google.com/document/d/14ElHNTjMLaIO42ChUxgMxOxDDtdf4V7EKAEVKJ1CZlM/edit?tab=t.0</div></section><section class="qa"><h2>Участвуете ли вы в номинации от xmemory?</h2><div class="answer">Да</div></section></main></body></html></template>
+<template id="report-doc"><!doctype html>
+<html lang="ru">
+<head><base target="_blank">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flywheel: анализ самообучающегося агента</title>
+  <style>
+    :root{color-scheme:light dark;--bg:#f7f7f5;--fg:#202124;--muted:#62666d;--card:#fff;--line:#d9dadd;--accent:#315caa}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 system-ui,sans-serif}main{max-width:1050px;margin:auto;padding:32px 22px 64px}h1{line-height:1.15}h2{margin-top:2.2em;border-bottom:2px solid var(--line);padding-bottom:.25em}h3{margin-top:1.6em}a{color:var(--accent)}.meta,.note{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 16px}.meta{color:var(--muted)}table{width:100%;border-collapse:collapse;background:var(--card)}th,td{border:1px solid var(--line);padding:9px;vertical-align:top;text-align:left}th{background:color-mix(in srgb,var(--card),var(--accent) 8%)}pre{overflow:auto;background:#17191d;color:#e8e8e8;padding:14px;border-radius:8px}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.answer{font-weight:650}.facts{margin-top:.35em;color:var(--muted)}.status-bad{color:#a33;font-weight:650}@media(prefers-color-scheme:dark){:root{--bg:#121416;--fg:#ececec;--muted:#b0b4ba;--card:#1b1e21;--line:#383c41;--accent:#8bb4ff}}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Flywheel: анализ самообучающегося агента</h1>
+  <div class="meta">
+    <div><strong>Репозиторий:</strong> <a href="https://github.com/podlodka-ai-club/flywheel">CrazyClicker/memorybot</a> (<a href="https://github.com/CrazyClicker/memorybot">origin</a>)</div>
+    <div><strong>Ветка:</strong> <code>main</code></div>
+    <div><strong>Commit:</strong> <code>749bec5badcd4ec111213593478b9b00febfca52</code> — “Update readme”</div>
+    <div><strong>Дата анализа:</strong> 9 сентября 2026</div>
+  </div>
+
+  <h2>1. Анализ</h2>
+
+  <h3>1.1. Пошаговый пайплайн</h3>
+  <table>
+    <thead><tr><th>Шаг</th><th>Что происходит</th><th>Подтверждение</th></tr></thead>
+    <tbody>
+      <tr><td>1. Получение задачи</td><td>Live-loop опрашивает GitHub Issues. Новое обращение приходит через support issue form; магазин определяется по полю формы, затем — по login автора.</td><td><a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/live/loop.ts"><code>src/live/loop.ts</code></a>, <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/live/events.ts"><code>src/live/events.ts</code></a>, <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/.github/ISSUE_TEMPLATE/support.yml"><code>.github/ISSUE_TEMPLATE/support.yml</code></a></td></tr>
+      <tr><td>2. Регистрация события</td><td>Сообщение нормализуется в событие треда; GitHub ID проверяется по журналу обработанных событий, чтобы повторный poll не исполнил его второй раз.</td><td><a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/live/state.ts"><code>src/live/state.ts</code></a>, <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/live/loop.ts"><code>src/live/loop.ts</code></a></td></tr>
+      <tr><td>3. Сбор контекста</td><td>Session формирует контекст из CRM-профиля клиента, истории текущего обращения, wiki и памяти, отфильтрованной по customer/shared scope.</td><td><a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/live/session.ts"><code>src/live/session.ts</code></a>, <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/agent/prompt.ts"><code>src/agent/prompt.ts</code></a></td></tr>
+      <tr><td>4. Recall</td><td>При режиме <code>hydrate</code>/<code>both</code> память заранее попадает в prompt; при <code>tool</code>/<code>both</code> агент может дополнительно вызвать <code>recall_memory</code>.</td><td><a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/agent/runTurn.ts"><code>src/agent/runTurn.ts</code></a>, <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/memory/engine.ts"><code>src/memory/engine.ts</code></a></td></tr>
+      <tr><td>5. Ход агента</td><td>LLM работает в tool-loop: читает/ищет wiki, при разрешении читает и пишет память, затем обязан вызвать <code>finish</code>.</td><td><a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/agent/runTurn.ts"><code>src/agent/runTurn.ts</code></a>, <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/agent/prompt.ts"><code>src/agent/prompt.ts</code></a></td></tr>
+      <tr><td>6. Решение</td><td>Результат — <code>answer</code>, <code>ask</code> или <code>escalate</code>. Ответ публикуется в issue; при эскалации ставится label и назначаются люди из конфигурации.</td><td><a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/evals/schema.ts"><code>src/evals/schema.ts</code></a>, <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/live/loop.ts"><code>src/live/loop.ts</code></a>, <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/live/config.yaml"><code>live/config.yaml</code></a></td></tr>
+      <tr><td>7. Human-in-the-loop</td><td>Обычный комментарий человека сохраняется как <code>human_reply</code>; команды <code>/coach</code>, <code>/consolidate</code>, <code>/clock</code> управляют обучением и временем сценария.</td><td><a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/live/events.ts"><code>src/live/events.ts</code></a>, <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/live/loop.ts"><code>src/live/loop.ts</code></a></td></tr>
+      <tr><td>8. Консолидация</td><td>После coach note, команды или закрытия обращения новые события извлекаются в структурированные memory items; курсор не даёт повторно обрабатывать тот же хвост треда.</td><td><a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/live/session.ts"><code>src/live/session.ts</code></a>, <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/memory/notes.ts"><code>src/memory/notes.ts</code></a></td></tr>
+      <tr><td>9. Flywheel документации</td><td>Устойчивый неизвестный продуктовый факт может стать предложением. Бот создаёт PR к wiki; только merge человеком обновляет базу знаний для будущих задач.</td><td><a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/live/proposals.ts"><code>src/live/proposals.ts</code></a>, <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/live/loop.ts"><code>src/live/loop.ts</code></a></td></tr>
+      <tr><td>10. Сохранение и наблюдение</td><td>Состояние, треды, turns, trace, recalls, writes, стоимость и latency сохраняются в SQLite; сокращённый trace прикладывается к GitHub-комментарию.</td><td><a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/live/state.ts"><code>src/live/state.ts</code></a>, <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/live/render.ts"><code>src/live/render.ts</code></a></td></tr>
+    </tbody>
+  </table>
+
+  <pre class="mermaid">flowchart TD
+    A[Новое GitHub issue] --> B[Сообщение клиента записано]
+    B --> C[CRM + wiki + recall памяти]
+    C --> D[Ход агента]
+    D --> E[answer]
+    D --> F[ask]
+    D --> G[escalate]
+    E --> H[Обращение открыто]
+    F --> H
+    G --> I[Сотрудник поддержки]
+    I --> J[Human reply или coach note]
+    J --> H
+    H --> K[Следующее сообщение клиента]
+    K --> B
+    H --> L[Обращение закрыто]
+    J --> M[Консолидация]
+    L --> M
+    M --> N[Память обновлена]
+    N --> O[Кандидат в документацию]
+    O --> P[Pull request]
+    P --> Q[Merge человеком]
+    Q --> R[Wiki обновлена]
+    N --> S[Завершение без PR]</pre>
+
+  <h3>1.2. Как воспроизвести</h3>
+  <ol>
+    <li>Установить Node.js и pnpm, затем в корне репозитория выполнить <code>pnpm install --frozen-lockfile</code>. Скрипты и зависимости перечислены в <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/package.json"><code>package.json</code></a>.</li>
+    <li>Скопировать <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/.env.example"><code>.env.example</code></a> в <code>.env</code>. Для реальных прогонов нужны ключи провайдера агента и judge; для XMemory — <code>XMEMORY_API_KEY</code>; для live GitHub — token или GitHub App credentials.</li>
+    <li>Проверить код и сценарии: <code>pnpm typecheck</code>, <code>pnpm test</code>, <code>pnpm eval validate</code>.</li>
+    <li>Без LLM-вызовов просмотреть план исследования: <code>pnpm eval run --suite research --dry-run</code>. На этом commit план содержит 31 пару scenario/config, 143 agent turns и до 373 judge calls.</li>
+    <li>Запустить измерение: <code>pnpm eval run --suite research --repeat 3 --run-id research-r1 --yes</code>, затем собрать отчёт: <code>pnpm eval report --run research-r1</code>. Методика описана в <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/evals/README.md"><code>evals/README.md</code></a> и <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/evals/RUNS.md"><code>evals/RUNS.md</code></a>.</li>
+    <li>Для безопасной репетиции live-loop без GitHub выполнить <code>pnpm live once --fake</code>: будет проигран <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/live/fixture.yaml"><code>live/fixture.yaml</code></a>, но LLM-ключ для хода агента всё равно нужен. Для реального режима настроить <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/live/config.yaml"><code>live/config.yaml</code></a> и выполнить <code>pnpm live run</code>.</li>
+  </ol>
+  <div class="note"><strong>Проверка текущего checkout:</strong> <code>pnpm eval validate</code> — 13/13 файлов валидны; dry-run research-suite успешен. Полный <code>pnpm test</code> дал 396/397 passed: один XMemory-тест упал из-за отсутствующего <code>XMEMORY_API_KEY</code>. <code>pnpm typecheck</code> сейчас не проходит: два тестовых объекта передают отсутствующее в типе поле <code>state</code> в <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/memory/xmemory.test.ts"><code>src/memory/xmemory.test.ts</code></a>.</div>
+
+  <h3>1.3. Технический стек</h3>
+  <ul>
+    <li><strong>Агенты:</strong> собственный support-agent, tool-loop AI SDK, outcomes <code>answer/ask/escalate</code>.</li>
+    <li><strong>LLM:</strong> OpenAI и Anthropic; live default — <code>openai:gpt-5.6-terra</code>; judge config — <code>anthropic:claude-sonnet-5</code> с OpenAI fallback.</li>
+    <li><strong>Внешние интеграции:</strong> GitHub Issues, comments, labels, assignees, Pull Requests; XMemory; Mem0 OSS.</li>
+    <li><strong>Память:</strong> backends <code>none</code>, <code>naive</code>, <code>notes</code>, <code>mem0</code>, <code>xmemory</code>; SQLite + MiniSearch для <code>notes</code>; customer/shared scopes.</li>
+    <li><strong>Эвалы:</strong> YAML-сценарии, deterministic checks, LLM-as-a-judge, controls, repeats, probes, JSON/Markdown reports.</li>
+    <li><strong>Фреймворки:</strong> TypeScript, Node.js, AI SDK 7, Octokit, Zod, better-sqlite3, MiniSearch, Vitest, tsx, pnpm.</li>
+  </ul>
+  <p class="facts">Факты: <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/package.json"><code>package.json</code></a>, <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/llm/registry.ts"><code>src/llm/registry.ts</code></a>, <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/memory/factory.ts"><code>src/memory/factory.ts</code></a>, <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/evals/configs/notes-both.yaml"><code>evals/configs/notes-both.yaml</code></a>.</p>
+
+  <h2>2. Ответы на вопросы</h2>
+
+  <h3>1. С какими задачами работает агент?</h3>
+  <p class="answer">Агент решает обращения первой линии поддержки e-commerce платформы «Прилавок»: отвечает, уточняет или эскалирует. В live-режиме он не придумывает задачу сам — получает GitHub issue/comment; в eval-режиме очередность задаёт YAML-сценарий.</p>
+  <p class="facts"><strong>Факты:</strong> назначение задано в <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/README.md"><code>README.md</code></a> и prompt в <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/agent/prompt.ts"><code>src/agent/prompt.ts</code></a>; разбор issue form и выбор клиента — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/live/events.ts"><code>src/live/events.ts</code></a>; scripted tasks — <a href="https://github.com/podlodka-ai-club/flywheel/tree/749bec5badcd4ec111213593478b9b00febfca52/evals/scenarios/"><code>evals/scenarios/</code></a>.</p>
+
+  <h3>2. Как агент выбирает, что сохранить в память?</h3>
+  <p class="answer">При agent-write LLM должен сохранять только явно сообщённые устойчивые настройки/ограничения/процессы или датированные временные условия, не догадки и не wiki; независимые факты пишутся отдельно и не дублируются. При consolidation отдельный extractor выделяет personal, temporal и undocumented product facts; coach notes считаются доверенным явным сигналом.</p>
+  <p class="facts"><strong>Факты:</strong> критерии <code>remember</code> — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/agent/prompt.ts"><code>src/agent/prompt.ts</code></a>; extraction и фильтрация — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/memory/notes.ts"><code>src/memory/notes.ts</code></a>; write-mode semantics — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/evals/README.md"><code>evals/README.md</code></a>.</p>
+
+  <h3>3. Как организована память между рестартами агента?</h3>
+  <p class="answer">В текущем live preset используется <code>notes</code>: структурированные заметки лежат в <code>live/memory.db</code>, а треды, курсоры и turns — в <code>live/state.db</code>; оба хранилища SQLite переживают рестарт. XMemory хранит данные удалённо, но восстановление его instance bindings через live Session в текущем checkout не доведено до согласованного состояния.</p>
+  <p class="facts"><strong>Факты:</strong> пути и default config — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/live/config.yaml"><code>live/config.yaml</code></a>; SQLite schema — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/memory/notes.ts"><code>src/memory/notes.ts</code></a> и <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/live/state.ts"><code>src/live/state.ts</code></a>; XMemory remote/persistence adapter — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/memory/xmemory.ts"><code>src/memory/xmemory.ts</code></a>. Несогласованность видна в текущих ошибках <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/memory/xmemory.test.ts"><code>src/memory/xmemory.test.ts</code></a>.</p>
+
+  <h3>4. Как агент обучается и меняет поведение?</h3>
+  <p class="answer">Вес модели не меняется: это обучение контекстом. Новый опыт записывается в память и подмешивается в будущие prompts/recall; устойчивый продуктовый опыт может пройти через PR и после human merge стать частью wiki.</p>
+  <p class="facts"><strong>Факты:</strong> recall/write contract — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/memory/engine.ts"><code>src/memory/engine.ts</code></a>; применение памяти — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/live/session.ts"><code>src/live/session.ts</code></a>; документационный цикл — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/live/proposals.ts"><code>src/live/proposals.ts</code></a> и <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/live/loop.ts"><code>src/live/loop.ts</code></a>. Fine-tuning или обновление весов <strong>в репозитории не найдено</strong>.</p>
+
+  <h3>5. Как память обновляется?</h3>
+  <p class="answer">В <code>notes</code> есть upsert, точная дедупликация, поиск конфликтов и удаление superseded notes; временные факты не стираются автоматически, а после <code>valid_until</code> помечаются как expired и запрещены как подтверждение текущего состояния. Универсальной TTL/garbage-collection политики для всех backend нет.</p>
+  <p class="facts"><strong>Факты:</strong> conflict resolution/delete/upsert — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/memory/notes.ts"><code>src/memory/notes.ts</code></a>; правила просрочки — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/agent/prompt.ts"><code>src/agent/prompt.ts</code></a> и <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/evals/schema.ts"><code>src/evals/schema.ts</code></a>; сценарий смены факта — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/evals/scenarios/customer-setup-change.yaml"><code>evals/scenarios/customer-setup-change.yaml</code></a>. Автоматическое удаление всех старых, но непротиворечивых фактов <strong>не описано</strong>.</p>
+
+  <h3>6. Как работают эвалы?</h3>
+  <p class="answer">Runner проигрывает датированные YAML-события через тот же Session/runTurn, проверяет outcome и regex детерминированно, а смысл ответа, использование и утечки фактов — отдельным LLM judge. Улучшение оценивается сравнением <code>none</code>/<code>naive</code>/memory backends, повторов, probes и гипотез; результаты сохраняются как JSON и агрегируются в отчёт, но не меняют агента автоматически.</p>
+  <p class="facts"><strong>Факты:</strong> pipeline — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/evals/runner.ts"><code>src/evals/runner.ts</code></a>; checks — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/evals/checks.ts"><code>src/evals/checks.ts</code></a>; judge — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/evals/judge.ts"><code>src/evals/judge.ts</code></a>; suites — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/evals/suites.ts"><code>src/evals/suites.ts</code></a>. Исторические измерения есть в <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/evals/BASELINE.md"><code>evals/BASELINE.md</code></a> и <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/evals/M1-LITE.md"><code>evals/M1-LITE.md</code></a>.</p>
+
+  <h3>7. Как работает human in the loop?</h3>
+  <p class="answer">Человек подключается после <code>escalate</code>, может ответить клиенту обычным комментарием, дать приватную coach note, принудить consolidation или сдвинуть часы сценария. Второй контрольный шлюз — merge/close документационного PR: без решения человека wiki не меняется.</p>
+  <p class="facts"><strong>Факты:</strong> labels/assignees — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/live/config.yaml"><code>live/config.yaml</code></a>; команды — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/live/events.ts"><code>src/live/events.ts</code></a>; обработка комментариев и PR — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/live/loop.ts"><code>src/live/loop.ts</code></a>; coach notes попадают в память при любом write mode — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/evals/README.md"><code>evals/README.md</code></a>.</p>
+
+  <h3>8. Используется ли xmemory?</h3>
+  <p class="answer">Да, XMemory реализован как опциональный hosted backend и включён в отдельную eval-конфигурацию: экземпляры разделяются по клиентам и shared scope, запись синхронная, recall получает structured dump и локально ранжирует его. В текущем <code>live/config.yaml</code> активен <code>notes-both</code>, поэтому XMemory не является live-default.</p>
+  <p class="facts"><strong>Факты:</strong> adapter — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/memory/xmemory.ts"><code>src/memory/xmemory.ts</code></a>; config — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/evals/configs/xmemory.yaml"><code>evals/configs/xmemory.yaml</code></a>; factory — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/memory/factory.ts"><code>src/memory/factory.ts</code></a>; фактический live preset — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/live/config.yaml"><code>live/config.yaml</code></a>.</p>
+
+  <h3>9. Сбои во время выполнения задачи</h3>
+  <p class="answer">Ошибки live-loop собираются по событиям и обычно оставляют событие для повтора на следующем poll; processed IDs и транзакции защищают от дублей. Консолидационная ошибка не валит eval-run и записывается как failed consolidation; XMemory повторяет rate-limit ошибки до трёх раз, но не quota exhaustion, а незавершённый model turn получает один nudge к <code>finish</code>.</p>
+  <p class="facts"><strong>Факты:</strong> poll/retry и best-effort обновления — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/live/loop.ts"><code>src/live/loop.ts</code></a>; транзакции/processed events — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/live/state.ts"><code>src/live/state.ts</code></a>; nudge и bounded loop — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/agent/runTurn.ts"><code>src/agent/runTurn.ts</code></a>; retry XMemory — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/memory/xmemory.ts"><code>src/memory/xmemory.ts</code></a>; поведение eval — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/evals/README.md"><code>evals/README.md</code></a>. Dead-letter queue <strong>в репозитории не найдено</strong>.</p>
+
+  <h3>10. Мониторинг</h3>
+  <p class="answer">Есть timestamped console logging, локальный SQLite-аудит и подробная telemetry каждого turn: tool trace, inputs/outputs, wiki reads, recalls, writes, outcome, token usage, latency и известная стоимость; eval дополнительно пишет это в result JSON. По ним можно восстановить наблюдаемую последовательность действий и использованные данные, но не скрытые рассуждения модели и не все внутренние расходы hosted memory.</p>
+  <p class="facts"><strong>Факты:</strong> сохраняемые поля — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/live/state.ts"><code>src/live/state.ts</code></a> и <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/live/session.ts"><code>src/live/session.ts</code></a>; GitHub trace — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/src/live/render.ts"><code>src/live/render.ts</code></a>; eval telemetry/result schema — <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/evals/README.md"><code>evals/README.md</code></a>. OpenTelemetry, Sentry или внешний dashboard <strong>в репозитории не найдено</strong>.</p>
+
+  <h2>Ограничения анализа</h2>
+  <ul>
+    <li>Анализ выполнен по исходникам и локальным offline-проверкам; реальные GitHub, OpenAI/Anthropic, Mem0 и XMemory вызовы не запускались.</li>
+    <li>Полного актуального research-suite результата в <code>evals/results/</code> нет; доступны исторические <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/evals/BASELINE.md"><code>BASELINE.md</code></a> и <a href="https://github.com/podlodka-ai-club/flywheel/blob/749bec5badcd4ec111213593478b9b00febfca52/evals/M1-LITE.md"><code>M1-LITE.md</code></a>, причём последний сам помечен как частично устаревший после изменений prompt/wiki.</li>
+    <li class="status-bad">Текущий commit не полностью green: 396/397 unit tests, один XMemory failure без API key; typecheck содержит две ошибки в XMemory-тесте. Поэтому cross-restart wiring XMemory нельзя считать подтверждённым end-to-end.</li>
+    <li>Автоматического обучения весов, непрерывного production A/B-test, внешнего observability backend и общей политики удаления старой памяти не описано.</li>
+  </ul>
+</main>
+</body>
+</html>
+</template>
+<noscript><p class="nojs">Для переключения вкладок нужен JavaScript.</p></noscript>
+<script>
+for (const name of ['questionnaire','report']) {
+  document.querySelector('#'+name+' iframe').srcdoc = document.getElementById(name+'-doc').innerHTML;
+}
+for (const button of document.querySelectorAll('.tab')) {
+  button.addEventListener('click', () => {
+    for (const other of document.querySelectorAll('.tab')) other.setAttribute('aria-selected', String(other === button));
+    for (const panel of document.querySelectorAll('.panel')) panel.hidden = panel.id !== button.dataset.panel;
+  });
+}
+</script>
+</body></html>

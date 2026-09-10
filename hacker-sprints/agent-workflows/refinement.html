@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="ru">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Refinement — анкета и анализ агента</title><style>
+:root{color-scheme:light dark;--bg:#f5f5f7;--fg:#1d1d1f;--panel:#fff;--line:#d2d2d7;--accent:#ff5a1f;--muted:#6e6e73}
+@media(prefers-color-scheme:dark){:root{--bg:#141416;--fg:#f5f5f7;--panel:#1f2024;--line:#3a3b40;--muted:#aaa}}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+body{display:flex;flex-direction:column}.top{padding:16px 18px 0;background:var(--panel);border-bottom:1px solid var(--line)}
+h1{font-size:22px;line-height:1.2;margin:0 0 12px}.tabs{display:flex;gap:6px}.tab{appearance:none;border:1px solid var(--line);border-bottom:0;background:var(--bg);color:var(--fg);padding:10px 15px;border-radius:9px 9px 0 0;font:600 14px system-ui;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:#fff}.panels{position:relative;flex:1;min-height:0}.panel{position:absolute;inset:0}.panel[hidden]{display:none}.panel iframe{border:0;width:100%;height:100%;background:#fff}.nojs{padding:12px 18px;color:var(--muted)}
+</style></head>
+<body>
+<header class="top"><h1>Refinement — анкета и анализ агента</h1><nav class="tabs" aria-label="Материалы команды">
+<button class="tab" type="button" id="tab-questionnaire" data-panel="questionnaire" role="tab" aria-selected="true" aria-controls="questionnaire">Анкета команды</button>
+<button class="tab" type="button" id="tab-report" data-panel="report" role="tab" aria-selected="false" aria-controls="report">Анализ агента</button>
+</nav></header>
+<main class="panels">
+<section class="panel" id="questionnaire" role="tabpanel" aria-labelledby="tab-questionnaire"><iframe title="Анкета команды"></iframe></section>
+<section class="panel" id="report" role="tabpanel" aria-labelledby="tab-report" hidden><iframe title="Анализ агента"></iframe></section>
+</main>
+<template id="questionnaire-doc"><!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Refinement — анкета команды</title><style>
+:root{color-scheme:light dark;--bg:#fafafa;--fg:#202124;--muted:#666;--card:#fff;--line:#d8dadd;--link:#1558d6;--accent:#ff5a1f}
+@media(prefers-color-scheme:dark){:root{--bg:#17181a;--fg:#e7e8ea;--muted:#aaa;--card:#202226;--line:#3b3e44;--link:#8ab4ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}main{max-width:980px;margin:auto;padding:28px 20px 56px}h1{font-size:28px;margin:0 0 8px}.meta{color:var(--muted);margin-bottom:26px}.meta a,a{color:var(--link)}.qa{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:17px 19px;margin:14px 0}.qa h2{font-size:17px;line-height:1.35;margin:0 0 9px}.answer{white-space:pre-wrap;overflow-wrap:anywhere}.badge{display:inline-block;padding:3px 8px;border-radius:999px;background:var(--accent);color:white;font-size:12px;font-weight:700;margin-left:7px}
+</style></head><body><main><h1>Refinement — анкета команды <span class="badge">xmemory</span></h1><div class="meta">Репозиторий: <a href="https://github.com/podlodka-ai-club/refinement" target="_blank" rel="noopener">https://github.com/podlodka-ai-club/refinement</a> · ответ отправлен 07.09.2026 17:11:09</div><section class="qa"><h2>Представьте, что вы делаете лендинг для вашего проекта или поднимаете инвестиции. Как бы вы описали его одной фразой, чтобы он выделялся среди всех остальных?</h2><div class="answer">Memory Curator — память агента, которая измеренно меняет его поведение: извлекает проверенные правила из реальных рабочих сессий, держит базу чистой и доставляет их в контекст задач — агент перестаёт повторять старые ошибки (на кодинговых задачах-ловушках: 0/6 без неё → 6/6 с ней, p=0.0011).</div></section><section class="qa"><h2>Что и как делает ваш агент?</h2><div class="answer">Агент с долговременной памятью для кодинг-ассистентов (opencode, Claude Code). Цикл «работа → знание»: скилл извлекает из завершённой сессии кандидатов с цитатами-evidence → gatekeeper валидирует, человек подтверждает → факт ложится в двухслойную память: .md как source of truth + структурированный индекс (типы, теги, статусы, provenance; xmemory primary, SQLite offline-fallback). Цикл «знание → работа»: правила памяти в AGENTS.md каждой сессии + MCP-тулзы поиска. Автоулучшение: фоновый improve loop — дубликаты, противоречия, устаревание, каждое изменение через eval-гейт. Данные: 100 реальных рабочих сессий → ревью человеком → 66 verified-правил. Эвалы: 331 тест + A/B-бенчмарк: 10 кодинговых задач-ловушек, 48 прогонов чистых агентов — без памяти 8/10 (ловушки 0/6), с куратором 10/10 (6/6, p=0.0011).</div></section><section class="qa"><h2>Про технический и AI стек</h2><div class="answer">Память: .md как source of truth + структурированный индекс; бэкенды xmemory (primary) и SQLite (offline + outbox). Главный выбор — LLM в бэкенде нет: извлечение делает сам агент харнеса (у него контекст сессии), бэкенд детерминированный — мгновенно, дёшево, воспроизводимо. Понравилось: MCP — один сервер для обоих харнесов. Не понравилось: зависимость облачного бэкенда от сети — память обязана работать offline. Эвалы: pytest (имя теста = ID требования), чек-скрипты бенчмарка с sha-заморозкой до прогонов.</div></section><section class="qa"><h2>Если бы у вас была ещё одна неделя, что бы вы сделали в первую очередь и почему именно это?</h2><div class="answer">Автодоставка правил по задаче: retrieval сам подбирает релевантные правила и кладёт их в контекст сессии. Эксперимент показал, что весь эффект памяти — именно в доставке; сегодня последняя миля полуручная. Это переводит измеренный эффект из полуручного режима в полностью автоматический.
+
+</div></section><section class="qa"><h2>Какие решения оправдали себя настолько, что вы бы рекомендовали другим командам их переиспользовать? Например: паттерн реализации, выбор технологии, архитектурное решение, продуктовая идея.</h2><div class="answer">Переиспользовать: 1) «LLM вне бэкенда» - извлекает агент, бэкенд детерминирован; 2) gatekeeper с human-in-the-loop по умолчанию + обязательный evidence; 3) requirement-тесты (имя = ID требования); 4) evidence chain вместо голой цифры - фикстуры/чеки/решения закоммичены, результат перепроверяется без запуска агентов.</div></section><section class="qa"><h2>Какие решения оказались неудачными или не дали ожидаемой пользы?</h2><div class="answer"> Неудачные: 1) LLM в бэкенде на каждый запрос - таймауты/недетерминированность, pivot на «агент извлекает, бэкенд валидирует»; 2) таймерный decay - время не делает факт ложным, выпилили в пользу семантического устаревания через eval-гейт; 3) молчаливые фолбэки - запретили, неизвестное = reject; 4) pull-доставка («сверься с базой») нестабильна - показали экспериментом, автодоставка - следующий шаг.</div></section><section class="qa"><h2>Пример работы агента до и после обучения</h2><div class="answer">Две демонстрации в репо (markdown + логи):
+
+Поведение от опыта: та же сессия прогоняется дважды - чистая память принимает знания, обученная отвергает их как дубликаты. Одна команда: curator demo --keep. — https://github.com/podlodka-ai-club/refinement/blob/main/demo/before-after.md
+Применение опыта в задачах: 10 кодинговых задач-ловушек, 48 прогонов чистых агентов - без памяти агент нарушает правила (0/6 на коварных), с Memory Curator применяет их (6/6, p=0.0011). Фикстуры и замороженные чеки закоммичены - таблица перепроверяется без запуска агентов. — https://github.com/podlodka-ai-club/refinement/tree/main/benchmark/application
+Основной файл для презентации: PRESENTATION.md в корне репо.</div></section><section class="qa"><h2>Участвуете ли вы в номинации от xmemory?</h2><div class="answer">Да</div></section></main></body></html></template>
+<template id="report-doc"><!doctype html>
+<html lang="ru">
+<head><base target="_blank">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Refinement: анализ самообучающегося агента</title>
+  <style>
+    body{max-width:1060px;margin:32px auto;padding:0 18px;font:16px/1.55 system-ui,sans-serif;color:#20242a;background:#fafafa}h1,h2,h3{line-height:1.2;color:#111827}h1{margin-bottom:.35rem}h2{margin-top:2.2rem;border-bottom:2px solid #d1d5db;padding-bottom:.3rem}h3{margin-top:1.6rem}a{color:#0758a5}code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#f0f2f4}code{padding:.1rem .25rem}pre{padding:14px;overflow:auto;border:1px solid #d6dae0;border-radius:6px}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #cfd4dc;padding:9px;text-align:left;vertical-align:top}th{background:#edf1f5}.meta,.note{background:#eef4fb;border-left:4px solid #4f7cac;padding:10px 14px}.answer{font-weight:600}.facts{margin-top:.4rem}.muted{color:#59636e}.warning{background:#fff6df;border-left-color:#c68a00}
+  </style>
+</head>
+<body>
+<header>
+  <h1>Refinement: анализ самообучающегося агента</h1>
+  <div class="meta">
+    <div><strong>Репозиторий:</strong> <a href="https://github.com/podlodka-ai-club/refinement">podlodka-ai-club/refinement</a></div>
+    <div><strong>Ветка / commit:</strong> <code>main</code> / <code>eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46</code></div>
+    <div><strong>Дата анализа:</strong> 9 сентября 2026, UTC</div>
+  </div>
+  <p class="note"><strong>Коротко:</strong> Memory Curator не решает прикладные задачи вместо coding-агента. Он извлекает и обслуживает проверяемые знания для OpenCode/Claude Code: валидирует кандидатов, хранит их, возвращает в Markdown и доставляет в контекст будущих задач. Весá LLM не обучаются.</p>
+</header>
+
+<main>
+<section>
+  <h2>1. Анализ</h2>
+
+  <h3>1.1. Пошаговый пайплайн</h3>
+  <p>Формальной state machine прикладной «таски» в репозитории нет. Реализован жизненный цикл знания, возникающего при работе внешнего агента над задачей; именно его состояния показаны ниже.</p>
+  <table>
+    <thead><tr><th>Шаг</th><th>Что происходит</th><th>Результат / состояние</th><th>Основание</th></tr></thead>
+    <tbody>
+      <tr><td>1. Получение контекста</td><td>OpenCode/Claude Code работает над текущей пользовательской задачей; перед нетривиальной работой правила интеграции требуют запросить релевантную память.</td><td>Знания найдены через <code>curator_query</code> и попадают в контекст агента.</td><td><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/integrations/curator-rules.md">integrations/curator-rules.md</a>, <a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/server.py">core/curator/server.py</a></td></tr>
+      <tr><td>2. Извлечение урока</td><td>По команде <code>/curator-save</code> или проактивному предложению сам host-агент (то есть LLM) выделяет из сессии абстрактные, подтверждённые правила, решения и паттерны.</td><td>JSON-массив <code>candidates</code>.</td><td><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/.agents/skills/curator-save/SKILL.md">.agents/skills/curator-save/SKILL.md</a>, <a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/README.md">README.md</a></td></tr>
+      <tr><td>3. Self-review</td><td>Агент делает поиск по памяти и убирает уже известные факты до отправки.</td><td>Очищенный набор кандидатов.</td><td><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/README.md">core/README.md</a>, <a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/.agents/skills/curator-save/SKILL.md">.agents/skills/curator-save/SKILL.md</a></td></tr>
+      <tr><td>4. Детерминированный gatekeeper</td><td>Проверяются формат и длина, наличие тегов, шумовые паттерны и сходство с существующими фактами.</td><td><code>approved</code> либо <code>rejected</code> с причиной.</td><td><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/gatekeeper.py">core/curator/gatekeeper.py</a></td></tr>
+      <tr><td>5. Human approval</td><td>В режиме по умолчанию сервер показывает preview и ничего не сохраняет. После решения человека агент повторяет вызов с <code>auto_approve=true</code>; CLI спрашивает <code>y/N</code>.</td><td>Одобрено человеком либо отклонено.</td><td><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/server.py">core/curator/server.py</a>, <a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/control.py">core/curator/control.py</a></td></tr>
+      <tr><td>6. Сохранение</td><td>Факт получает статус <code>verified</code> (CLI также умеет <code>hypothesis</code>) и записывается через backend. Natural key — <code>title</code>, запись работает как UPSERT.</td><td>Персистентный факт в SQLite или xmemory.</td><td><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/backend/local.py">core/curator/backend/local.py</a>, <a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/schemas/xmd_kb.yaml">core/schemas/xmd_kb.yaml</a></td></tr>
+      <tr><td>7. Write-back</td><td>Router выбирает Markdown-файл; SyncEngine создаёт/обновляет секцию и пересобирает управляемый <code>index.md</code>. Карта проекта поддерживает режимы update/append/readonly.</td><td>Человекочитаемая база <code>.md</code>.</td><td><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/sync_engine.py">core/curator/sync_engine.py</a>, <a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/routing/map_router.py">core/curator/routing/map_router.py</a></td></tr>
+      <tr><td>8. Переиспользование</td><td>Следующая задача запрашивает факты; использование фиксируется. Инсталлер также добавляет правила обращения к базе в глобальные AGENTS.md/CLAUDE.md.</td><td>Опыт влияет на следующий ответ через контекст, а не через дообучение модели.</td><td><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/retrieval_feedback.py">core/curator/retrieval_feedback.py</a>, <a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/installer.py">core/curator/installer.py</a></td></tr>
+      <tr><td>9. Автономное улучшение</td><td>Worker раз в сутки по умолчанию ищет дубликаты, hypothesis-факты и противоречия; консолидация и семантическая депрекация проходят eval-gate.</td><td>Факт остаётся активным либо становится <code>deprecated</code>.</td><td><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/worker.py">core/curator/worker.py</a>, <a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/improve_loop.py">core/curator/improve_loop.py</a>, <a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/eval_runner.py">core/curator/eval_runner.py</a></td></tr>
+      <tr><td>10. Синхронизация после сбоя</td><td>При сетевой ошибке/timeout/5xx xmemory запись сохраняется локально и ставится в outbox; <code>curator sync</code> позже отправляет её повторно.</td><td>Offline queued → synced; данные не теряются при рестарте.</td><td><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/backend/xmemory.py">core/curator/backend/xmemory.py</a>, <a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/outbox.py">core/curator/outbox.py</a></td></tr>
+    </tbody>
+  </table>
+
+  <pre class="mermaid">stateDiagram-v2
+    [*] --&gt; TaskInHostAgent
+    TaskInHostAgent --&gt; Candidate
+    Candidate --&gt; Rejected
+    Candidate --&gt; Preview
+    Preview --&gt; Declined
+    Preview --&gt; Approved
+    Approved --&gt; Stored
+    Stored --&gt; MarkdownWriteBack
+    Stored --&gt; OfflineOutbox
+    OfflineOutbox --&gt; SyncedToXmemory
+    MarkdownWriteBack --&gt; ActiveVerified
+    SyncedToXmemory --&gt; ActiveVerified
+    ActiveVerified --&gt; RetrievedForNextTask
+    RetrievedForNextTask --&gt; TaskInHostAgent
+    ActiveVerified --&gt; ImproveEvaluation
+    ImproveEvaluation --&gt; ActiveVerified
+    ImproveEvaluation --&gt; Deprecated
+    Rejected --&gt; [*]
+    Declined --&gt; [*]
+    Deprecated --&gt; [*]</pre>
+
+  <h3>1.2. Как воспроизвести</h3>
+  <ol>
+    <li>Нужен Python <strong>3.12+</strong>. Клонировать репозиторий: <pre><code>git clone https://github.com/podlodka-ai-club/refinement.git
+cd refinement</code></pre></li>
+    <li>Пользовательская установка для обнаруженного OpenCode/Claude Code: <pre><code>./install.sh          # Windows: install.bat</code></pre>Перезапустить host-агент. Инсталлер добавляет MCP-сервер, команды, скиллы, worker и правила памяти. См. <a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/docs/getting-started.md">docs/getting-started.md</a>.</li>
+    <li>Проверить изолированный полный тур и состояние: <pre><code>curator demo --keep
+curator status</code></pre>Тур проводит кандидатов через gatekeeper, write-back, query, improve и телеметрию. См. <a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/README.md">README.md</a>.</li>
+    <li>Для разработки и тестов: <pre><code>cd core
+python3.12 -m venv .venv
+.venv/bin/pip install -e ".[dev]"
+.venv/bin/python -m pytest tests/ -q --ignore=tests/smoke
+.venv/bin/python -m pytest tests/e2e/test_full_lifecycle.py -v
+.venv/bin/curator demo</code></pre>Команды документированы в <a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/README.md">core/README.md</a> и <a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/tests/requirements/README.md">core/tests/requirements/README.md</a>.</li>
+    <li>Локальный MCP без внешних сервисов: <pre><code>cd core
+MEMORY_BACKEND=local .venv/bin/curator-mcp-server</code></pre>Персистентная БД по умолчанию: <code>~/.curator/knowledge.db</code>.</li>
+    <li>Режим xmemory: <pre><code>export MEMORY_BACKEND=xmemory
+export XMEMORY_API_KEY=&lt;key&gt;
+export XMEMORY_INSTANCE_ID=&lt;instance-id&gt;
+.venv/bin/curator-mcp-server</code></pre>Smoke-проверка реального сервиса требует ключей и сети; после offline-работы используется <code>curator sync</code>.</li>
+    <li>Воспроизвести опубликованный скоринг без живых агентов можно командами из <a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/benchmark/application/README.md">benchmark/application/README.md</a>; решения и детерминированные проверки уже сохранены в <a href="https://github.com/podlodka-ai-club/refinement/tree/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/benchmark/application/results/">benchmark/application/results/</a>.</li>
+  </ol>
+
+  <h3>1.3. Технический стек</h3>
+  <ul>
+    <li><strong>Агенты:</strong> OpenCode, Claude Code, любой MCP-клиент; фоновый Python worker.</li>
+    <li><strong>LLM:</strong> LLM host-агента; конкретная модель не закреплена; в backend LLM-вызовов нет.</li>
+    <li><strong>Внешние интеграции:</strong> MCP stdio, xmemory REST API, OpenCode/Claude Code, Git/Markdown.</li>
+    <li><strong>Память:</strong> Markdown как человекочитаемый source of truth; SQLite local/fallback; xmemory cloud; SQLite outbox; JSON usage telemetry.</li>
+    <li><strong>Эвалы:</strong> EvalRunner before/after gate; pytest requirements/unit/integration/e2e/smoke; A/B/C application benchmark с детерминированным скорингом.</li>
+    <li><strong>Фреймворки:</strong> Python 3.12+, MCP SDK, Pydantic 2, httpx, PyYAML, Rich, pytest, stdlib sqlite3.</li>
+  </ul>
+  <p class="muted">Зависимости и entry points: <a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/pyproject.toml">core/pyproject.toml</a>.</p>
+</section>
+
+<section>
+  <h2>2. Ответы на вопросы</h2>
+
+  <article>
+    <h3>1. С какими задачами работает агент?</h3>
+    <p class="answer">Он обслуживает знания из текущих coding-сессий OpenCode/Claude Code и из Markdown-директорий; очереди самостоятельных прикладных задач у Curator нет. Задачу выбирает пользователь/host-агент, а Curator получает готовые кандидаты или запускает ingest изменившихся <code>.md</code>.</p>
+    <ul class="facts"><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/server.py">core/curator/server.py</a> принимает <code>candidates</code> через <code>curator_session_capture</code>.</li><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/worker.py">core/curator/worker.py</a> содержит периодический improve-loop и watcher Markdown.</li><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/design/spec.md">design/spec.md</a> описывает UC1–UC4: ingest, session capture, query и improve.</li></ul>
+  </article>
+
+  <article>
+    <h3>2. Как агент выбирает, что сохранить в память?</h3>
+    <p class="answer">Скилл требует выбирать подтверждённые исходниками/логами и достаточно абстрактные правила, паттерны, принципы и решения, затем убрать уже известное. Backend дополнительно применяет детерминированные ограничения формата, тегов, шума и дубликатов.</p>
+    <ul class="facts"><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/.agents/skills/curator-save/SKILL.md">.agents/skills/curator-save/SKILL.md</a> задаёт критерии «подтверждённое и абстрактное» и исключает конкретные баги, гипотезы и фичевые детали.</li><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/gatekeeper.py">core/curator/gatekeeper.py</a> проверяет длины, Markdown-инварианты, теги, noise patterns и сходство заголовков.</li><li>Семантическую оценку делает host-LLM; backend собственной LLM не содержит — <a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/README.md">README.md</a>.</li></ul>
+  </article>
+
+  <article>
+    <h3>3. Как организована память между рестартами агента?</h3>
+    <p class="answer">Локально факты живут в файловой SQLite <code>~/.curator/knowledge.db</code> и возвращаются в Markdown-базу; облачный вариант хранит их в xmemory. Для недоставленных облачных записей есть персистентный SQLite outbox, поэтому рестарт не обнуляет очередь.</p>
+    <ul class="facts"><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/backend/local.py">core/curator/backend/local.py</a> создаёт таблицы <code>facts</code>/<code>relations</code> и UPSERT по уникальному <code>title</code>.</li><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/sync_engine.py">core/curator/sync_engine.py</a> синхронизирует статус и содержимое в <code>.md</code>.</li><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/tests/requirements/test_hackathon_must.py">core/tests/requirements/test_hackathon_must.py</a> содержит R4 на память между рестартами.</li></ul>
+  </article>
+
+  <article>
+    <h3>4. Как агент обучается и меняет поведение?</h3>
+    <p class="answer">Это обучение через внешнюю память, не fine-tuning: извлечённые правила позже ищутся и помещаются в контекст host-агента. Improve-loop меняет состав активной памяти — консолидирует дубли и депрекейтит слабые/противоречивые факты, отчего меняется контекст следующих задач.</p>
+    <ul class="facts"><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/integrations/curator-rules.md">integrations/curator-rules.md</a> предписывает сверяться с базой перед задачей.</li><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/improve_loop.py">core/curator/improve_loop.py</a> реализует duplicate/stale/contradiction processing.</li><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/benchmark/application/results/report.md">benchmark/application/results/report.md</a> сравнивает голого агента, статические файлы и proactive retrieval.</li></ul>
+  </article>
+
+  <article>
+    <h3>5. Как память обновляется?</h3>
+    <p class="answer">Повторный <code>title</code> обновляется через UPSERT; improve-loop помечает проигравшие дубли, hypothesis-факты и проигравшие противоречия как <code>deprecated</code>, после чего это отражается маркером <code>[УСТАРЕЛО]</code> в Markdown. Автоматического decay только по возрасту или редкому использованию принципиально нет.</p>
+    <ul class="facts"><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/backend/local.py">core/curator/backend/local.py</a> — <code>ON CONFLICT(title) DO UPDATE</code>.</li><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/improve_loop.py">core/curator/improve_loop.py</a> — порог дубликатов, semantic stale и приоритет <code>verified &gt; hypothesis &gt; deprecated</code>.</li><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/worker.py">core/curator/worker.py</a> прямо запрещает наказывать факт за неиспользование; usage остаётся подсказкой человеку.</li><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/sync_engine.py">core/curator/sync_engine.py</a> исключает deprecated-секции из живого индекса и повторного ingest.</li></ul>
+  </article>
+
+  <article>
+    <h3>6. Как работают эвалы?</h3>
+    <p class="answer">Внутренний EvalRunner симулирует консолидацию/депрекацию, сравнивает coverage, долю stale/verified и размер памяти и блокирует ухудшение; противоречия в текущем коде разрешаются отдельно, без этого gate. Отдельный application benchmark измеряет качество coding-задач в трёх вариантах доставки памяти.</p>
+    <ul class="facts"><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/eval_runner.py">core/curator/eval_runner.py</a> использует пять фиксированных запросов (<code>kotlin</code>, <code>compose</code>, <code>git</code>, <code>architecture</code>, тип <code>Style</code>) и правила допуска; поле <code>duplicate_count</code> в текущем <code>measure()</code> всегда равно нулю.</li><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/improve_loop.py">core/curator/improve_loop.py</a> вызывает eval для duplicate/stale, но применяет contradiction resolution напрямую.</li><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/tests/requirements/README.md">core/tests/requirements/README.md</a> связывает 21 тест с 16 требованиями (включая шесть UC6-сценариев); есть также unit/integration/e2e/smoke.</li><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/benchmark/application/README.md">benchmark/application/README.md</a>: 10 coding-задач и 2 контроля, руки A/B/C; опубликовано 8/10 → 9/10 → 10/10, на двух реплицированных ловушках 0/6 → 3/6 → 6/6, Fisher p=0.0011.</li></ul>
+  </article>
+
+  <article>
+    <h3>7. Как работает human in the loop?</h3>
+    <p class="answer">По умолчанию человек инициирует/подтверждает сохранение: видит preview одобренных и отклонённых кандидатов и выбирает всё, часть или отказ; только затем выполняется вызов с <code>auto_approve=true</code>. Improve-loop после запуска автономен, а usage-телеметрия лишь информирует человека.</p>
+    <ul class="facts"><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/README.md">core/README.md</a> описывает двухшаговый approval flow.</li><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/control.py">core/curator/control.py</a> реализует CLI-подтверждение <code>y/N</code> и логирует человеческий отказ.</li><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/.agents/skills/curator-save/SKILL.md">.agents/skills/curator-save/SKILL.md</a> требует согласия и отдельного подтверждения нового типа.</li><li>Редактирование кандидата поштучно до сохранения пока в backlog — <a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/design/backlog.md">design/backlog.md</a>.</li></ul>
+  </article>
+
+  <article>
+    <h3>8. Используется ли xmemory?</h3>
+    <p class="answer">Да, как опциональный облачный schema-enforced backend для командного/сетевого режима; локальный backend остаётся режимом по умолчанию. Интеграция пишет и читает через REST, а при network/timeout/5xx автоматически уходит в SQLite + outbox.</p>
+    <ul class="facts"><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/backend/xmemory.py">core/curator/backend/xmemory.py</a> обращается к <code>https://api.xmemory.ai</code>, endpoint-ам <code>/write</code> и <code>/read</code>.</li><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/schemas/xmd_kb.yaml">core/schemas/xmd_kb.yaml</a> задаёт XMD-схему и статусы.</li><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/server.py">core/curator/server.py</a> выбирает xmemory только при <code>MEMORY_BACKEND=xmemory</code>; default — <code>local</code>.</li><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/tests/smoke/test_all_backends.py">core/tests/smoke/test_all_backends.py</a> содержит smoke-путь для реальных backend-ов.</li></ul>
+  </article>
+
+  <article>
+    <h3>9. Сбои во время выполнения задачи</h3>
+    <p class="answer">При сбое xmemory из-за сети, timeout или 5xx факт сохраняется локально и ставится в outbox; 4xx считается ошибкой запроса и fallback не включает. Capture продолжает обработку остальных фактов, а daemon ловит ошибку цикла и пробует снова после интервала.</p>
+    <ul class="facts"><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/backend/xmemory.py">core/curator/backend/xmemory.py</a> классифицирует ошибки и выполняет fallback чтения/записи.</li><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/outbox.py">core/curator/outbox.py</a> хранит уникальные по title записи, число попыток и <code>synced_at</code>.</li><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/server.py">core/curator/server.py</a> логирует <code>store_error</code>/<code>writeback_error</code> по факту и продолжает батч; неудачный write-back означает, что факт уже может быть в backend.</li><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/daemon.py">core/curator/daemon.py</a> проверяет stale PID и идемпотентно перезапускает worker.</li></ul>
+  </article>
+
+  <article>
+    <h3>10. Мониторинг</h3>
+    <p class="answer">Есть файловое логирование этапов MCP, решений gatekeeper, improve-действий, before/after-метрик, usage и worker-отчётов. По ним можно восстановить операции Curator над конкретными фактами и причины решений, но не полный tool trace или ход работы внешнего OpenCode/Claude Code над исходной задачей.</p>
+    <ul class="facts"><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/server_log.py">core/curator/server_log.py</a> пишет этапы в <code>~/.curator/server.log</code>.</li><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/candidates_log.py">core/curator/candidates_log.py</a> пишет proposed/saved/rejected/reason в <code>~/.curator/candidates.jsonl</code>.</li><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/core/curator/observability.py">core/curator/observability.py</a> пишет action, facts, applied, reason и eval before/after в <code>~/.curator/improve_events.jsonl</code>.</li><li><a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/docs/getting-started.md">docs/getting-started.md</a> перечисляет <code>worker.log</code>, <code>usage.json</code> и JSON-отчёты <code>~/.curator/reports/improve_*.json</code>.</li></ul>
+  </article>
+</section>
+
+<section>
+  <h2>Ограничения анализа</h2>
+  <div class="note warning">
+    <ul>
+      <li>В репозитории не найдено формальной модели состояний или очереди прикладных задач: диаграмма отражает реализованный lifecycle кандидата/факта памяти.</li>
+      <li>Конкретная LLM, её версия, системный prompt host-агента и стоимость вызовов не закреплены — backend намеренно не вызывает LLM.</li>
+      <li>Реальный xmemory smoke-run без <code>XMEMORY_API_KEY</code>/<code>XMEMORY_INSTANCE_ID</code> не проверялся. Тесты проекта в этом checkout не запускались: готового <code>core/.venv</code> нет; приведены команды и закоммиченные тесты/результаты.</li>
+      <li>Полная рабочая база из 100 сессий не опубликована; в benchmark доступны задачи, checks и снимки решений, но не исходная база знаний. Поэтому независимо подтвердить весь процесс майнинга из репозитория нельзя.</li>
+      <li>Schema evolution, pull из xmemory и автоматическое извлечение из закрытых сессий не реализованы: они перечислены в <a href="https://github.com/podlodka-ai-club/refinement/blob/eae572a5a2a3b7bd39ba814ebe7b50c167cc4a46/design/backlog.md">design/backlog.md</a>. Описанный в ранней спецификации auto-trigger не подтверждён кодом; текущая интеграция напоминает человеку через <code>session.idle</code>.</li>
+    </ul>
+  </div>
+</section>
+</main>
+</body>
+</html>
+</template>
+<noscript><p class="nojs">Для переключения вкладок нужен JavaScript.</p></noscript>
+<script>
+for (const name of ['questionnaire','report']) {
+  document.querySelector('#'+name+' iframe').srcdoc = document.getElementById(name+'-doc').innerHTML;
+}
+for (const button of document.querySelectorAll('.tab')) {
+  button.addEventListener('click', () => {
+    for (const other of document.querySelectorAll('.tab')) other.setAttribute('aria-selected', String(other === button));
+    for (const panel of document.querySelectorAll('.panel')) panel.hidden = panel.id !== button.dataset.panel;
+  });
+}
+</script>
+</body></html>

@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="ru">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sharpening — анкета и анализ агента</title><style>
+:root{color-scheme:light dark;--bg:#f5f5f7;--fg:#1d1d1f;--panel:#fff;--line:#d2d2d7;--accent:#ff5a1f;--muted:#6e6e73}
+@media(prefers-color-scheme:dark){:root{--bg:#141416;--fg:#f5f5f7;--panel:#1f2024;--line:#3a3b40;--muted:#aaa}}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+body{display:flex;flex-direction:column}.top{padding:16px 18px 0;background:var(--panel);border-bottom:1px solid var(--line)}
+h1{font-size:22px;line-height:1.2;margin:0 0 12px}.tabs{display:flex;gap:6px}.tab{appearance:none;border:1px solid var(--line);border-bottom:0;background:var(--bg);color:var(--fg);padding:10px 15px;border-radius:9px 9px 0 0;font:600 14px system-ui;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:#fff}.panels{position:relative;flex:1;min-height:0}.panel{position:absolute;inset:0}.panel[hidden]{display:none}.panel iframe{border:0;width:100%;height:100%;background:#fff}.nojs{padding:12px 18px;color:var(--muted)}
+</style></head>
+<body>
+<header class="top"><h1>Sharpening — анкета и анализ агента</h1><nav class="tabs" aria-label="Материалы команды">
+<button class="tab" type="button" id="tab-questionnaire" data-panel="questionnaire" role="tab" aria-selected="true" aria-controls="questionnaire">Анкета команды</button>
+<button class="tab" type="button" id="tab-report" data-panel="report" role="tab" aria-selected="false" aria-controls="report">Анализ агента</button>
+</nav></header>
+<main class="panels">
+<section class="panel" id="questionnaire" role="tabpanel" aria-labelledby="tab-questionnaire"><iframe title="Анкета команды"></iframe></section>
+<section class="panel" id="report" role="tabpanel" aria-labelledby="tab-report" hidden><iframe title="Анализ агента"></iframe></section>
+</main>
+<template id="questionnaire-doc"><!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sharpening — анкета команды</title><style>
+:root{color-scheme:light dark;--bg:#fafafa;--fg:#202124;--muted:#666;--card:#fff;--line:#d8dadd;--link:#1558d6;--accent:#ff5a1f}
+@media(prefers-color-scheme:dark){:root{--bg:#17181a;--fg:#e7e8ea;--muted:#aaa;--card:#202226;--line:#3b3e44;--link:#8ab4ff}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}main{max-width:980px;margin:auto;padding:28px 20px 56px}h1{font-size:28px;margin:0 0 8px}.meta{color:var(--muted);margin-bottom:26px}.meta a,a{color:var(--link)}.qa{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:17px 19px;margin:14px 0}.qa h2{font-size:17px;line-height:1.35;margin:0 0 9px}.answer{white-space:pre-wrap;overflow-wrap:anywhere}.badge{display:inline-block;padding:3px 8px;border-radius:999px;background:var(--accent);color:white;font-size:12px;font-weight:700;margin-left:7px}
+</style></head><body><main><h1>Sharpening — анкета команды </h1><div class="meta">Репозиторий: <a href="https://github.com/podlodka-ai-club/sharpening" target="_blank" rel="noopener">https://github.com/podlodka-ai-club/sharpening</a> · ответ отправлен 07.09.2026 22:39:26</div><section class="qa"><h2>Представьте, что вы делаете лендинг для вашего проекта или поднимаете инвестиции. Как бы вы описали его одной фразой, чтобы он выделялся среди всех остальных?</h2><div class="answer">swift-claw — персональный AI-ассистент, который выполняет регулярные задачи и превращает ваши исправления в опыт для следующих запусков.</div></section><section class="qa"><h2>Что и как делает ваш агент?</h2><div class="answer">Я развиваю swift-claw как персонального ассистента, который постоянно работает на локальной машине и веду с ним обзение через Telegram. Он использует инструменты, читает файлы, работает с вебом и выполняет задачи по расписанию. На хакатоне я добавил обучение на результатах этих задач: пользователь может исправить конкретный ответ, а агент предложит урок и проверит его в следующих запусках той же задачи. Функцию обучения владелец включает явно.
+
+**Внутренний цикл отвечает за выполнение задачи.** Планировщик создаёт запуск и закрепляет за ним конкретную версию уроков. Агент начинает новый диалог, получает задачу и сохранённые уроки, вызывает модель и инструменты, затем отправляет результат в Telegram. Историю предыдущих запусков он не переносит в этот диалог. Выполнение ограничивают бюджет и правила доступа к инструментам.
+
+**Внешний цикл отвечает за обучение.** После завершения запуска отдельный вызов модели оценивает ответ по задаче и рубрике качества. Оценщик не видит уроки, статус проверяемой версии или предыдущие оценки. Он может отметить проблему, которую стоит исправить в будущих запусках, временный сбой, отсутствие проблемы или неопределённый результат. Исправления владельца имеют приоритет над оценкой модели.
+
+Два разных совместимых запуска с отрицательным исходом и одним и тем же кодом проблемы либо одно конкретное исправление владельца позволяют запустить рефлексию. Другой вызов модели предлагает новый набор уроков. Код проверяет его и допускает к пробе максимум на трёх запусках. Для принятия нужны два положительных исхода разных запусков, отсутствие отрицательных исходов и запретов; также должны быть определены исходы всех назначенных проб. При провале пробы агент сохраняет прежнюю стабильную версию. Владелец может посмотреть уроки, откатить принятую версию или сбросить обучение задачи.
+
+**Память локальная и разделена по назначению.** Диалоги и подтверждённые факты хранятся в SQLite, профиль и заметки владельца также могут жить в Markdown-файлах. Для обучения я добавил отдельные версионированные наборы, до трёх коротких уроков на задачу. Система хранит их происхождение: результаты запусков, исправления, оценки и решения о принятии. После перезапуска она загружает сохранённую версию. Уроки поступают в контекст как недоверенные данные и не меняют права агента. Веса модели остаются прежними; обучение меняет контекст следующих запусков. [Архитектура и границы](https://github.com/ivan-magda/swift-claw/blob/d784bf912ef661ccc5729347200740a97712a324/docs/ARCHITECTURE.md#140-scheduled-learning-capture), [алгоритм](https://github.com/ivan-magda/swift-claw/blob/d784bf912ef661ccc5729347200740a97712a324/docs/research/170-generic-scheduled-task-learning-algorithm.md).
+
+**Данные для обучения** поступают из собственных запусков агента и обратной связи владельца. Для измеримых экспериментов я подготовил фиксированные тестовые корпуса. Первый выбранный сценарий: сравнить два состояния страницы и отличить существенные изменения от динамического шума. Ответы проверяет код по эталонной разметке. Примеры разделены на разработку, регрессионную и отложенную проверку; модель не получает эталонные ответы. Для проверки общего цикла подготовлен отдельный корпус из семи примеров: два для разработки, три для регрессионных сравнений и два для отложенных проверок. Это контролируемые данные, а длительное обучение на живом потоке ещё предстоит оценить. [Протокол эксперимента](https://github.com/ivan-magda/swift-claw/blob/d784bf912ef661ccc5729347200740a97712a324/docs/research/172-validation-protocol.md).</div></section><section class="qa"><h2>Про технический и AI стек</h2><div class="answer">**Приложение:** Swift с toolchain 6.3, Swift Package Manager, Swift Concurrency и actors. Основной продукт работает как один процесс `clawd` на macOS или Linux. Для Telegram я использую собственный клиент Bot API; для сетевых запросов и потоковых ответов модели — AsyncHTTPClient и SwiftNIO. Обучение встроено в существующие планировщик и агентный runtime. [Описание проекта](https://github.com/ivan-magda/swift-claw/blob/d784bf912ef661ccc5729347200740a97712a324/README.md).
+
+**Движок памяти:** SQLite через GRDB, с WAL и FTS5 для поиска по истории, плюс Markdown-файлы рабочего пространства. Уроки и состояние обучения хранятся в SQLite. Внешний сервис памяти не использую. Для памяти отдельной задачи достаточно небольшого набора уроков, который можно загрузить целиком. Транзакции позволяют закрепить версию уроков одновременно с созданием запуска и сохранить эту связь после сбоя. Обратная сторона выбора: версии, происхождение уроков, откат и очистку старых данных пришлось реализовать в проекте. [Хранение и жизненный цикл](https://github.com/ivan-magda/swift-claw/blob/d784bf912ef661ccc5729347200740a97712a324/docs/ARCHITECTURE.md).
+
+**Модели:** в опубликованных экспериментах использовал `openai-chatgpt/gpt-5.6-sol`. Выполнение задачи, оценка и рефлексия получают отдельные контексты. Модельный маршрут в эксперименте фиксирован; отдельного сравнения открытых моделей и режимов reasoning я не проводил. Сам ассистент поддерживает и другие модели через OpenAI-compatible endpoints. [Зафиксированный маршрут](https://github.com/ivan-magda/swift-claw/blob/d784bf912ef661ccc5729347200740a97712a324/docs/research/118-scenario-decision.md).
+
+**Эвалы и обучение:** Swift-компоненты выполняют вызовы модели, Python-стенд воспроизводит алгоритм и проверяет результаты. Я использую фиксированные входы, JSON-контракты, детерминированный scorer для мониторинга страниц и сохраняю ответы вместе с решениями алгоритма. В рабочем daemon оценку дают модель и владелец; предметный scorer остаётся частью экспериментального стенда. Такая схема позволяет проследить путь от ошибки до урока и его применения. Главная обнаруженная слабость: модель-оценщик может пропустить проблему, поэтому её положительная оценка не доказывает улучшение качества. [Стенд и правила проверки](https://github.com/ivan-magda/swift-claw/blob/d784bf912ef661ccc5729347200740a97712a324/docs/research/172-validation-protocol.md).</div></section><section class="qa"><h2>Если бы у вас была ещё одна неделя, что бы вы сделали в первую очередь и почему именно это?</h2><div class="answer">Я бы первым делом проверил обучение в повседневной работе. За время хакатона я успел реализовать механизм и провести стендовые эксперименты, но до такого продуктового прогона не дошёл.
+
+Хочу начать с персонального дайджеста. Агент получает фиксированный набор материалов и присылает общий обзор. Я объясняю свои предпочтения. Затем проверяю, какой урок агент извлёк, как применяет его в пробных запусках и сохраняется ли результат после перезапуска.
+
+Это мой первый приоритет, потому что на стенде уже был случай: урок прошёл три проверки, а на следующем примере агент пропустил существенное изменение. Хочу понять, насколько обучение помогает в задаче, которой я сам буду пользоваться, и где оценщику требуется моя обратная связь.</div></section><section class="qa"><h2>Какие решения оправдали себя настолько, что вы бы рекомендовали другим командам их переиспользовать? Например: паттерн реализации, выбор технологии, архитектурное решение, продуктовая идея.</h2><div class="answer">**Начинать с проверки, есть ли на выбранной задаче чему учиться.** До разработки памяти и самоулучшения стоит запустить модель без обучения на примерах будущих задач и определить, что именно должно стать лучше. У нас один сценарий оказался слишком простым: модель уже справлялась без ошибок. Такая проверка помогает раньше понять, подходит ли задача для эксперимента и можно ли на ней измерить пользу обучения.
+
+**Отделять данные для извлечения уроков от данных для их проверки.** Урок нужно проверять на примерах, которых агент не видел при его формировании. Причём стоит проверять и исправление исходной ошибки, и сохранение качества в других случаях. У нас новый урок улучшил результаты на нескольких примерах, но на следующем отложенном примере агент пропустил существенное изменение. Успех на короткой проверке ещё не означает, что правило хорошо обобщается.
+
+**Версионировать уроки и заранее предусматривать откат.** Новый набор сначала стоит применять в ограниченном числе пробных запусков, сохраняя предыдущую версию. Если проверка не пройдена, кандидат отклоняется. Если проблема обнаружилась уже после принятия, должна быть возможность вернуть прежний набор. Критерии принятия и отката лучше определить заранее, а для каждого запуска сохранять, какую версию уроков он использовал. Тогда можно разобраться, связано ли ухудшение с изменением памяти.
+
+**Проверять качество самого evaluator.** Автоматическая оценка тоже может ошибаться. В нашем эксперименте evaluator дважды не обнаружил проблему, и для продолжения обучения потребовалось конкретное исправление человека. Поэтому мы бы рекомендовали проверять evaluator на примерах с известными ошибками и дополнять его предметными проверками или человеческой оценкой там, где качество нельзя надёжно определить автоматически.</div></section><section class="qa"><h2>Какие решения оказались неудачными или не дали ожидаемой пользы?</h2><div class="answer">На создание стенда и бенчмарков я потратил около половины спринта, а практической пользы получил меньше, чем ожидал. Стоило раньше собрать рабочий цикл обучения на одной реальной задаче с простой проверкой «до и после», а стенд развивать по мере появления конкретных потребностей.</div></section><section class="qa"><h2>Пример работы агента до и после обучения</h2><div class="answer">Цикл обучения реализован, но за время хакатона я не успел провести серию запусков на реальных задачах через Telegram и подготовить демонстрацию «до и после». Есть предварительные сравнения на стенде: в отдельных примерах урок улучшал результат, но на новом примере агент ошибся. Проверка полного цикла в повседневной работе ещё предстоит, поэтому подтверждённого результата обучения в проде пока нет.</div></section><section class="qa"><h2>Участвуете ли вы в номинации от xmemory?</h2><div class="answer">Нет</div></section></main></body></html></template>
+<template id="report-doc"><!doctype html>
+<html lang="ru">
+<head><base target="_blank">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sharpening: анализ самообучающегося агента</title>
+  <style>
+    :root{color-scheme:light dark;--bg:#fff;--fg:#202124;--muted:#5f6368;--card:#f6f8fa;--line:#d0d7de;--link:#0969da} @media(prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--muted:#9da7b3;--card:#161b22;--line:#30363d;--link:#58a6ff}} *{box-sizing:border-box} body{max-width:1040px;margin:0 auto;padding:28px 22px 64px;background:var(--bg);color:var(--fg);font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif} h1{font-size:2rem;line-height:1.2} h2{margin-top:2.2rem;border-bottom:1px solid var(--line);padding-bottom:.3rem} h3{margin-top:1.6rem} a{color:var(--link)} table{width:100%;border-collapse:collapse;margin:1rem 0} th,td{border:1px solid var(--line);padding:.55rem .65rem;text-align:left;vertical-align:top} th{background:var(--card)} code,pre{background:var(--card);border:1px solid var(--line);border-radius:6px} code{padding:.1rem .3rem} pre{padding:1rem;overflow:auto;white-space:pre-wrap}.meta,.note{color:var(--muted)} .answer{font-weight:650} .facts{margin-top:.35rem} .question{padding:.1rem 0 .45rem} .warn{border-left:4px solid #bf8700;padding:.6rem 1rem;background:var(--card)}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Sharpening: анализ самообучающегося агента</h1>
+    <p class="meta">
+      Репозиторий: <a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/README.md">podlodka-ai-club/sharpening</a><br>
+      Ветка: <code>main</code> · commit: <code>8af4b55d9b4aa69e42443260c04ea35065e1e075</code><br>
+      Дата анализа: <time datetime="2026-09-09T19:36:48Z">9 сентября 2026, 19:36 UTC</time>
+    </p>
+    <p><strong>Коротко:</strong> это локальный Telegram-ассистент <code>clawd</code>. Его «обучение» — не дообучение весов, а выработка, проверка и версионирование коротких правил для конкретной повторяющейся задачи.</p>
+  </header>
+
+  <main>
+    <h2>1. Анализ</h2>
+
+    <h3>1.1. Пошаговый пайплайн</h3>
+    <table>
+      <thead><tr><th>Шаг</th><th>Что происходит</th><th>Результат</th></tr></thead>
+      <tbody>
+        <tr><td>1. Постановка</td><td>Владелец создаёт задачу через <code>/schedule</code> и подтверждает её; задача хранит prompt и расписание. Запуск создаёт тикер либо <code>/runnow &lt;jobId&gt;</code>.</td><td>Активная scheduled job.</td></tr>
+        <tr><td>2. Атомарный fire</td><td>Планировщик CAS-операцией забирает due occurrence, пропускает пересечение с живым запуском, создаёт сессию/сообщение и run в <code>pending</code>. При включённом обучении run привязывается к конкретной версии lessons.</td><td>Durable run + pinned lesson digest.</td></tr>
+        <tr><td>3. Выполнение</td><td>Session lane переводит run в <code>running</code>, собирает контекст, вызывает настроенный LLM и инструменты. Рискованные действия приостанавливают run в <code>awaitingApproval</code>.</td><td>Ответ либо терминальное состояние.</td></tr>
+        <tr><td>4. Фиксация</td><td>Ответ, usage, delivery/outbox и состояние коммитятся транзакционно. Технические, policy- и owner-сбои классифицируются отдельно и не объявляются плохим качеством задачи.</td><td><code>done</code>, <code>failed</code>, <code>cancelled</code> или <code>superseded</code>.</td></tr>
+        <tr><td>5. Evidence</td><td>Для learning-bound run после settlement замораживаются transcript, compatibility surface и terminal cause. Только <code>eligible_task_evidence</code> получает payload для оценщика.</td><td>Хешированный immutable receipt.</td></tr>
+        <tr><td>6. Evaluation</td><td>Отдельный tool-free LLM-вызов получает prompt задачи, rubric и evidence, но не видит lessons, candidate и trial state. Он возвращает <code>no_issue</code>, <code>reusable_issue</code>, <code>transient_issue</code> или <code>uncertain</code>.</td><td>Durable evaluation с issue codes.</td></tr>
+        <tr><td>7. Trigger и reflection</td><td>Reflection запускают два совместимых отрицательных результата с одинаковой проблемой за окно либо одна коррекция владельца. Reflector видит stable lessons, совместимые оценки и owner feedback и предлагает замену максимум из трёх lessons — либо ничего.</td><td>Candidate lesson set.</td></tr>
+        <tr><td>8. Admission</td><td>Код проверяет актуальность источников, provenance, лимиты, secrets, recurrence, vetoes и отсутствие конкурирующего trial. Невалидный candidate отклоняется.</td><td>Отклонение, review/approval или bounded trial.</td></tr>
+        <tr><td>9. Trial</td><td>Candidate назначается максимум трём новым запускам; каждый run использует неизменную версию candidate до завершения. Решения опираются на оценки и приоритетный owner feedback.</td><td>Накопление trial evidence.</td></tr>
+        <tr><td>10. Promotion / fallback</td><td>Два positive при отсутствии negative/veto продвигают candidate в stable lessons; один negative или hard veto оставляет прежнюю версию. Promotion можно откатить, learning — reset-нуть в новый epoch.</td><td>Следующие запуски получают новую либо прежнюю stable version.</td></tr>
+        <tr><td>11. Recovery / retention</td><td>Фоновый sweep каждые 300 секунд повторяет незавершённую sealing/workflow-работу, сверяет trials и чистит недостижимую историю. При старте interrupted operations закрываются, а не начатые возвращаются в очередь.</td><td>Восстановление после рестарта и ограниченный рост БД.</td></tr>
+      </tbody>
+    </table>
+    <p class="facts">Источники: <a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/README.md">README.md</a>, <a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/Sources/ClawData/Stores/Scheduling/ScheduledJobStoreGRDB+Firing.swift">ScheduledJobStoreGRDB+Firing.swift</a>, <a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/Sources/ClawGateway/Services/Learning/LearningWorkflow.swift">LearningWorkflow.swift</a>, <a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/Sources/ClawGateway/Services/Learning/LearningOperationRunner.swift">LearningOperationRunner.swift</a>, <a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/Sources/ClawGateway/Services/Learning/LearningOperationRunner+Reflection.swift">LearningOperationRunner+Reflection.swift</a>, <a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/Sources/ClawGateway/Services/Learning/ScheduledLearningService.swift">ScheduledLearningService.swift</a>.</p>
+
+    <pre class="mermaid">stateDiagram-v2
+    [*] --&gt; pending
+    pending --&gt; running
+    pending --&gt; failed
+    pending --&gt; cancelled
+    pending --&gt; superseded
+    running --&gt; awaitingApproval
+    awaitingApproval --&gt; running
+    awaitingApproval --&gt; failed
+    awaitingApproval --&gt; cancelled
+    awaitingApproval --&gt; superseded
+    running --&gt; done
+    running --&gt; failed
+    running --&gt; cancelled
+    running --&gt; superseded
+    done --&gt; [*]
+    failed --&gt; [*]
+    cancelled --&gt; [*]
+    superseded --&gt; [*]</pre>
+    <p class="note">Диаграмма повторяет разрешённые переходы run FSM; условия намеренно не показаны. Источник: <a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/Sources/ClawCore/Domain/Run/RunFSM.swift">Sources/ClawCore/Domain/Run/RunFSM.swift</a>.</p>
+
+    <h3>1.2. Как воспроизвести</h3>
+    <ol>
+      <li>Подготовить Swift 6.3, macOS 15+ или Linux; для сборки на Linux установить <code>libsqlite3-dev</code>.</li>
+      <li><code>git clone https://github.com/podlodka-ai-club/sharpening.git &amp;&amp; cd sharpening &amp;&amp; swift build -c release</code>.</li>
+      <li>Добавить <code>.build/release</code> в <code>PATH</code>; скопировать <code>.env.example</code> в <code>~/.swift-claw/clawd.env</code>.</li>
+      <li>Задать Telegram bot token, LLM route/model/API key и <code>CLAW_ALLOWLIST</code>; выполнить <code>clawd secrets seal</code>.</li>
+      <li>Включить <code>CLAW_LEARNING_ENABLED=true</code>, заново загрузить env и проверить <code>clawd doctor --check-config</code>.</li>
+      <li>Запустить <code>clawd run</code>. В Telegram создать повторяющуюся задачу: <code>/schedule …</code>, подтвердить её и узнать <code>jobId</code> через <code>/schedule list</code>.</li>
+      <li>Выполнить <code>/runnow &lt;jobId&gt;</code>, нажать <strong>Correct it</strong> и описать ошибку; проверить candidate/trial через <code>/learning &lt;jobId&gt;</code>.</li>
+      <li>Повторить <code>/runnow</code> и оценить результаты. Два positive могут дать promotion; один negative завершает trial. Проверить rollback кнопкой <strong>Roll back promotion</strong>.</li>
+      <li>Для офлайн-проверки M3 harness перейти в <code>experiments/scheduled-task-learning/scheduled-learning-v1</code> и запустить <code>scripts/lint.sh</code>, <code>scripts/test.sh</code>, conformance и freeze verify из README. Live <code>scored</code> запрещён без нового freeze и явного owner approval.</li>
+    </ol>
+    <p class="facts">Источники: <a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/README.md">README.md, “Run the hackathon version”</a>, <a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/docs/GETTING_STARTED.md">docs/GETTING_STARTED.md</a>, <a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/experiments/scheduled-task-learning/scheduled-learning-v1/README.md">scheduled-learning-v1/README.md</a>.</p>
+
+    <h3>1.3. Технический стек</h3>
+    <ul>
+      <li><strong>Агенты:</strong> <code>ClawAgent</code>; scheduled task agent; отдельные tool-free evaluator и reflector LLM-вызовы.</li>
+      <li><strong>LLM:</strong> настраиваемая OpenAI-compatible route или ChatGPT subscription; primary/fallback; конкретная модель не зафиксирована.</li>
+      <li><strong>Интеграции:</strong> Telegram Bot API, MCP, HTTP/web search, файловые и subprocess/code tools, Apple Speech.</li>
+      <li><strong>Память:</strong> локальная SQLite/WAL через GRDB; <code>memory_items</code>; сообщения + FTS5/BM25; Markdown workspace; versioned per-job lesson sets.</li>
+      <li><strong>Эвалы:</strong> production evaluator + trial reducer; <code>ClawEvaluation</code>/<code>claw-eval</code>; Python M3 harness, frozen fixtures, deterministic scorer, JSON receipts.</li>
+      <li><strong>Фреймворки:</strong> Swift 6 strict concurrency, SwiftPM, GRDB, AsyncHTTPClient, SwiftNIO, swift-log, ServiceLifecycle, ArgumentParser, Swift Crypto, Python/uv, Ruff, Mypy, unittest.</li>
+    </ul>
+    <p class="facts">Источники: <a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/Package.swift">Package.swift</a>, <a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/docs/ARCHITECTURE.md">docs/ARCHITECTURE.md</a>, <a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/experiments/scheduled-task-learning/scheduled-learning-v1/pyproject.toml">scheduled-learning-v1/pyproject.toml</a>.</p>
+
+    <h2>2. Ответы на вопросы</h2>
+
+    <section class="question">
+      <h3>1. С какими задачами работает агент?</h3>
+      <p class="answer">Ассистент принимает обычные сообщения из Telegram, но самообучающийся loop работает только с подтверждёнными scheduled jobs, прежде всего повторяющимися. Задачу задаёт владелец через <code>/schedule</code>; конкретный запуск выбирает due-ticker либо владелец через <code>/runnow</code>.</p>
+      <ul class="facts"><li><a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/README.md">README.md</a> описывает recurring tasks и команды.</li><li><a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/Sources/ClawData/Stores/Scheduling/ScheduledJobStoreGRDB+Firing.swift">ScheduledJobStoreGRDB+Firing.swift</a> читает prompt из <code>scheduled_jobs</code>, атомарно claim-ит occurrence и создаёт run; overlap пропускается.</li></ul>
+    </section>
+
+    <section class="question">
+      <h3>2. Как агент выбирает, что сохранить в память?</h3>
+      <p class="answer">Для общей памяти формального критерия полезности нет: модель может предложить один факт через <code>memory_write</code>, но запись всегда требует одобрения владельца; факт получает kind, importance и sensitivity. Для task lessons критерий жёстче: два совместимых reusable issue с одинаковым code либо одна owner correction запускают reflection, после чего кандидат проходит программные проверки.</p>
+      <ul class="facts"><li><a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/Sources/ClawTools/Tools/MemoryWriteTool.swift">MemoryWriteTool.swift</a>: один факт, категории <code>user|feedback|project|reference</code>, risk <code>ask</code>, только approval path.</li><li><a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/Sources/ClawCore/Domain/Memory/MemoryWriteRequest.swift">MemoryWriteRequest.swift</a>: нормализация, удаление управляющих символов и warnings для secret/instruction-shaped текста.</li><li><a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/README.md">README.md, “How learning works”</a>: trigger и ограничения candidate.</li></ul>
+    </section>
+
+    <section class="question">
+      <h3>3. Как организована память между рестартами агента?</h3>
+      <p class="answer">Долгосрочное состояние хранится локально в SQLite/WAL через GRDB: факты — в <code>memory_items</code>, история сообщений индексируется FTS5/BM25, а task experience — в versioned lesson sets, learning state, evidence и decisions. При каждом run digest lessons фиксируется, поэтому рестарт не меняет опыт задним числом.</p>
+      <ul class="facts"><li><a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/Sources/ClawData/Stores/Memory/MemoryStoreGRDB.swift">MemoryStoreGRDB.swift</a> хранит и ранжирует memory по importance, времени и id.</li><li><a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/Sources/ClawData/Stores/Memory/RetrieverGRDB.swift">RetrieverGRDB.swift</a> делает FTS5/BM25 recall только по trusted user/assistant messages.</li><li><a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/Sources/ClawData/Database/ClawDatabase.swift">ClawDatabase.swift</a> создаёт SQLite schema/FTS; <a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/docs/ARCHITECTURE.md">ARCHITECTURE.md</a> описывает durable stores и boot recovery.</li></ul>
+    </section>
+
+    <section class="question">
+      <h3>4. Как агент обучается и меняет поведение?</h3>
+      <p class="answer">Веса модели не меняются: reflector синтезирует короткий набор правил, candidate испытывается на будущих запусках и после promotion становится частью контекста только этой задачи. Каждая версия immutable и адресуется digest; failed trial сохраняет старые stable lessons.</p>
+      <ul class="facts"><li><a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/README.md">README.md</a> прямо говорит: learning обновляет task memory, fine-tuning отсутствует.</li><li><a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/Sources/ClawGateway/Services/Learning/LearningOperationRunner+Reflection.swift">LearningOperationRunner+Reflection.swift</a> строит replacement lesson set и candidate manifest.</li><li><a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/Sources/ClawData/Stores/Learning/Candidates/ScheduledLearningStoreGRDB+Admission.swift">Candidate admission</a> создаёт bounded trial.</li></ul>
+    </section>
+
+    <section class="question">
+      <h3>5. Как память обновляется?</h3>
+      <p class="answer">Task memory обновляется через versioned promotion, rollback, owner correction/edit/reject и <code>/learning reset</code>; отзыв подтверждающей evidence может автоматически откатить promotion. Для обычных <code>memory_items</code> автоматическое устаревание, дедупликация или пересмотр ошибочных фактов <strong>в репозитории не найдены</strong>: есть явное удаление.</p>
+      <ul class="facts"><li><a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/Sources/ClawData/Stores/Learning/Trials/ScheduledLearningStoreGRDB+Rollback.swift">ScheduledLearningStoreGRDB+Rollback.swift</a> возвращает base digest при owner rollback, candidate rejection или withdrawal достаточной positive support.</li><li><a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/Sources/ClawData/Stores/Learning/ScheduledLearningStoreGRDB+Retention.swift">ScheduledLearningStoreGRDB+Retention.swift</a>: payloads старше evidence window очищаются, недостижимые receipts и lessons старше 90 дней удаляются; live references сохраняются.</li><li><a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/Sources/ClawData/Stores/Memory/MemoryStoreGRDB.swift">MemoryStoreGRDB.swift</a> содержит append/list/get/delete, но не decay/update.</li></ul>
+    </section>
+
+    <section class="question">
+      <h3>6. Как работают эвалы?</h3>
+      <p class="answer">Production evaluator слепо классифицирует только eligible completed evidence структурированным tool-free LLM-вызовом; trial reducer продвигает candidate после двух positive при отсутствии negative/veto и отклоняет после одного negative. Проверка «лучше со временем» реализована сравнительными offline-эвала́ми, но текущий сохранённый M3 не доказал устойчивое улучшение.</p>
+      <ul class="facts"><li><a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/Sources/ClawGateway/Services/Learning/LearningOperationRunner.swift">LearningOperationRunner.swift</a>: закрытый carrier, schema, 512-token cap, budget/privacy gates, отсутствие tools.</li><li><a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/docs/research/172-validation-protocol.md">172-validation-protocol.md</a>: fixed split, paired clean/candidate checks, threshold ≥90, mean delta ≥10, active и restart gates.</li><li><a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/experiments/scheduled-task-learning/scheduled-learning-v1/results/final-report.json">final-report.json</a>: пары дали mean +15 и candidate score 100, но active score 30; status <code>incomplete_failed</code>, restart evidence отсутствует.</li></ul>
+    </section>
+
+    <section class="question">
+      <h3>7. Как работает human in the loop?</h3>
+      <p class="answer">Человек подтверждает создание scheduled job и рискованные tool/memory actions, а после результата может пометить его Useful/Not useful, дать correction, подтвердить/оспорить evaluation, approve/edit/reject candidate и откатить promotion. Feedback сохраняется как типизированное событие и имеет приоритет над raw evaluator outcome.</p>
+      <ul class="facts"><li><a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/Sources/ClawCore/Domain/Learning/LearningVocabulary.swift">LearningVocabulary.swift</a> перечисляет девять owner signals.</li><li><a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/Sources/ClawGateway/Services/Learning/LearningWorkflow.swift">LearningWorkflow.swift</a> обрабатывает approve/edit и ставит review notices владельцу.</li><li><a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/README.md">README.md</a> описывает Telegram-кнопки, correction, rollback и reset.</li></ul>
+    </section>
+
+    <section class="question">
+      <h3>8. Используется ли xmemory?</h3>
+      <p class="answer">Нет. <strong>xMemory в репозитории не используется</strong>; task lessons, память и learning artifacts хранятся локально в SQLite через GRDB.</p>
+      <ul class="facts"><li><a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/README.md">README.md</a> прямо утверждает: “No external memory service, including xMemory, is used”.</li><li>Поиск <code>xmemory|XMemory</code> в <a href="https://github.com/podlodka-ai-club/sharpening/tree/8af4b55d9b4aa69e42443260c04ea35065e1e075/Sources">Sources/</a> не дал реализаций или интеграций.</li></ul>
+    </section>
+
+    <section class="question">
+      <h3>9. Сбои во время выполнения задачи</h3>
+      <p class="answer">Основной run переходит в <code>failed</code>, <code>cancelled</code> или <code>superseded</code>; approval может безопасно suspend/resume. Learning не ломает доставку результата: ошибки логируются и откладываются, unsealed work повторяет sweep, а boot reconciliation закрывает interrupted calls и возвращает не начатые в claimable state.</p>
+      <ul class="facts"><li><a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/Sources/ClawCore/Domain/Run/RunFSM.swift">RunFSM.swift</a> задаёт все допустимые переходы.</li><li><a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/Sources/ClawGateway/Services/Learning/ScheduledLearningService.swift">ScheduledLearningService.swift</a>: 300-секундный recovery sweep, batch 64, boot operation reconciliation.</li><li><a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/Sources/ClawGateway/Services/Learning/LearningOperationRunner.swift">LearningOperationRunner.swift</a>: одна допустимая смена primary→fallback, terminal schema/provider failure и exactly-once result commit.</li></ul>
+    </section>
+
+    <section class="question">
+      <h3>10. Мониторинг</h3>
+      <p class="answer">Есть структурное логирование через <code>swift-log</code>, health/status checks и подробный локальный audit trail: runs, messages, tool decisions, outbox, usage, evidence, evaluations, feedback, candidates, trials и decision receipts. По БД можно восстановить ход run и основания learning-решений, но не байт-в-байт полный внешний LLM exchange: audit args редактируются, usage не хранит body, а полноценный distributed tracing/OpenTelemetry <strong>в репозитории не найден</strong>.</p>
+      <ul class="facts"><li><a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/Sources/ClawData/Stores/Observability/AuditLogGRDB.swift">AuditLogGRDB.swift</a> пишет actor/action/tool/redacted args/decision/run/session.</li><li><a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/Sources/ClawData/Stores/Observability/UsageStoreGRDB.swift">UsageStoreGRDB.swift</a> хранит token/cost accounting.</li><li><a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/Sources/ClawData/Stores/Learning/Inference/ScheduledLearningStoreGRDB+Evaluations.swift">ScheduledLearningStoreGRDB+Evaluations.swift</a> сохраняет evaluation, compatibility digest и audit event в одной транзакции.</li><li><a href="https://github.com/podlodka-ai-club/sharpening/blob/8af4b55d9b4aa69e42443260c04ea35065e1e075/docs/GETTING_STARTED.md">GETTING_STARTED.md</a> описывает <code>clawd doctor --json</code>, Telegram <code>/status</code> и service logs.</li></ul>
+    </section>
+
+    <h2>Ограничения анализа</h2>
+    <div class="warn">
+      <ul>
+        <li>Проведён статический анализ текущего checkout; live Telegram/LLM-прогон и scored harness не запускались.</li>
+        <li>Конкретная LLM не определяется кодом: она задаётся конфигурацией пользователя.</li>
+        <li>Сохранённый M3 показал улучшение на трёх paired cases, затем провалил active gate; restart gate не был достигнут. Устойчивое улучшение на новых задачах не доказано.</li>
+        <li>Не описан автоматический lifecycle устаревания обычных <code>memory_items</code>; retention относится прежде всего к learning evidence/history.</li>
+        <li>Полный byte-level replay всех сетевых запросов по production telemetry не заявлен и из найденных stores не следует.</li>
+      </ul>
+    </div>
+  </main>
+</body>
+</html>
+</template>
+<noscript><p class="nojs">Для переключения вкладок нужен JavaScript.</p></noscript>
+<script>
+for (const name of ['questionnaire','report']) {
+  document.querySelector('#'+name+' iframe').srcdoc = document.getElementById(name+'-doc').innerHTML;
+}
+for (const button of document.querySelectorAll('.tab')) {
+  button.addEventListener('click', () => {
+    for (const other of document.querySelectorAll('.tab')) other.setAttribute('aria-selected', String(other === button));
+    for (const panel of document.querySelectorAll('.panel')) panel.hidden = panel.id !== button.dataset.panel;
+  });
+}
+</script>
+</body></html>
